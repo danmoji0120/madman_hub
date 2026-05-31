@@ -1,0 +1,1 @@
+location.href = '/posts.html';

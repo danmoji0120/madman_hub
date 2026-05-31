@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>방명록 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>방명록</h1>
+      <p>쓸모없는 말을 남기면 포인트를 조금 줍니다. 참으로 저렴한 인간성이네요.</p>
+    </section>
+
+    <form class="card" onsubmit="postGuestbook(event)">
+      <textarea class="textarea" id="guestbook-body" placeholder="방명록 내용"></textarea>
+      <button class="button" type="submit">남기기</button>
+      <p id="message" class="message"></p>
+    </form>
+
+    <section class="grid" id="guestbook-list" style="margin-top: 18px;"></section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/guestbook.js"></script>
+</body>
+</html>

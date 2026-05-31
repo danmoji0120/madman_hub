@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>칭호 상점 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="badge">쓸모를 찾은 포인트</span>
+      <h1>칭호 상점</h1>
+      <p>꾸준히 모은 포인트로 그럴듯한 칭호를 구매하고 프로필에 장착하세요.</p>
+    </section>
+
+    <section class="card">
+      <div class="stat-row">
+        <div>
+          <h2>내 포인트</h2>
+          <p class="meta" id="shop-account-hint">로그인하면 현재 포인트를 확인할 수 있습니다.</p>
+        </div>
+        <p class="point" id="shop-points">-</p>
+      </div>
+      <p class="message" id="shop-message"></p>
+    </section>
+
+    <section class="shop-grid" id="shop-titles" style="margin-top: 18px;"></section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/shop.js"></script>
+</body>
+</html>

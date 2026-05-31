@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>내 프로필 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <button onclick="API.logout()">로그아웃</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="grid">
+      <article class="card" id="profile-card">
+        <h1>내 프로필</h1>
+        <p class="meta">불러오는 중...</p>
+      </article>
+
+      <article class="card" id="points-card">
+        <h2>내 포인트</h2>
+        <p class="point">0P</p>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <div class="section-heading">
+        <h2>프로필 수정</h2>
+        <a class="button secondary inline" href="/shop.html">칭호 상점 가기</a>
+      </div>
+      <form class="profile-editor" onsubmit="saveProfile(event)">
+        <div class="form-grid">
+          <label>
+            <span class="meta">닉네임</span>
+            <input class="input" id="profile-nickname" maxlength="30" />
+          </label>
+          <label>
+            <span class="meta">위험도</span>
+            <select class="input" id="profile-danger-level">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </label>
+          <label>
+            <span class="meta">프로필 테마</span>
+            <select class="input" id="profile-theme">
+              <option value="neon">neon</option>
+              <option value="midnight">midnight</option>
+              <option value="chaos">chaos</option>
+            </select>
+          </label>
+          <label>
+            <span class="meta">아바타 URL</span>
+            <input class="input" id="profile-avatar-url" maxlength="500" />
+          </label>
+        </div>
+        <label>
+          <span class="meta">자기소개</span>
+          <textarea class="textarea" id="profile-bio" maxlength="500"></textarea>
+        </label>
+        <label>
+          <span class="meta">좋아하는 문장</span>
+          <input class="input" id="profile-favorite-quote" maxlength="200" />
+        </label>
+        <label>
+          <span class="meta">태그: 쉼표로 구분, 최대 8개</span>
+          <input class="input" id="profile-tags" placeholder="기획, 새벽, 버그소환" />
+        </label>
+        <button class="button" type="submit">프로필 저장</button>
+        <p class="message" id="profile-message"></p>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <div class="section-heading">
+        <h2>보유 칭호</h2>
+        <a class="button secondary inline" href="/shop.html">더 둘러보기</a>
+      </div>
+      <div class="shop-grid" id="owned-titles"></div>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <h2>내 업적</h2>
+      <div class="achievement-grid" id="profile-achievements"></div>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <h2>포인트 내역</h2>
+      <div id="transactions"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>

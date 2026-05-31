@@ -1,0 +1,30 @@
+{
+  "name": "madmen-hub",
+  "version": "0.1.0",
+  "description": "Friends hub site with shared auth and point core",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "nodemon server/app.js",
+    "db:init": "node server/db.js --init",
+    "db:init:sqlite": "cross-env DB_PROVIDER=sqlite node server/db.js --init",
+    "test:smoke": "node scripts/smoke-test.js",
+    "test:smoke:sqlite": "cross-env DB_PROVIDER=sqlite node scripts/smoke-test.js",
+    "test:smoke:supabase": "cross-env DB_PROVIDER=supabase node scripts/smoke-test.js",
+    "test:smoke:casino:sqlite": "cross-env DB_PROVIDER=sqlite node scripts/smoke-test.js",
+    "test:smoke:casino:supabase": "cross-env DB_PROVIDER=supabase node scripts/smoke-test.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "nodemon": "^3.1.9"
+  }
+}

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+      <span id="nav-auth"><a href="/login.html">로그인</a></span>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="badge">정상인 출입 금지</span>
+      <h1>미친놈들 모임</h1>
+      <p>
+        친구들의 글, 잡담, 포인트, 흑역사를 보관하는 디지털 격리소입니다.
+        쓸모는 애매하지만 존재감은 확실한 인터넷 아지트입니다.
+      </p>
+      <div class="hero-actions" id="hero-actions">
+        <a class="button inline" href="/login.html">로그인</a>
+        <a class="button secondary inline" href="/register.html">회원가입</a>
+      </div>
+    </section>
+
+    <p class="message" id="dashboard-message"></p>
+
+    <section class="dashboard-grid">
+      <article class="card" id="my-status-card">
+        <h2>내 상태</h2>
+        <p class="meta">불러오는 중...</p>
+      </article>
+
+      <article class="card" id="today-card">
+        <h2>오늘의 미친놈</h2>
+        <p class="meta">불러오는 중...</p>
+      </article>
+
+      <article class="card" id="random-post-card">
+        <h2>랜덤 게시글</h2>
+        <p class="meta">불러오는 중...</p>
+      </article>
+
+      <article class="card wide-card">
+        <h2>최근 방명록</h2>
+        <div id="recent-guestbook-list" class="preview-list"></div>
+      </article>
+
+      <article class="card wide-card">
+        <h2>최근 게시글</h2>
+        <div id="recent-posts-list" class="preview-list"></div>
+      </article>
+
+      <article class="card">
+        <h2>포인트 랭킹 TOP 5</h2>
+        <div id="leaderboard-list" class="rank-list"></div>
+      </article>
+
+      <article class="card wide-card">
+        <h2>최근 활동</h2>
+        <div id="recent-feed-list" class="feed-list"></div>
+      </article>
+
+      <article class="card wide-card">
+        <h2>최근 업적</h2>
+        <div id="recent-achievements-list" class="achievement-grid"></div>
+      </article>
+
+      <article class="card wide-card">
+        <h2>최근 카지노</h2>
+        <div id="recent-casino-list" class="casino-history"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>

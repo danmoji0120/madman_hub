@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>포인트 카지노 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero casino-hero">
+      <span class="badge">내부 포인트 전용</span>
+      <h1>POINT CASINO</h1>
+      <p>현금, 상품, 외부 재화와 연결되지 않는 사이트 내부 미니게임입니다. 결과와 포인트 거래는 서버에 기록됩니다.</p>
+    </section>
+
+    <section class="card">
+      <div class="stat-row">
+        <div>
+          <h2>내 카지노 상태</h2>
+          <p class="meta" id="casino-limit-note">로그인하면 포인트와 오늘 남은 횟수를 확인할 수 있습니다.</p>
+        </div>
+        <p class="point" id="casino-points">-</p>
+      </div>
+      <p class="risk-warning">하루 전체 30회 제한 · 일반 최대 베팅 min(500P, 보유 포인트 50%) · 환금 불가</p>
+      <p class="message" id="casino-message"></p>
+    </section>
+
+    <section class="casino-grid" style="margin-top: 18px;">
+      <article class="casino-card">
+        <h2>룰렛</h2>
+        <p class="meta">0x부터 20x까지 서버가 즉시 추첨합니다.</p>
+        <div class="roulette-wheel">?</div>
+        <div class="casino-controls">
+          <input class="input" id="roulette-bet" type="number" min="10" value="10" />
+          <button class="button" onclick="playRoulette(this)">룰렛 돌리기</button>
+        </div>
+        <div class="casino-result" id="roulette-result">결과 대기 중</div>
+      </article>
+
+      <article class="casino-card">
+        <h2>주사위 블랙잭</h2>
+        <p class="meta">21 이하에서 딜러보다 높은 합계를 노립니다.</p>
+        <div class="dice-row" id="blackjack-dice"></div>
+        <div class="casino-controls">
+          <input class="input" id="blackjack-bet" type="number" min="20" value="20" />
+          <button class="button" onclick="startBlackjack(this)">시작</button>
+          <button class="button secondary" onclick="hitBlackjack(this)">Hit</button>
+          <button class="button secondary" onclick="standBlackjack(this)">Stand</button>
+        </div>
+        <div class="casino-result" id="blackjack-result">결과 대기 중</div>
+      </article>
+
+      <article class="casino-card">
+        <h2>크래시</h2>
+        <p class="meta">서버가 정한 배율에 도달하기 전에 탈출하세요.</p>
+        <div class="crash-meter"><strong class="crash-value" id="crash-value">1.00x</strong></div>
+        <div class="casino-controls">
+          <input class="input" id="crash-bet" type="number" min="10" value="10" />
+          <button class="button" onclick="startCrash(this)">시작</button>
+          <button class="button secondary" onclick="cashoutCrash(this)">탈출</button>
+        </div>
+        <div class="casino-result" id="crash-result">결과 대기 중</div>
+      </article>
+
+      <article class="casino-card">
+        <h2>러시안 룰렛</h2>
+        <p class="meta">30P 고정. 생존할수록 보상이 커집니다.</p>
+        <div class="chamber-row" id="russian-chambers"></div>
+        <div class="casino-controls">
+          <button class="button" onclick="startRussian(this)">30P로 시작</button>
+          <button class="button secondary" onclick="pullRussian(this)">방아쇠 당기기</button>
+          <button class="button secondary" onclick="cashoutRussian(this)">보상 받고 멈추기</button>
+        </div>
+        <div class="casino-result" id="russian-result">결과 대기 중</div>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <h2>확률과 보상표</h2>
+      <div class="payout-table" id="casino-games"></div>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <h2>최근 내 기록</h2>
+      <div class="casino-history" id="casino-history"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/casino.js"></script>
+</body>
+</html>

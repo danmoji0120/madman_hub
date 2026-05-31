@@ -1,0 +1,191 @@
+const casinoEscape = API.escape;
+let blackjackSessionId = null;
+let crashSessionId = null;
+let crashInterval = null;
+let russianSessionId = null;
+
+function casinoMessage(text) {
+  document.querySelector('#casino-message').textContent = text;
+}
+
+function requireLogin() {
+  if (API.token) return true;
+  casinoMessage('플레이하려면 먼저 로그인하세요.');
+  return false;
+}
+
+async function withButton(button, action) {
+  if (!requireLogin()) return;
+  button.disabled = true;
+  try {
+    await action();
+    await loadCasinoAccount();
+    await loadCasinoHistory();
+  } catch (error) {
+    casinoMessage(error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function inputAmount(id) {
+  return Number(document.querySelector(id).value);
+}
+
+function renderGames(games) {
+  document.querySelector('#casino-games').innerHTML = games.map((game) => {
+    const rows = game.payoutTable
+      ? game.payoutTable.map((item) => `<li>${casinoEscape(item.label)}${item.weight ? ` · ${casinoEscape(item.weight)}%` : ` · ${casinoEscape(item.multiplier)}x`}</li>`).join('')
+      : Object.entries(game.rewardTable || {}).map(([count, payout]) => `<li>${casinoEscape(count)}회 생존 · ${casinoEscape(payout)}P</li>`).join('');
+    return `<article><strong>${casinoEscape(game.name)}</strong><p class="meta">${casinoEscape(game.rules)}</p><ul>${rows}</ul></article>`;
+  }).join('');
+}
+
+async function loadCasinoAccount() {
+  if (!API.token) return;
+  const data = await API.request('/api/casino/me/limits');
+  document.querySelector('#casino-points').textContent = `${data.account.balance}P`;
+  document.querySelector('#casino-limit-note').textContent = `오늘 ${data.totalPlayed}/${data.totalDailyLimit}회 플레이 · ${data.totalRemaining}회 남음`;
+}
+
+async function loadCasinoHistory() {
+  if (!API.token) return;
+  const data = await API.request('/api/casino/history?limit=30');
+  document.querySelector('#casino-history').innerHTML = data.results.map((item) => `
+    <div class="casino-history-item">
+      <strong>${casinoEscape(item.gameCode)}</strong>
+      <span>${casinoEscape(item.result)} · 베팅 ${casinoEscape(item.betAmount)}P · 지급 ${casinoEscape(item.payoutAmount)}P · 순변동 ${casinoEscape(item.netAmount)}P</span>
+    </div>
+  `).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>';
+}
+
+async function playRoulette(button) {
+  await withButton(button, async () => {
+    const data = await API.request('/api/casino/roulette/play', {
+      method: 'POST',
+      body: JSON.stringify({ betAmount: inputAmount('#roulette-bet') })
+    });
+    document.querySelector('.roulette-wheel').textContent = data.result.label;
+    document.querySelector('#roulette-result').textContent = `${data.result.label} · 지급 ${data.result.payoutAmount}P · 순변동 ${data.result.netAmount}P`;
+  });
+}
+
+function renderBlackjack(session) {
+  const state = session.state;
+  document.querySelector('#blackjack-dice').innerHTML = `
+    <div><span class="meta">나</span> ${state.playerDice.map((die) => `<span class="die">${casinoEscape(die)}</span>`).join('')} <strong>${casinoEscape(state.playerTotal)}</strong></div>
+    <div><span class="meta">딜러</span> ${state.dealerDicePublic.map((die) => `<span class="die">${casinoEscape(die ?? '?')}</span>`).join('')} <strong>${casinoEscape(state.dealerVisibleTotal)}</strong></div>
+  `;
+}
+
+async function startBlackjack(button) {
+  await withButton(button, async () => {
+    const data = await API.request('/api/casino/dice-blackjack/start', {
+      method: 'POST',
+      body: JSON.stringify({ betAmount: inputAmount('#blackjack-bet') })
+    });
+    blackjackSessionId = data.session.id;
+    renderBlackjack(data.session);
+    document.querySelector('#blackjack-result').textContent = '진행 중';
+  });
+}
+
+async function hitBlackjack(button) {
+  if (!blackjackSessionId) return casinoMessage('먼저 블랙잭을 시작하세요.');
+  await withButton(button, async () => {
+    const data = await API.request(`/api/casino/dice-blackjack/${blackjackSessionId}/hit`, { method: 'POST' });
+    renderBlackjack(data.session);
+    document.querySelector('#blackjack-result').textContent = data.result ? `${data.result.result} · 지급 ${data.result.payoutAmount}P` : '계속 진행 중';
+    if (data.result) blackjackSessionId = null;
+  });
+}
+
+async function standBlackjack(button) {
+  if (!blackjackSessionId) return casinoMessage('먼저 블랙잭을 시작하세요.');
+  await withButton(button, async () => {
+    const data = await API.request(`/api/casino/dice-blackjack/${blackjackSessionId}/stand`, { method: 'POST' });
+    renderBlackjack(data.session);
+    document.querySelector('#blackjack-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+    blackjackSessionId = null;
+  });
+}
+
+async function startCrash(button) {
+  await withButton(button, async () => {
+    const data = await API.request('/api/casino/crash/start', {
+      method: 'POST',
+      body: JSON.stringify({ betAmount: inputAmount('#crash-bet') })
+    });
+    crashSessionId = data.session.id;
+    const startedAt = Date.now();
+    clearInterval(crashInterval);
+    crashInterval = setInterval(() => {
+      const multiplier = Math.floor((1 + (Date.now() - startedAt) / 1000 * 0.35) * 100) / 100;
+      document.querySelector('#crash-value').textContent = `${multiplier.toFixed(2)}x`;
+    }, 80);
+    document.querySelector('#crash-result').textContent = '탈출 타이밍을 잡으세요.';
+  });
+}
+
+async function cashoutCrash(button) {
+  if (!crashSessionId) return casinoMessage('먼저 크래시를 시작하세요.');
+  await withButton(button, async () => {
+    const data = await API.request(`/api/casino/crash/${crashSessionId}/cashout`, { method: 'POST' });
+    clearInterval(crashInterval);
+    crashInterval = null;
+    crashSessionId = null;
+    document.querySelector('#crash-value').textContent = `${data.result.cashoutMultiplier.toFixed(2)}x`;
+    document.querySelector('#crash-result').textContent = `${data.result.outcome} · 크래시 ${data.result.crashMultiplier}x · 지급 ${data.result.payoutAmount}P`;
+  });
+}
+
+function renderRussian(session) {
+  const state = session.state;
+  document.querySelector('#russian-chambers').innerHTML = Array.from({ length: 6 }, (_, index) => (
+    `<span class="chamber ${index < state.survivedCount ? 'safe' : ''}">${index + 1}</span>`
+  )).join('');
+  document.querySelector('#russian-result').textContent = `${state.survivedCount}회 생존 · 지금 멈추면 ${state.cashoutReward}P`;
+}
+
+async function startRussian(button) {
+  await withButton(button, async () => {
+    const data = await API.request('/api/casino/russian-roulette/start', { method: 'POST', body: '{}' });
+    russianSessionId = data.session.id;
+    renderRussian(data.session);
+  });
+}
+
+async function pullRussian(button) {
+  if (!russianSessionId) return casinoMessage('먼저 러시안 룰렛을 시작하세요.');
+  await withButton(button, async () => {
+    const data = await API.request(`/api/casino/russian-roulette/${russianSessionId}/pull`, { method: 'POST' });
+    renderRussian(data.session);
+    if (data.result) {
+      document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+      russianSessionId = null;
+    }
+  });
+}
+
+async function cashoutRussian(button) {
+  if (!russianSessionId) return casinoMessage('먼저 러시안 룰렛을 시작하세요.');
+  await withButton(button, async () => {
+    const data = await API.request(`/api/casino/russian-roulette/${russianSessionId}/cashout`, { method: 'POST' });
+    renderRussian(data.session);
+    document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+    russianSessionId = null;
+  });
+}
+
+async function initCasino() {
+  try {
+    renderGames((await API.request('/api/casino/games')).games);
+    await loadCasinoAccount();
+    await loadCasinoHistory();
+  } catch (error) {
+    casinoMessage(error.message);
+  }
+}
+
+window.addEventListener('beforeunload', () => clearInterval(crashInterval));
+initCasino();

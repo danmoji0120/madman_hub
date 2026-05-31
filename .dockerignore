@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+
+database/*.sqlite
+database/*.sqlite-journal
+database/*.db
+
+.git
+.gitignore
+
+coverage
+.vscode
+.DS_Store

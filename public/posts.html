@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>게시판 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>게시판</h1>
+      <p>친구들의 글, 기록, 잡담을 남기는 공간입니다.</p>
+    </section>
+
+    <form class="card" onsubmit="postArticle(event)">
+      <input class="input" id="post-title" placeholder="제목" maxlength="100" />
+      <input class="input" id="post-target" placeholder="관련 대상" maxlength="40" />
+      <textarea class="textarea" id="post-body" placeholder="게시글 내용" maxlength="2000"></textarea>
+      <button class="button" type="submit">게시글 작성</button>
+      <p id="message" class="message"></p>
+    </form>
+
+    <section class="grid" id="posts-list" style="margin-top: 18px;"></section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/posts.js"></script>
+</body>
+</html>

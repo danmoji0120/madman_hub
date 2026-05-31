@@ -1,0 +1,35 @@
+const mappings = [
+  ['insufficient_points', 400, '포인트가 부족합니다.'],
+  ['amount_zero', 400, '포인트 변경 금액은 0일 수 없습니다.'],
+  ['invalid_reason', 400, '사유를 두 글자 이상 입력해 주세요.'],
+  ['invalid_user', 404, '사용자를 찾을 수 없습니다.'],
+  ['invalid_target_user', 404, '대상 사용자를 찾을 수 없습니다.'],
+  ['forbidden', 403, '권한이 부족합니다.'],
+  ['title_not_found', 404, '칭호를 찾을 수 없습니다.'],
+  ['inactive_title', 400, '비활성 칭호입니다.'],
+  ['admin_title_not_buyable', 400, '관리자 전용 칭호는 구매할 수 없습니다.'],
+  ['active_session_exists', 409, '이미 진행 중인 게임이 있습니다.'],
+  ['session_not_found', 404, '게임 세션을 찾을 수 없습니다.'],
+  ['session_not_owned', 403, '다른 사용자의 게임 세션에는 접근할 수 없습니다.'],
+  ['session_not_active', 409, '이미 완료된 게임입니다.'],
+  ['invalid_bet_amount', 400, '베팅 금액이 올바르지 않습니다.'],
+  ['invalid_payout_amount', 400, '지급 금액이 올바르지 않습니다.'],
+  ['invalid_session_status', 400, '게임 세션 상태가 올바르지 않습니다.'],
+  ['achievement_not_found', 404, '업적을 찾을 수 없습니다.'],
+  ['inactive_achievement', 400, '비활성 업적입니다.']
+];
+
+function mapRpcError(error) {
+  const rawMessage = error?.message || 'Supabase RPC failed';
+  const mapping = mappings.find(([code]) => rawMessage.includes(code));
+  const mapped = new Error(mapping ? mapping[2] : rawMessage);
+  mapped.status = mapping ? mapping[1] : 500;
+  mapped.statusCode = mapped.status;
+  mapped.code = mapping ? mapping[0] : error?.code;
+  mapped.details = error?.details;
+  return mapped;
+}
+
+module.exports = {
+  mapRpcError
+};
