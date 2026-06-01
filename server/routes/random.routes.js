@@ -1,5 +1,6 @@
 const express = require('express');
 const { all } = require('../db');
+const { getRandomPost } = require('../services/posts.service');
 
 const router = express.Router();
 
@@ -15,12 +16,12 @@ router.get('/today', async (req, res) => {
      LEFT JOIN user_profiles p ON p.user_id = u.id`
   );
 
-  const quotes = await all('SELECT * FROM quotes WHERE is_hidden = 0 ORDER BY RANDOM() LIMIT 1');
+  const randomQuote = await getRandomPost();
 
   return res.json({
     success: true,
     madmanOfTheDay: pickRandom(members),
-    randomQuote: quotes[0] || null,
+    randomQuote,
     message: '오늘도 정상인 척 실패한 하루입니다.'
   });
 });

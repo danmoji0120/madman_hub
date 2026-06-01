@@ -32,6 +32,28 @@ function inputAmount(id) {
   return Number(document.querySelector(id).value);
 }
 
+function setDisabled(id, disabled) {
+  document.querySelector(id).disabled = disabled;
+}
+
+function syncBlackjackControls() {
+  const active = Boolean(blackjackSessionId);
+  setDisabled('#blackjack-start', active);
+  setDisabled('#blackjack-hit', !active);
+  setDisabled('#blackjack-stand', !active);
+}
+
+function syncRussianControls(session = null) {
+  const active = Boolean(russianSessionId);
+  setDisabled('#russian-start', active);
+  setDisabled('#russian-pull', !active);
+  setDisabled('#russian-cashout', !active || !session?.state.canCashout);
+}
+
+function formatLimit(limit, remaining) {
+  return limit > 0 ? `${remaining}회 남음` : '무제한';
+}
+
 function renderGames(games) {
   document.querySelector('#casino-games').innerHTML = games.map((game) => {
     const rows = game.payoutTable
@@ -45,7 +67,7 @@ async function loadCasinoAccount() {
   if (!API.token) return;
   const data = await API.request('/api/casino/me/limits');
   document.querySelector('#casino-points').textContent = `${data.account.balance}P`;
-  document.querySelector('#casino-limit-note').textContent = `오늘 ${data.totalPlayed}/${data.totalDailyLimit}회 플레이 · ${data.totalRemaining}회 남음`;
+  document.querySelector('#casino-limit-note').textContent = `오늘 ${data.totalPlayed}회 플레이 · ${formatLimit(data.totalDailyLimit, data.totalRemaining)}`;
 }
 
 async function loadCasinoHistory() {
@@ -86,6 +108,7 @@ async function startBlackjack(button) {
     });
     blackjackSessionId = data.session.id;
     renderBlackjack(data.session);
+    syncBlackjackControls();
     document.querySelector('#blackjack-result').textContent = '진행 중';
   });
 }
@@ -96,7 +119,10 @@ async function hitBlackjack(button) {
     const data = await API.request(`/api/casino/dice-blackjack/${blackjackSessionId}/hit`, { method: 'POST' });
     renderBlackjack(data.session);
     document.querySelector('#blackjack-result').textContent = data.result ? `${data.result.result} · 지급 ${data.result.payoutAmount}P` : '계속 진행 중';
-    if (data.result) blackjackSessionId = null;
+    if (data.result) {
+      blackjackSessionId = null;
+      syncBlackjackControls();
+    }
   });
 }
 
@@ -107,6 +133,7 @@ async function standBlackjack(button) {
     renderBlackjack(data.session);
     document.querySelector('#blackjack-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
     blackjackSessionId = null;
+    syncBlackjackControls();
   });
 }
 
@@ -152,6 +179,7 @@ async function startRussian(button) {
     const data = await API.request('/api/casino/russian-roulette/start', { method: 'POST', body: '{}' });
     russianSessionId = data.session.id;
     renderRussian(data.session);
+    syncRussianControls(data.session);
   });
 }
 
@@ -164,6 +192,7 @@ async function pullRussian(button) {
       document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
       russianSessionId = null;
     }
+    syncRussianControls(data.session);
   });
 }
 
@@ -174,11 +203,14 @@ async function cashoutRussian(button) {
     renderRussian(data.session);
     document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
     russianSessionId = null;
+    syncRussianControls(data.session);
   });
 }
 
 async function initCasino() {
   try {
+    syncBlackjackControls();
+    syncRussianControls();
     renderGames((await API.request('/api/casino/games')).games);
     await loadCasinoAccount();
     await loadCasinoHistory();

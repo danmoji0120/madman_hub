@@ -10,9 +10,11 @@
   <header class="nav">
     <a class="logo" href="/">MADMEN HUB ADMIN</a>
     <nav class="nav-links">
+      <a href="#songs">노래추천</a>
       <a href="#overview">개요</a>
       <a href="#users">유저</a>
       <a href="#content">콘텐츠</a>
+      <a href="#comments">댓글</a>
       <a href="#titles">칭호</a>
       <a href="/casino.html">카지노</a>
       <a href="/profile.html">내 프로필</a>
@@ -104,6 +106,20 @@
       <h2>게시글 관리</h2>
       <div class="admin-toolbar">
         <input class="input" id="quote-search" placeholder="제목, 내용, 관련 대상 검색" />
+        <select class="input" id="quote-category-filter">
+          <option value="">전체 카테고리</option>
+          <option value="general">잡담</option>
+          <option value="notice">공지/안내</option>
+          <option value="meme">짤/드립</option>
+          <option value="game">게임</option>
+          <option value="casino">카지노</option>
+          <option value="music">음악</option>
+          <option value="anonymous">익명</option>
+          <option value="record">기록문</option>
+          <option value="suggestion">건의사항</option>
+        </select>
+        <input class="input" id="quote-tag-filter" placeholder="태그" />
+        <input class="input" id="quote-user-filter" placeholder="작성자 ID" />
         <label class="checkbox-label"><input type="checkbox" id="quote-hidden" checked /> 숨김 포함</label>
         <button class="button secondary inline small-button" onclick="loadAdminQuotes()">검색</button>
       </div>
@@ -126,6 +142,39 @@
         <table class="admin-table">
           <thead><tr><th>ID</th><th>방명록</th><th>작성자</th><th>상태</th><th>작업</th></tr></thead>
           <tbody id="admin-guestbook"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section" id="comments">
+      <h2>댓글 관리</h2>
+      <div class="admin-toolbar">
+        <input class="input" id="comment-search" placeholder="댓글 내용 검색" />
+        <input class="input" id="comment-post-id" placeholder="게시글 ID" />
+        <input class="input" id="comment-user-id" placeholder="작성자 ID" />
+        <label class="checkbox-label"><input type="checkbox" id="comment-hidden" checked /> 숨김 포함</label>
+        <button class="button secondary inline small-button" onclick="loadAdminComments()">검색</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>댓글</th><th>작성자</th><th>상태</th><th>작업</th></tr></thead>
+          <tbody id="admin-comments"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="admin-section" id="songs">
+      <h2>노래추천 관리</h2>
+      <div class="admin-toolbar">
+        <input class="input" id="song-admin-search" placeholder="제목, 아티스트, 추천 이유 검색" />
+        <input class="input" id="song-admin-user-id" placeholder="작성자 ID" />
+        <label class="checkbox-label"><input type="checkbox" id="song-admin-hidden" checked /> 숨김 포함</label>
+        <button class="button secondary inline small-button" onclick="loadAdminSongs()">검색</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>노래</th><th>작성자</th><th>상태</th><th>작업</th></tr></thead>
+          <tbody id="admin-songs"></tbody>
         </table>
       </div>
     </section>

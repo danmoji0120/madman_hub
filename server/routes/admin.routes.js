@@ -11,11 +11,15 @@ const {
   setPostHidden,
   listAdminGuestbook,
   setGuestbookHidden,
+  listAdminComments,
+  setCommentHidden,
   listAdminTitles,
   createAdminTitle,
   updateAdminTitle,
   setTitleActive
 } = require('../repositories/admin.repo');
+const { listAdminSongs, adminSetSongHidden } = require('../services/songs.service');
+const { getPostCategory } = require('../config/postCategories.config');
 
 const router = express.Router();
 const allowedRoles = ['owner', 'admin', 'member', 'guest'];
@@ -120,9 +124,14 @@ safe('post', '/points/grant', async (req, res) => {
 });
 
 safe('get', ['/quotes', '/posts'], async (req, res) => {
+  const category = typeof req.query.category === 'string' ? req.query.category.trim().toLowerCase() : '';
+  if (category && category !== 'all' && !getPostCategory(category)) throw createHttpError(400, 'category is invalid.');
   const posts = await listAdminPosts({
     includeHidden: parseBoolean(req.query.includeHidden),
     q: typeof req.query.q === 'string' ? req.query.q.trim() : '',
+    category: category === 'all' ? '' : category,
+    tag: typeof req.query.tag === 'string' ? req.query.tag.trim() : '',
+    userId: req.query.userId ? parseId(req.query.userId, 'user id') : null,
     limit: parseLimit(req.query.limit),
     offset: parseOffset(req.query.offset)
   });
@@ -159,6 +168,51 @@ safe('patch', '/guestbook/:id/hidden', async (req, res) => {
     reason: cleanText(req.body.reason, 'reason', 300) || ''
   });
   return res.json({ success: true, entry });
+});
+
+safe('get', '/comments', async (req, res) => {
+  const comments = await listAdminComments({
+    q: typeof req.query.q === 'string' ? req.query.q.trim() : '',
+    postId: req.query.postId ? parseId(req.query.postId, 'post id') : null,
+    userId: req.query.userId ? parseId(req.query.userId, 'user id') : null,
+    includeHidden: parseBoolean(req.query.includeHidden),
+    limit: parseLimit(req.query.limit),
+    offset: parseOffset(req.query.offset)
+  });
+  return res.json({ success: true, comments });
+});
+
+safe('patch', '/comments/:id/hidden', async (req, res) => {
+  if (typeof req.body.hidden !== 'boolean') throw createHttpError(400, 'hidden must be a boolean.');
+  const comment = await setCommentHidden({
+    actorUser: req.user,
+    commentId: parseId(req.params.id, 'comment id'),
+    hidden: req.body.hidden,
+    reason: cleanText(req.body.reason, 'reason', 300) || ''
+  });
+  return res.json({ success: true, comment });
+});
+
+safe('get', '/songs', async (req, res) => {
+  const songs = await listAdminSongs({
+    q: typeof req.query.q === 'string' ? req.query.q.trim() : '',
+    userId: req.query.userId ? parseId(req.query.userId, 'user id') : null,
+    includeHidden: parseBoolean(req.query.includeHidden),
+    limit: parseLimit(req.query.limit),
+    offset: parseOffset(req.query.offset)
+  });
+  return res.json({ success: true, songs });
+});
+
+safe('patch', '/songs/:id/hidden', async (req, res) => {
+  if (typeof req.body.hidden !== 'boolean') throw createHttpError(400, 'hidden must be a boolean.');
+  const song = await adminSetSongHidden({
+    actorUser: req.user,
+    songId: parseId(req.params.id, 'song id'),
+    hidden: req.body.hidden,
+    reason: cleanText(req.body.reason, 'reason', 300) || ''
+  });
+  return res.json({ success: true, song });
 });
 
 safe('get', '/titles', async (req, res) => {

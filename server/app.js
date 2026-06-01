@@ -20,6 +20,8 @@ const postsRoutes = require('./routes/posts.routes');
 const feedRoutes = require('./routes/feed.routes');
 const achievementsRoutes = require('./routes/achievements.routes');
 const casinoRoutes = require('./routes/casino.routes');
+const songsRoutes = require('./routes/songs.routes');
+const missionsRoutes = require('./routes/missions.routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -47,6 +49,8 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/feed', feedRoutes);
 app.use('/api/achievements', achievementsRoutes);
 app.use('/api/casino', casinoRoutes);
+app.use('/api/songs', songsRoutes);
+app.use('/api/missions', missionsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: '찾을 수 없는 경로입니다.' });

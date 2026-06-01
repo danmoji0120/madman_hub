@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',
+  account_status TEXT NOT NULL DEFAULT 'active',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   last_login_at TEXT
 );
@@ -85,12 +86,83 @@ CREATE TABLE IF NOT EXISTS quotes (
   body TEXT NOT NULL,
   target_name TEXT DEFAULT '',
   tags TEXT DEFAULT '[]',
+  category TEXT NOT NULL DEFAULT 'general',
+  is_anonymous INTEGER NOT NULL DEFAULT 0,
+  anonymous_name TEXT DEFAULT '',
   is_hidden INTEGER NOT NULL DEFAULT 0,
   hidden_at TEXT,
   hidden_by INTEGER,
   hidden_reason TEXT DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS post_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id INTEGER NOT NULL,
+  user_id INTEGER,
+  body TEXT NOT NULL,
+  is_anonymous INTEGER NOT NULL DEFAULT 0,
+  anonymous_name TEXT DEFAULT '',
+  is_hidden INTEGER NOT NULL DEFAULT 0,
+  hidden_at TEXT,
+  hidden_by INTEGER,
+  hidden_reason TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT,
+  FOREIGN KEY (post_id) REFERENCES quotes(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (hidden_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS song_recommendations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  title TEXT NOT NULL,
+  artist TEXT DEFAULT '',
+  url TEXT NOT NULL,
+  reason TEXT DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  is_anonymous INTEGER NOT NULL DEFAULT 0,
+  is_hidden INTEGER NOT NULL DEFAULT 0,
+  hidden_at TEXT,
+  hidden_by INTEGER,
+  hidden_reason TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (hidden_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS daily_mission_progress (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  mission_date TEXT NOT NULL,
+  mission_code TEXT NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0,
+  target INTEGER NOT NULL DEFAULT 1,
+  completed INTEGER NOT NULL DEFAULT 0,
+  claimed INTEGER NOT NULL DEFAULT 0,
+  reward_points INTEGER NOT NULL DEFAULT 0,
+  completed_at TEXT,
+  claimed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT,
+  UNIQUE(user_id, mission_date, mission_code),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS daily_mission_bonus_claims (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  mission_date TEXT NOT NULL,
+  bonus_code TEXT NOT NULL,
+  claimed INTEGER NOT NULL DEFAULT 0,
+  reward_points INTEGER NOT NULL DEFAULT 0,
+  claimed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, mission_date, bonus_code),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS guestbook_entries (
@@ -168,3 +240,13 @@ CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_i
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_game_results_game_created ON game_results(game_code, created_at);
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id_created_at ON post_comments(post_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_hidden ON post_comments(is_hidden);
+CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at);
+CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at);
+CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date);
+CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code);

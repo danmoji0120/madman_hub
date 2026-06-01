@@ -76,6 +76,7 @@ function renderRandomPost(post) {
     <span class="badge">${escapeHtml(post.target_name || '대상 없음')}</span>
     <h3>${escapeHtml(post.title)}</h3>
     <p class="quote-preview">${escapeHtml(post.body)}</p>
+    <a class="meta" href="/post.html?id=${post.id}">상세 보기</a>
   `;
 }
 
@@ -91,15 +92,62 @@ function renderRecentGuestbook(entries) {
   `).join('') || '<p class="empty-state">아직 방명록이 비어 있습니다.</p>';
 }
 
+function renderDailyMissions(data) {
+  const card = document.querySelector('#daily-missions-card');
+  if (!API.token) return;
+  card.innerHTML = `
+    <div class="section-heading"><h2>오늘의 관찰 과제</h2><span class="badge">${data.completedCount}/${data.totalCount}</span></div>
+    <div class="mission-list">${data.missions.slice(0, 5).map((mission) => `
+      <div class="mission-item">
+        <div><strong>${escapeHtml(mission.title)}</strong><br /><span class="meta">${mission.progress}/${mission.target} · ${mission.rewardPoints}P</span></div>
+        ${mission.completed && !mission.claimed ? `<button class="button secondary inline small-button" onclick="claimMission('${mission.code}')">보상 받기</button>` : `<span class="meta">${mission.claimed ? '수령 완료' : '진행 중'}</span>`}
+      </div>
+    `).join('')}</div>
+    <div class="mission-list">${data.bonuses.map((bonus) => `
+      <div class="mission-item">
+        <div><strong>${escapeHtml(bonus.title)}</strong><br /><span class="meta">보너스 ${bonus.rewardPoints}P</span></div>
+        ${bonus.claimable && !bonus.claimed ? `<button class="button secondary inline small-button" onclick="claimMissionBonus('${bonus.code}')">보너스 받기</button>` : `<span class="meta">${bonus.claimed ? '수령 완료' : '조건 미달'}</span>`}
+      </div>
+    `).join('')}</div>
+  `;
+}
+
+async function loadDailyMissions() {
+  if (!API.token) return;
+  renderDailyMissions(await API.request('/api/missions/daily'));
+}
+
+async function claimMission(code) {
+  const message = document.querySelector('#dashboard-message');
+  try {
+    const data = await API.request(`/api/missions/daily/${code}/claim`, { method: 'POST' });
+    message.textContent = `미션 보상 ${data.rewardPoints}P를 받았습니다.`;
+    await loadDashboard();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
+async function claimMissionBonus(code) {
+  const message = document.querySelector('#dashboard-message');
+  try {
+    const data = await API.request(`/api/missions/daily/bonus/${code}/claim`, { method: 'POST' });
+    message.textContent = `미션 보너스 ${data.rewardPoints}P를 받았습니다.`;
+    await loadDashboard();
+  } catch (error) {
+    message.textContent = error.message;
+  }
+}
+
 function renderRecentPosts(posts) {
   const root = document.querySelector('#recent-posts-list');
 
   root.innerHTML = posts.map((post) => `
-    <div class="quote-preview">
+    <a class="quote-preview" href="/post.html?id=${post.id}">
       <span class="badge">${escapeHtml(post.target_name || '대상 없음')}</span>
       <strong>${escapeHtml(post.title)}</strong>
       <p>${escapeHtml(post.body)}</p>
-    </div>
+    </a>
   `).join('') || '<p class="empty-state">아직 게시글이 없습니다.</p>';
 }
 
@@ -111,9 +159,12 @@ function feedText(item) {
     daily_checkin: `${name} 님이 출석하고 ${escapeHtml(metadata.rewardAmount || 10)}P를 받았습니다.`,
     guestbook_posted: `${name} 님이 방명록을 남겼습니다.`,
     post_created: `${name} 님이 게시글을 작성했습니다.`,
+    comment_created: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 게시글에 댓글을 남겼습니다.`,
     title_purchased: `${name} 님이 [${escapeHtml(metadata.titleName || '')}] 칭호를 구매했습니다.`,
     title_equipped: `${name} 님이 [${escapeHtml(metadata.titleName || '')}] 칭호를 장착했습니다.`,
-    achievement_unlocked: `${name} 님이 업적 [${escapeHtml(metadata.achievementName || '')}]을 달성했습니다.`
+    achievement_unlocked: `${name} 님이 업적 [${escapeHtml(metadata.achievementName || '')}]을 달성했습니다.`,
+    song_recommended: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 노래를 추천했습니다.`,
+    daily_missions_completed_all: `${name} 님이 오늘의 관찰 과제를 모두 완료했습니다.`
     ,
     game_big_win: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 ${escapeHtml(metadata.payoutAmount || 0)}P를 획득했습니다.`,
     game_jackpot: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 잭팟 ${escapeHtml(metadata.payoutAmount || 0)}P를 터뜨렸습니다.`,
@@ -175,6 +226,7 @@ async function loadDashboard() {
     renderFeed(data.recentFeed);
     renderAchievements(data.recentAchievements);
     renderCasinoResults(data.recentCasinoResults || []);
+    await loadDailyMissions();
   } catch (error) {
     console.error('대시보드 로딩 실패', error);
     message.textContent = '대시보드를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';

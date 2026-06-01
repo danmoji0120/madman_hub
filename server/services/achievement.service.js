@@ -11,7 +11,10 @@ function isEligible(code, state) {
     FIRST_TITLE_PURCHASE: state.titlePurchaseCount >= 1,
     POINT_100: state.balance >= 100,
     POST_5: state.postCount >= 5,
-    CHECKIN_3: state.checkinCount >= 3
+    CHECKIN_3: state.checkinCount >= 3,
+    COMMENT_FIRST: state.commentCount >= 1,
+    ANONYMOUS_FIRST: state.anonymousCount >= 1,
+    SONG_FIRST_RECOMMEND: state.songCount >= 1
   };
 
   return Boolean(rules[code]);
@@ -23,9 +26,13 @@ async function getUserState(userId) {
        (SELECT COUNT(*) FROM daily_checkins WHERE user_id = ?) AS checkinCount,
        (SELECT COUNT(*) FROM guestbook_entries WHERE user_id = ?) AS guestbookCount,
        (SELECT COUNT(*) FROM quotes WHERE user_id = ?) AS postCount,
+       (SELECT COUNT(*) FROM post_comments WHERE user_id = ?) AS commentCount,
+       (SELECT COUNT(*) FROM song_recommendations WHERE user_id = ?) AS songCount,
+       ((SELECT COUNT(*) FROM quotes WHERE user_id = ? AND is_anonymous = 1) +
+        (SELECT COUNT(*) FROM post_comments WHERE user_id = ? AND is_anonymous = 1)) AS anonymousCount,
        (SELECT COUNT(*) FROM point_transactions WHERE user_id = ? AND type = 'title_purchase') AS titlePurchaseCount,
        COALESCE((SELECT balance FROM point_accounts WHERE user_id = ?), 0) AS balance`,
-    [userId, userId, userId, userId, userId]
+    [userId, userId, userId, userId, userId, userId, userId, userId, userId]
   );
 }
 

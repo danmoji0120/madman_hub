@@ -49,10 +49,14 @@ async function ensureColumn(table, column, definition) {
 }
 
 async function runMigrations() {
+  await ensureColumn('users', 'account_status', "TEXT NOT NULL DEFAULT 'active'");
   await ensureColumn('quotes', 'is_hidden', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('quotes', 'hidden_at', 'TEXT');
   await ensureColumn('quotes', 'hidden_by', 'INTEGER');
   await ensureColumn('quotes', 'hidden_reason', "TEXT DEFAULT ''");
+  await ensureColumn('quotes', 'is_anonymous', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('quotes', 'anonymous_name', "TEXT DEFAULT ''");
+  await ensureColumn('quotes', 'category', "TEXT NOT NULL DEFAULT 'general'");
   await ensureColumn('guestbook_entries', 'is_hidden', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('guestbook_entries', 'hidden_at', 'TEXT');
   await ensureColumn('guestbook_entries', 'hidden_by', 'INTEGER');
@@ -60,6 +64,61 @@ async function runMigrations() {
   await ensureColumn('titles', 'updated_at', 'TEXT');
   await ensureColumn('titles', 'updated_by', 'INTEGER');
   await ensureColumn('activity_logs', 'is_public', 'INTEGER NOT NULL DEFAULT 0');
+  await run(
+    `CREATE TABLE IF NOT EXISTS post_comments (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       post_id INTEGER NOT NULL,
+       user_id INTEGER,
+       body TEXT NOT NULL,
+       is_anonymous INTEGER NOT NULL DEFAULT 0,
+       anonymous_name TEXT DEFAULT '',
+       is_hidden INTEGER NOT NULL DEFAULT 0,
+       hidden_at TEXT,
+       hidden_by INTEGER,
+       hidden_reason TEXT DEFAULT '',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT,
+       FOREIGN KEY (post_id) REFERENCES quotes(id) ON DELETE CASCADE,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+       FOREIGN KEY (hidden_by) REFERENCES users(id) ON DELETE SET NULL
+     )`
+  );
+  await run('CREATE INDEX IF NOT EXISTS idx_post_comments_post_id_created_at ON post_comments(post_id, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_post_comments_hidden ON post_comments(is_hidden)');
+  await run('CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at)');
+  await run(
+    `CREATE TABLE IF NOT EXISTS song_recommendations (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT NOT NULL, artist TEXT DEFAULT '',
+       url TEXT NOT NULL, reason TEXT DEFAULT '', tags TEXT NOT NULL DEFAULT '[]',
+       is_anonymous INTEGER NOT NULL DEFAULT 0, is_hidden INTEGER NOT NULL DEFAULT 0,
+       hidden_at TEXT, hidden_by INTEGER, hidden_reason TEXT DEFAULT '',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS daily_mission_progress (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, mission_date TEXT NOT NULL,
+       mission_code TEXT NOT NULL, progress INTEGER NOT NULL DEFAULT 0, target INTEGER NOT NULL DEFAULT 1,
+       completed INTEGER NOT NULL DEFAULT 0, claimed INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0,
+       completed_at TEXT, claimed_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT,
+       UNIQUE(user_id, mission_date, mission_code)
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS daily_mission_bonus_claims (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, mission_date TEXT NOT NULL,
+       bonus_code TEXT NOT NULL, claimed INTEGER NOT NULL DEFAULT 0, reward_points INTEGER NOT NULL DEFAULT 0,
+       claimed_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE(user_id, mission_date, bonus_code)
+     )`
+  );
+  await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date)');
+  await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code)');
 }
 
 async function initDatabase() {

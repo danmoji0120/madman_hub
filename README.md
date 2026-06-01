@@ -2,19 +2,21 @@
 
 친구들의 글, 잡담, 포인트, 업적을 보관하는 Express + Vanilla JS 기반 MVP입니다.
 
-## MVP 0.9
+## MVP 1.1
 
 - 자체 `users` 테이블, bcrypt 비밀번호 해시, JWT 인증
 - `DB_PROVIDER=sqlite` 또는 `DB_PROVIDER=supabase`
 - 출석, 방명록, 게시판, 포인트 거래, 칭호 상점, 업적, 활동 피드
 - 관리자 운영 패널과 숨김 콘텐츠 관리
 - 내부 포인트 전용 카지노 미니게임 4종
+- 게시판 랜덤 글 보기와 확장된 칭호 seed
+- 게시글 상세 페이지, 댓글, 익명 게시글과 익명 댓글
 
 ## 포인트 카지노
 
 카지노는 사이트 내부 포인트만 사용하는 미니게임입니다. 현금 구매, 출금, 상품권, 현물, 외부 재화, 암호화폐, 환금 기능은 없습니다.
 
-공통 제한:
+기본 제한:
 
 - 하루 전체 카지노 플레이: 최대 30회
 - 일반 최대 베팅: `min(500P, floor(balance * 0.5))`
@@ -22,6 +24,20 @@
 - 주사위 블랙잭: 최소 `20P`, 하루 10회
 - 크래시: 최소 `10P`, 하루 10회
 - 러시안 룰렛: 참가비 `30P` 고정, 하루 10회
+
+카지노 제한은 환경변수로 조정할 수 있습니다. 값이 `0`이면 해당 제한을 적용하지 않습니다. 환경변수를 생략하면 위 기본값을 사용합니다. 러시안 룰렛의 참가비 `30P`는 제한 설정과 별개로 고정입니다.
+
+```dotenv
+CASINO_DAILY_LIMIT=0
+CASINO_ROULETTE_DAILY_LIMIT=0
+CASINO_BLACKJACK_DAILY_LIMIT=0
+CASINO_CRASH_DAILY_LIMIT=0
+CASINO_RUSSIAN_DAILY_LIMIT=0
+CASINO_MAX_BET=0
+CASINO_MAX_BET_BALANCE_RATIO=0
+```
+
+`CASINO_MAX_BET=0`과 `CASINO_MAX_BET_BALANCE_RATIO=0`을 함께 사용하면 일반 게임은 보유 포인트까지만 베팅할 수 있습니다.
 
 룰렛 확률표:
 
@@ -100,6 +116,82 @@ Supabase 테스트는 `smoke_` 접두사의 임시 사용자를 만들고 FK 순
 - `POST /api/casino/russian-roulette/start`
 - `POST /api/casino/russian-roulette/:sessionId/pull`
 - `POST /api/casino/russian-roulette/:sessionId/cashout`
+
+## 게시판 API
+
+- `GET /api/posts`
+- `GET /api/posts/config`
+- `GET /api/posts/random`
+- `GET /api/posts/:id`
+- `GET /api/posts/:id/comments`
+- `POST /api/posts/:id/comments`
+- `POST /api/posts`
+
+`GET /api/posts/random`은 숨김 처리되지 않고 제목과 본문이 비어 있지 않은 게시글 하나를 반환합니다. 기존 quotes 호환 API와 대시보드의 `randomQuote` / `randomPost` alias는 유지합니다.
+
+칭호 seed는 기본, 장난, 활동, 야간, 배포 테마를 포함한 24개 항목으로 확장되었습니다. 기존 DB에도 신규 칭호를 반영하려면 SQLite는 `npm.cmd run db:init:sqlite`, Supabase는 SQL Editor에서 `database/supabase.seed.sql`을 다시 실행하세요. 관리자 전용 칭호는 상점에서 구매할 수 없습니다.
+
+## 게시글 상세와 댓글
+
+게시판 목록에서 제목을 누르면 `/post.html?id={id}` 상세 페이지로 이동합니다. 상세 페이지에서는 게시글 본문과 공개 댓글을 확인하고, 로그인한 사용자는 댓글을 남길 수 있습니다. 숨김 게시글은 공개 상세 API에서 조회되지 않으며 숨김 댓글도 공개 목록에서 제외됩니다.
+
+익명 작성과 댓글 보상 정책은 아래 환경변수로 조정합니다.
+
+```dotenv
+ANONYMOUS_POST_COST=5
+ANONYMOUS_COMMENT_COST=2
+COMMENT_REWARD_POINTS=2
+COMMENT_REWARD_DAILY_LIMIT=5
+```
+
+- 익명 게시글은 기본 `5P`, 익명 댓글은 기본 `2P`를 사용합니다.
+- 일반 댓글과 익명 댓글 모두 기본 `2P` 작성 보상을 받습니다.
+- 댓글 보상은 기본 하루 `5회`까지만 지급하며, 제한 이후에도 댓글 작성은 가능합니다.
+- 비용이나 보상 제한 값을 `0`으로 설정하면 각각 무료 또는 제한 없음으로 처리합니다.
+- 익명 작성자의 실제 작성자 정보는 공개 API와 공개 피드에 노출하지 않습니다.
+- 관리자 패널의 게시글·댓글 관리 화면에서만 익명 작성자의 실제 표시명과 유저 ID를 확인할 수 있습니다.
+
+기존 Supabase 프로젝트에는 `post_comments` 테이블과 익명 컬럼을 추가해야 합니다. SQL Editor에서 아래 순서로 다시 실행하세요.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
+## MVP 1.3 게시판 카테고리와 검색
+
+게시판은 글 작성 시 카테고리를 선택하고, 목록에서 검색어, 카테고리, 태그, 정렬 조건으로 글을 찾을 수 있습니다. 랜덤 게시글도 현재 선택한 카테고리와 태그 조건 안에서 조회합니다.
+
+지원 카테고리:
+
+- `general`: 잡담
+- `notice`: 공지/안내
+- `meme`: 짤/드립
+- `game`: 게임
+- `casino`: 카지노
+- `music`: 음악
+- `anonymous`: 익명
+- `record`: 기록문
+- `suggestion`: 건의사항
+
+`notice`는 관리자와 owner만 작성할 수 있습니다. 익명 작성 여부는 카테고리와 독립적으로 동작합니다.
+
+주요 API:
+
+- `GET /api/posts/categories`
+- `GET /api/posts?q=&category=&tag=&author=&sort=latest&limit=50&offset=0`
+- `GET /api/posts/random?category=&tag=`
+- `POST /api/posts`
+- `GET /api/admin/posts?q=&category=&tag=&userId=&includeHidden=true`
+
+기존 `/api/quotes`, dashboard의 `recentQuotes`, `randomQuote`는 게시글 API 호환 alias로 유지됩니다.
+
+기존 Supabase 프로젝트에는 `quotes.category` 컬럼과 인덱스를 추가해야 합니다. SQL Editor에서 아래 순서로 다시 실행하세요.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
+이번 단계는 새 RPC를 추가하지 않습니다. 익명 비용과 댓글 보상은 기존 `apply_point_transaction` RPC를 사용합니다.
 
 ## DB Provider 구조
 
@@ -182,3 +274,21 @@ docker run --rm -p 3000:10000 --env-file .env -e PORT=10000 madmen-hub
 ```
 
 컨테이너 실행 후 `http://localhost:3000/health`가 `{"success":true,"status":"ok"}`를 반환하는지 확인하세요.
+
+## MVP 1.2 노래추천과 일일 미션
+
+`/songs.html`에서 노래추천 목록, 추천 등록, 익명 추천, 랜덤 노래, 오늘의 노래를 사용할 수 있습니다.
+
+- 익명 노래추천은 기본 `3P`를 사용합니다.
+- 노래추천 작성 보상은 기본 `5P`, 하루 `3회`까지입니다.
+- 로그인 사용자의 랜덤 노래 조회 보상은 기본 `1P`, 하루 `1회`까지입니다.
+- 오늘의 노래는 KST 날짜를 seed로 사용해 같은 날에는 동일한 추천을 반환합니다.
+- 익명 추천은 공개 API에서 작성자 ID와 실제 작성자를 노출하지 않습니다. 관리자 API에서만 확인할 수 있습니다.
+
+dashboard의 `오늘의 관찰 과제` 카드에서 KST 기준 일일 미션 진행 상태와 보상, 보너스를 확인할 수 있습니다. 출석, 게시글, 댓글, 랜덤 게시글, 노래추천, 랜덤 노래, 카지노 플레이가 미션에 반영됩니다. 보상은 `/api/missions/daily/:missionCode/claim`, 보너스는 `/api/missions/daily/bonus/:bonusCode/claim`에서 한 번만 지급됩니다.
+
+기존 Supabase 프로젝트에는 새 테이블과 미션 보상 RPC가 필요합니다. SQL Editor에서 다음 순서로 다시 실행하세요.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`

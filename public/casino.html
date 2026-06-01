@@ -34,7 +34,7 @@
         </div>
         <p class="point" id="casino-points">-</p>
       </div>
-      <p class="risk-warning">하루 전체 30회 제한 · 일반 최대 베팅 min(500P, 보유 포인트 50%) · 환금 불가</p>
+      <p class="risk-warning">운영 설정에 따라 플레이 횟수와 일반 최대 베팅이 달라질 수 있습니다. · 환금 불가</p>
       <p class="message" id="casino-message"></p>
     </section>
 
@@ -56,9 +56,9 @@
         <div class="dice-row" id="blackjack-dice"></div>
         <div class="casino-controls">
           <input class="input" id="blackjack-bet" type="number" min="20" value="20" />
-          <button class="button" onclick="startBlackjack(this)">시작</button>
-          <button class="button secondary" onclick="hitBlackjack(this)">Hit</button>
-          <button class="button secondary" onclick="standBlackjack(this)">Stand</button>
+          <button class="button" id="blackjack-start" onclick="startBlackjack(this)">시작</button>
+          <button class="button secondary" id="blackjack-hit" onclick="hitBlackjack(this)" disabled>Hit</button>
+          <button class="button secondary" id="blackjack-stand" onclick="standBlackjack(this)" disabled>Stand</button>
         </div>
         <div class="casino-result" id="blackjack-result">결과 대기 중</div>
       </article>
@@ -80,9 +80,9 @@
         <p class="meta">30P 고정. 생존할수록 보상이 커집니다.</p>
         <div class="chamber-row" id="russian-chambers"></div>
         <div class="casino-controls">
-          <button class="button" onclick="startRussian(this)">30P로 시작</button>
-          <button class="button secondary" onclick="pullRussian(this)">방아쇠 당기기</button>
-          <button class="button secondary" onclick="cashoutRussian(this)">보상 받고 멈추기</button>
+          <button class="button" id="russian-start" onclick="startRussian(this)">30P로 시작</button>
+          <button class="button secondary" id="russian-pull" onclick="pullRussian(this)" disabled>방아쇠 당기기</button>
+          <button class="button secondary" id="russian-cashout" onclick="cashoutRussian(this)" disabled>보상 받고 멈추기</button>
         </div>
         <div class="casino-result" id="russian-result">결과 대기 중</div>
       </article>

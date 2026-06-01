@@ -416,6 +416,20 @@ button {
   gap: 10px;
 }
 
+.mission-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
 .feed-item {
   display: flex;
   gap: 10px;
@@ -463,6 +477,11 @@ button {
 
 .post-card {
   min-height: 190px;
+}
+
+.comment-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .message {

@@ -5,6 +5,7 @@ const { addPointTransaction, ensurePointAccount } = require('../services/points.
 const { getKstDateString } = require('../utils/date');
 const { logActivity } = require('../services/activity.service');
 const { checkAndUnlockAchievements } = require('../services/achievement.service');
+const { incrementMission } = require('../services/dailyMissions.service');
 
 const router = express.Router();
 const rewardAmount = 10;
@@ -74,6 +75,7 @@ router.post('/', async (req, res) => {
       metadata: { rewardAmount, checkinDate },
       isPublic: true
     });
+    await incrementMission(req.user.id, 'checkin');
     const unlockedAchievements = await checkAndUnlockAchievements(req.user.id);
     const account = await ensurePointAccount(req.user.id);
 

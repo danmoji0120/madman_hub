@@ -1,6 +1,22 @@
 const assert = require('assert');
+process.env.ANONYMOUS_POST_COST = '5';
+process.env.ANONYMOUS_COMMENT_COST = '2';
+process.env.COMMENT_REWARD_POINTS = '2';
+process.env.COMMENT_REWARD_DAILY_LIMIT = '5';
+process.env.SONG_REWARD_POINTS = '5';
+process.env.ANONYMOUS_SONG_COST = '3';
+process.env.SONG_REWARD_DAILY_LIMIT = '3';
+process.env.RANDOM_SONG_REWARD_POINTS = '1';
+process.env.RANDOM_SONG_REWARD_DAILY_LIMIT = '1';
 
 process.env.PORT = process.env.PORT || '3102';
+process.env.CASINO_DAILY_LIMIT = '0';
+process.env.CASINO_ROULETTE_DAILY_LIMIT = '0';
+process.env.CASINO_BLACKJACK_DAILY_LIMIT = '0';
+process.env.CASINO_CRASH_DAILY_LIMIT = '0';
+process.env.CASINO_RUSSIAN_DAILY_LIMIT = '0';
+process.env.CASINO_MAX_BET = '0';
+process.env.CASINO_MAX_BET_BALANCE_RATIO = '0';
 const smokePrefix = process.env.SMOKE_TEST_PREFIX || 'smoke_';
 const runPrefix = `${smokePrefix}${Date.now()}_`;
 const email = `${runPrefix}user@example.com`;
@@ -12,6 +28,9 @@ const { getSupabaseAdminClient } = require('../server/supabaseClient');
 const { runCasinoSmoke } = require('./casino-smoke-helper');
 const { runSupabaseAdminSmoke } = require('./admin-smoke-helper');
 const { runSupabaseRpcSmoke } = require('./rpc-smoke-helper');
+const { runCommunitySmoke } = require('./community-smoke-helper');
+const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
+const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const baseUrl = `http://127.0.0.1:${process.env.PORT}`;
 
 async function request(route, options = {}, expectedStatus = 200) {
@@ -45,7 +64,8 @@ async function logAdminDebug() {
     ownedTitles,
     unlockedAchievements,
     gameSessions,
-    gameResults
+    gameResults,
+    comments
   ] = await Promise.all([
     client.from('users').select('id,email,role').like('email', `${runPrefix}%`),
     client.from('quotes').select('id,title,is_hidden,user_id').like('title', `${runPrefix}%`),
@@ -56,7 +76,8 @@ async function logAdminDebug() {
     client.from('user_titles').select('*').order('acquired_at', { ascending: false }).limit(30),
     client.from('user_achievements').select('*').order('unlocked_at', { ascending: false }).limit(30),
     client.from('game_sessions').select('*').order('id', { ascending: false }).limit(30),
-    client.from('game_results').select('*').order('id', { ascending: false }).limit(30)
+    client.from('game_results').select('*').order('id', { ascending: false }).limit(30),
+    client.from('post_comments').select('*').order('id', { ascending: false }).limit(30)
   ]);
   console.error('Supabase admin smoke debug:', {
     users: users.data,
@@ -68,7 +89,8 @@ async function logAdminDebug() {
     ownedTitles: ownedTitles.data,
     unlockedAchievements: unlockedAchievements.data,
     gameSessions: gameSessions.data,
-    gameResults: gameResults.data
+    gameResults: gameResults.data,
+    comments: comments.data
   });
 }
 
@@ -81,12 +103,12 @@ async function main() {
     assert.strictEqual(health.status, 'ok');
 
     const titles = await request('/api/shop/titles');
-    assert.ok(titles.titles.length >= 6);
+    assert.ok(titles.titles.length >= 24);
     const officialTitle = titles.titles.find((title) => title.name === '공식 미친놈');
     assert.ok(officialTitle);
 
     const achievements = await request('/api/achievements');
-    assert.strictEqual(achievements.achievements.length, 17);
+    assert.strictEqual(achievements.achievements.length, 22);
 
     const registered = await request('/api/auth/register', {
       method: 'POST',
@@ -165,6 +187,13 @@ async function main() {
     assert.ok(feed.items.every((item) => !item.action.startsWith('admin_')));
 
     const posts = await request('/api/posts');
+    const randomPost = await request('/api/posts/random');
+    assert.ok(randomPost.post.id);
+    assert.ok(randomPost.post.title);
+    assert.ok(randomPost.post.body);
+    assert.ok(Object.hasOwn(randomPost.post, 'targetName'));
+    assert.ok(Object.hasOwn(randomPost.post, 'authorName'));
+    assert.ok(randomPost.post.createdAt);
     const dashboard = await request('/api/dashboard', { headers: auth });
     const expectedPostTitle = `${runPrefix}post`;
     if (
@@ -187,12 +216,14 @@ async function main() {
     assert.deepStrictEqual(postTitles(dashboard.recentQuotes), postTitles(dashboard.recentPosts));
     assert.strictEqual(dashboard.randomQuote?.id, dashboard.randomPost?.id);
 
+    console.log('Supabase smoke stage: casino');
     await runCasinoSmoke({
       request,
       auth,
       userId: registered.user.id,
       runPrefix
     });
+    console.log('Supabase smoke stage: rpc');
     await runSupabaseRpcSmoke({
       request,
       auth,
@@ -237,6 +268,7 @@ async function main() {
     assert.ok(Array.isArray(overview.recentAdminLogs));
     assert.ok(Array.isArray(overview.recentAchievementUnlocks));
 
+    console.log('Supabase smoke stage: admin');
     await runSupabaseAdminSmoke({
       request,
       ownerAuth,
@@ -244,6 +276,17 @@ async function main() {
       runPrefix,
       password
     });
+    console.log('Supabase smoke stage: post-categories');
+    await runPostCategoriesSmoke({ request, auth, ownerAuth, runPrefix });
+    console.log('Supabase smoke stage: community');
+    await runCommunitySmoke({
+      request,
+      auth,
+      ownerAuth,
+      runPrefix
+    });
+    console.log('Supabase smoke stage: songs-missions');
+    await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix });
 
     console.log('Supabase smoke test passed.');
   } catch (error) {

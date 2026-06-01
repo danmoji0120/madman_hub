@@ -19,6 +19,10 @@ function adminActionText(action) {
     admin_quote_unhidden: '게시글 숨김 해제',
     admin_guestbook_hidden: '방명록 숨김',
     admin_guestbook_unhidden: '방명록 숨김 해제',
+    admin_comment_hidden: '댓글 숨김',
+    admin_comment_unhidden: '댓글 숨김 해제',
+    admin_song_hidden: '노래추천 숨김',
+    admin_song_unhidden: '노래추천 복구',
     admin_title_created: '칭호 생성',
     admin_title_updated: '칭호 수정',
     admin_title_disabled: '칭호 비활성화',
@@ -130,14 +134,17 @@ async function grantPoints() {
 
 async function loadAdminQuotes() {
   const query = encodeURIComponent(document.querySelector('#quote-search').value.trim());
+  const category = encodeURIComponent(document.querySelector('#quote-category-filter').value);
+  const tag = encodeURIComponent(document.querySelector('#quote-tag-filter').value.trim());
+  const userId = encodeURIComponent(document.querySelector('#quote-user-filter').value.trim());
   const includeHidden = document.querySelector('#quote-hidden').checked;
   try {
-    const data = await API.request(`/api/admin/posts?q=${query}&includeHidden=${includeHidden}`);
+    const data = await API.request(`/api/admin/posts?q=${query}&category=${category}&tag=${tag}&userId=${userId}&includeHidden=${includeHidden}`);
     document.querySelector('#admin-quotes').innerHTML = data.quotes.map((quote) => `
       <tr class="${quote.is_hidden ? 'status-hidden' : ''}">
         <td>${quote.id}</td>
-        <td><strong>${API.escape(quote.title)}</strong> · ${API.escape(quote.target_name || '관련자 미상')}<br /><span class="meta">${API.escape(shortText(quote.body))}</span></td>
-        <td>${API.escape(quote.author_name || '-')}<br /><span class="meta">${API.escape(quote.created_at)}</span></td>
+        <td><span class="badge">${API.escape(quote.categoryLabel)}</span><br /><strong>${API.escape(quote.title)}</strong> · ${API.escape(quote.target_name || '관련자 미상')}<br /><span class="meta">${API.escape(shortText(quote.body))}</span></td>
+        <td>${API.escape(quote.author_name || '-')} ${quote.isAnonymous ? '<span class="badge">익명</span>' : ''}<br /><span class="meta">${quote.isAnonymous ? `실제: ${API.escape(quote.realAuthorName || '-')} · ` : ''}${API.escape(quote.created_at)}</span></td>
         <td>${quote.is_hidden ? `숨김<br /><span class="meta">${API.escape(quote.hidden_reason || '-')}</span>` : '공개'}</td>
         <td><button class="button secondary small-button ${quote.is_hidden ? '' : 'danger-button'}" onclick="toggleQuote(${quote.id}, ${!quote.is_hidden})">${quote.is_hidden ? '숨김 해제' : '숨김'}</button></td>
       </tr>
@@ -174,6 +181,57 @@ async function loadAdminGuestbook() {
 async function toggleGuestbook(entryId, hidden) {
   const reason = hidden ? (prompt('숨김 사유를 입력하세요.') || '') : '';
   await updateHidden(`/api/admin/guestbook/${entryId}/hidden`, { hidden, reason }, loadAdminGuestbook);
+}
+
+async function loadAdminComments() {
+  const query = encodeURIComponent(document.querySelector('#comment-search').value.trim());
+  const postId = encodeURIComponent(document.querySelector('#comment-post-id').value.trim());
+  const userId = encodeURIComponent(document.querySelector('#comment-user-id').value.trim());
+  const includeHidden = document.querySelector('#comment-hidden').checked;
+  try {
+    const data = await API.request(`/api/admin/comments?q=${query}&postId=${postId}&userId=${userId}&includeHidden=${includeHidden}`);
+    document.querySelector('#admin-comments').innerHTML = data.comments.map((comment) => `
+      <tr class="${comment.isHidden ? 'status-hidden' : ''}">
+        <td>${comment.id}</td>
+        <td><strong>${API.escape(comment.postTitle || `게시글 ${comment.postId}`)}</strong><br /><span class="meta">${API.escape(shortText(comment.body))}</span></td>
+        <td>${API.escape(comment.authorName || '-')} ${comment.isAnonymous ? '<span class="badge">익명</span>' : ''}<br /><span class="meta">${comment.isAnonymous ? `실제: ${API.escape(comment.realAuthorName || '-')} · ` : ''}ID ${API.escape(comment.userId || '-')} · ${API.escape(comment.createdAt)}</span></td>
+        <td>${comment.isHidden ? `숨김<br /><span class="meta">${API.escape(comment.hiddenReason || '-')}</span>` : '공개'}</td>
+        <td><button class="button secondary small-button ${comment.isHidden ? '' : 'danger-button'}" onclick="toggleComment(${comment.id}, ${!comment.isHidden})">${comment.isHidden ? '숨김 해제' : '숨김'}</button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">댓글 없음</td></tr>';
+  } catch (error) {
+    showAdminMessage(error.message);
+  }
+}
+
+async function toggleComment(commentId, hidden) {
+  const reason = hidden ? (prompt('숨김 사유를 입력하세요.') || '') : '';
+  await updateHidden(`/api/admin/comments/${commentId}/hidden`, { hidden, reason }, loadAdminComments);
+}
+
+async function loadAdminSongs() {
+  const query = encodeURIComponent(document.querySelector('#song-admin-search').value.trim());
+  const userId = encodeURIComponent(document.querySelector('#song-admin-user-id').value.trim());
+  const includeHidden = document.querySelector('#song-admin-hidden').checked;
+  try {
+    const data = await API.request(`/api/admin/songs?q=${query}&userId=${userId}&includeHidden=${includeHidden}`);
+    document.querySelector('#admin-songs').innerHTML = data.songs.map((song) => `
+      <tr class="${song.isHidden ? 'status-hidden' : ''}">
+        <td>${song.id}</td>
+        <td><strong>${API.escape(song.title)}</strong> · ${API.escape(song.artist || '-')}<br /><span class="meta">${API.escape(shortText(song.reason))}</span></td>
+        <td>${API.escape(song.authorName)} ${song.isAnonymous ? '<span class="badge">익명</span>' : ''}<br /><span class="meta">${song.isAnonymous ? `실제: ${API.escape(song.realAuthorName || '-')} · ` : ''}ID ${API.escape(song.userId || '-')}</span></td>
+        <td>${song.isHidden ? `숨김<br /><span class="meta">${API.escape(song.hiddenReason || '-')}</span>` : '공개'}</td>
+        <td><button class="button secondary small-button ${song.isHidden ? '' : 'danger-button'}" onclick="toggleSong(${song.id}, ${!song.isHidden})">${song.isHidden ? '복구' : '숨김'}</button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">노래추천 없음</td></tr>';
+  } catch (error) {
+    showAdminMessage(error.message);
+  }
+}
+
+async function toggleSong(songId, hidden) {
+  const reason = hidden ? (prompt('숨김 사유를 입력하세요.') || '') : '';
+  await updateHidden(`/api/admin/songs/${songId}/hidden`, { hidden, reason }, loadAdminSongs);
 }
 
 async function updateHidden(path, body, reload) {
@@ -267,7 +325,7 @@ async function toggleTitle(titleId, isActive) {
 }
 
 async function refreshAdmin() {
-  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminTitles()]);
+  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles()]);
 }
 
 refreshAdmin();

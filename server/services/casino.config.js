@@ -1,4 +1,17 @@
-const TOTAL_DAILY_LIMIT = 30;
+function nonNegativeNumber(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function nonNegativeInteger(name, fallback) {
+  return Math.floor(nonNegativeNumber(name, fallback));
+}
+
+const TOTAL_DAILY_LIMIT = nonNegativeInteger('CASINO_DAILY_LIMIT', 30);
+const MAX_BET = nonNegativeInteger('CASINO_MAX_BET', 500);
+const MAX_BET_BALANCE_RATIO = nonNegativeNumber('CASINO_MAX_BET_BALANCE_RATIO', 0.5);
 
 const games = {
   roulette: {
@@ -6,7 +19,7 @@ const games = {
     name: '룰렛',
     type: 'instant',
     minBet: 10,
-    dailyLimit: 20,
+    dailyLimit: nonNegativeInteger('CASINO_ROULETTE_DAILY_LIMIT', 20),
     rules: '베팅 후 서버가 0x부터 20x까지의 배율을 추첨합니다.',
     payoutTable: [
       { label: '0x', multiplier: 0, weight: 45 },
@@ -23,7 +36,7 @@ const games = {
     name: '주사위 블랙잭',
     type: 'session',
     minBet: 20,
-    dailyLimit: 10,
+    dailyLimit: nonNegativeInteger('CASINO_BLACKJACK_DAILY_LIMIT', 10),
     rules: '21을 넘지 않으면서 딜러보다 높은 합계를 만드세요. 딜러는 17 이상까지 굴립니다.',
     payoutTable: [
       { label: '일반 승리', multiplier: 2 },
@@ -36,7 +49,7 @@ const games = {
     name: '크래시',
     type: 'session',
     minBet: 10,
-    dailyLimit: 10,
+    dailyLimit: nonNegativeInteger('CASINO_CRASH_DAILY_LIMIT', 10),
     rules: '서버가 정한 크래시 배율에 도달하기 전에 탈출하세요.',
     speedPerSecond: 0.35,
     maxMultiplier: 50,
@@ -54,7 +67,7 @@ const games = {
     type: 'session',
     minBet: 30,
     fixedBet: 30,
-    dailyLimit: 10,
+    dailyLimit: nonNegativeInteger('CASINO_RUSSIAN_DAILY_LIMIT', 10),
     rules: '고정 참가비 30P. 방아쇠를 당긴 뒤 생존 보상을 받고 멈추거나 계속 도전하세요.',
     rewardTable: { 1: 40, 2: 65, 3: 110, 4: 190, 5: 350 }
   }
@@ -64,16 +77,26 @@ function getGame(gameCode) {
   return games[gameCode];
 }
 
+function maxBetRule(game) {
+  if (game.fixedBet) return `${game.fixedBet}P fixed`;
+  const rules = [];
+  if (MAX_BET > 0) rules.push(`${MAX_BET}P`);
+  if (MAX_BET_BALANCE_RATIO > 0) rules.push(`balance * ${MAX_BET_BALANCE_RATIO}`);
+  return rules.length ? `min(${rules.join(', ')})` : 'balance only';
+}
+
 function getPublicGames() {
   return Object.values(games).map((game) => ({
     ...game,
-    maxBetRule: game.fixedBet ? `${game.fixedBet}P fixed` : 'min(500P, balance * 0.5)',
+    maxBetRule: maxBetRule(game),
     totalDailyLimit: TOTAL_DAILY_LIMIT
   }));
 }
 
 module.exports = {
   TOTAL_DAILY_LIMIT,
+  MAX_BET,
+  MAX_BET_BALANCE_RATIO,
   games,
   getGame,
   getPublicGames

@@ -4,6 +4,22 @@ const assert = require('assert');
 const vm = require('vm');
 
 process.env.DB_PROVIDER = 'sqlite';
+process.env.CASINO_DAILY_LIMIT = '0';
+process.env.CASINO_ROULETTE_DAILY_LIMIT = '0';
+process.env.CASINO_BLACKJACK_DAILY_LIMIT = '0';
+process.env.CASINO_CRASH_DAILY_LIMIT = '0';
+process.env.CASINO_RUSSIAN_DAILY_LIMIT = '0';
+process.env.CASINO_MAX_BET = '0';
+process.env.CASINO_MAX_BET_BALANCE_RATIO = '0';
+process.env.ANONYMOUS_POST_COST = '5';
+process.env.ANONYMOUS_COMMENT_COST = '2';
+process.env.COMMENT_REWARD_POINTS = '2';
+process.env.COMMENT_REWARD_DAILY_LIMIT = '5';
+process.env.SONG_REWARD_POINTS = '5';
+process.env.ANONYMOUS_SONG_COST = '3';
+process.env.SONG_REWARD_DAILY_LIMIT = '3';
+process.env.RANDOM_SONG_REWARD_POINTS = '1';
+process.env.RANDOM_SONG_REWARD_DAILY_LIMIT = '1';
 const dbPath = path.join(__dirname, '../database/smoke.sqlite');
 fs.rmSync(dbPath, { force: true });
 
@@ -14,6 +30,9 @@ const { start } = require('../server/app');
 const { get, run, close } = require('../server/db');
 const { getKstDateString } = require('../server/utils/date');
 const { runCasinoSmoke } = require('./casino-smoke-helper');
+const { runCommunitySmoke } = require('./community-smoke-helper');
+const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
+const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -49,7 +68,7 @@ async function main() {
     );
     assert.strictEqual(titleSchemaTable.name, 'titles');
     const achievementCount = await get('SELECT COUNT(*) AS count FROM achievements');
-    assert.strictEqual(achievementCount.count, 17);
+    assert.strictEqual(achievementCount.count, 22);
 
     assert.strictEqual(getKstDateString(new Date('2026-05-31T14:59:59Z')), '2026-05-31');
     assert.strictEqual(getKstDateString(new Date('2026-05-31T15:00:00Z')), '2026-06-01');
@@ -57,6 +76,7 @@ async function main() {
     const home = await requestText('/');
     const profileHtml = await requestText('/profile.html');
     const postsHtml = await requestText('/posts.html');
+    const postHtml = await requestText('/post.html');
     const shopHtml = await requestText('/shop.html');
     const adminHtml = await requestText('/admin.html');
     const casinoHtml = await requestText('/casino.html');
@@ -65,12 +85,14 @@ async function main() {
     const mainJs = await requestText('/js/main.js');
     const profileJs = await requestText('/js/profile.js');
     const postsJs = await requestText('/js/posts.js');
+    const postJs = await requestText('/js/post.js');
     const shopJs = await requestText('/js/shop.js');
     const adminJs = await requestText('/js/admin.js');
     const casinoJs = await requestText('/js/casino.js');
     assert.ok(home.includes('<title>MADMEN HUB</title>'));
     assert.ok(profileHtml.includes('프로필 수정'));
     assert.ok(postsHtml.includes('<title>게시판 | MADMEN HUB</title>'));
+    assert.ok(postHtml.includes('<title>게시글 상세 | MADMEN HUB</title>'));
     assert.ok(shopHtml.includes('<title>칭호 상점 | MADMEN HUB</title>'));
     assert.ok(adminHtml.includes('<title>관리자 | MADMEN HUB</title>'));
     assert.ok(casinoHtml.includes('<title>포인트 카지노 | MADMEN HUB</title>'));
@@ -80,6 +102,7 @@ async function main() {
     assert.ok(mainJs.includes("API.request('/api/dashboard')"));
     assert.ok(profileJs.includes("API.request('/api/me/profile'"));
     assert.ok(postsJs.includes("API.request('/api/posts'"));
+    assert.ok(postJs.includes('API.escape(comment.body)'));
     assert.ok(shopJs.includes("API.request('/api/shop/titles'"));
     assert.ok(adminJs.includes("API.request('/api/admin/overview'"));
     assert.ok(casinoJs.includes("API.request('/api/casino/games'"));
@@ -100,7 +123,7 @@ async function main() {
     await request('/api/checkin', { method: 'POST', headers: badAuth }, 401);
 
     const publicTitles = await request('/api/shop/titles');
-    assert.ok(publicTitles.titles.length >= 6);
+    assert.ok(publicTitles.titles.length >= 24);
     assert.ok(publicTitles.titles.some((title) => title.name === '신규 격리 대상'));
     const officialTitle = publicTitles.titles.find((title) => title.name === '공식 미친놈');
     const adminTitle = publicTitles.titles.find((title) => title.name === '격리소 관리자');
@@ -108,7 +131,7 @@ async function main() {
     assert.ok(adminTitle);
     await request(`/api/shop/titles/${officialTitle.id}/buy`, { method: 'POST' }, 401);
     const publicAchievements = await request('/api/achievements');
-    assert.strictEqual(publicAchievements.achievements.length, 17);
+    assert.strictEqual(publicAchievements.achievements.length, 22);
 
     const email = `smoke-${Date.now()}@example.com`;
     const password = 'secret123';
@@ -249,6 +272,13 @@ async function main() {
     assert.strictEqual(account.account.balance, 37);
     const posts = await request('/api/posts');
     assert.ok(posts.posts.some((post) => post.title === 'unsafe post'));
+    const randomPost = await request('/api/posts/random');
+    assert.ok(randomPost.post.id);
+    assert.ok(randomPost.post.title);
+    assert.ok(randomPost.post.body);
+    assert.ok(Object.hasOwn(randomPost.post, 'targetName'));
+    assert.ok(Object.hasOwn(randomPost.post, 'authorName'));
+    assert.ok(randomPost.post.createdAt);
     const compatibleQuotes = await request('/api/quotes');
     assert.ok(compatibleQuotes.quotes.some((quote) => quote.title === 'legacy compatibility'));
 
@@ -446,6 +476,8 @@ async function main() {
       headers: ownerAuth,
       body: JSON.stringify({ hidden: true, reason: '친구 요청으로 숨김' })
     });
+    await request(`/api/posts/${quoteEntry.id}`, {}, 404);
+    await request(`/api/posts/${quoteEntry.id}/comments`, {}, 404);
     const hiddenPublicPosts = await request('/api/posts');
     assert.ok(!hiddenPublicPosts.posts.some((post) => post.id === quoteEntry.id));
     const hiddenDashboard = await request('/api/dashboard');
@@ -502,7 +534,7 @@ async function main() {
     assert.ok(finalOverview.recentAdminLogs.length > 0);
     assert.ok(finalOverview.hiddenQuotes >= 0);
     assert.ok(finalOverview.hiddenGuestbookEntries >= 0);
-    assert.strictEqual(finalOverview.totalAchievements, 17);
+    assert.strictEqual(finalOverview.totalAchievements, 22);
     assert.ok(finalOverview.totalUserAchievements > 0);
     assert.ok(finalOverview.recentAchievementUnlocks.length > 0);
     const loggedAdminActions = await get(
@@ -515,12 +547,27 @@ async function main() {
     const publicFeedAfterAdminActions = await request('/api/feed?limit=50');
     assert.ok(publicFeedAfterAdminActions.items.every((item) => !item.action.startsWith('admin_')));
 
+    await runPostCategoriesSmoke({
+      request,
+      auth,
+      ownerAuth,
+      runPrefix: `sqlite-categories-${Date.now()}-`
+    });
+
+    await runCommunitySmoke({
+      request,
+      auth,
+      ownerAuth,
+      runPrefix: `sqlite-community-${Date.now()}-`
+    });
+
     await runCasinoSmoke({
       request,
       auth,
       userId: registered.user.id,
       runPrefix: `sqlite-${Date.now()}-`
     });
+    await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix: 'sqlite-smoke-' });
 
     console.log('Smoke test passed.');
   } finally {

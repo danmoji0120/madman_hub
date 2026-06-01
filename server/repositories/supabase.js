@@ -1,6 +1,6 @@
 const { getSupabaseAdminClient } = require('../supabaseClient');
 
-const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public']);
+const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'completed', 'claimed']);
 const jsonColumns = new Set(['metadata', 'tags']);
 
 function client() {
@@ -128,7 +128,8 @@ function normalizePostRow(row) {
   if (!row) return row;
 
   const targetName = row.targetName ?? row.target_name ?? '';
-  const authorName = row.authorName ?? row.author_name ?? null;
+  const isAnonymous = Boolean(row.is_anonymous);
+  const authorName = isAnonymous ? '익명' : (row.authorName ?? row.author_name ?? null);
   const createdAt = row.createdAt ?? row.created_at ?? null;
 
   return {
@@ -139,6 +140,7 @@ function normalizePostRow(row) {
     targetName,
     author_name: authorName,
     authorName,
+    is_anonymous: isAnonymous ? 1 : 0,
     created_at: createdAt,
     createdAt,
     tags: typeof row.tags === 'string' ? row.tags : JSON.stringify(row.tags || [])
@@ -181,7 +183,15 @@ async function run(sql, params = []) {
     return insertRow('daily_checkins', { user_id: params[0], checkin_date: params[1], reward_amount: params[2] });
   }
   if (statement.startsWith('insert into quotes ')) {
-    return insertRow('quotes', { user_id: params[0], title: params[1], body: params[2], target_name: params[3], tags: params[4] });
+    return insertRow('quotes', {
+      user_id: params[0],
+      title: params[1],
+      body: params[2],
+      target_name: params[3],
+      tags: params[4],
+      is_anonymous: params[5],
+      anonymous_name: params[6]
+    });
   }
   if (statement.startsWith('insert into guestbook_entries ')) {
     return insertRow('guestbook_entries', { user_id: params[0], nickname: params[1], body: params[2] });
@@ -298,14 +308,27 @@ async function getCount(table, configure = (query) => query) {
 
 async function getUserState(params) {
   const userId = params[0];
-  const [checkinCount, guestbookCount, postCount, titlePurchaseCount, account] = await Promise.all([
+  const [checkinCount, guestbookCount, postCount, commentCount, songCount, anonymousPostCount, anonymousCommentCount, titlePurchaseCount, account] = await Promise.all([
     getCount('daily_checkins', (query) => query.eq('user_id', userId)),
     getCount('guestbook_entries', (query) => query.eq('user_id', userId)),
     getCount('quotes', (query) => query.eq('user_id', userId)),
+    getCount('post_comments', (query) => query.eq('user_id', userId)),
+    getCount('song_recommendations', (query) => query.eq('user_id', userId)),
+    getCount('quotes', (query) => query.eq('user_id', userId).eq('is_anonymous', true)),
+    getCount('post_comments', (query) => query.eq('user_id', userId).eq('is_anonymous', true)),
     getCount('point_transactions', (query) => query.eq('user_id', userId).eq('type', 'title_purchase')),
     selectOne('point_accounts', (query) => query.eq('user_id', userId))
   ]);
-  return { checkinCount, guestbookCount, postCount, titlePurchaseCount, balance: account?.balance || 0 };
+  return {
+    checkinCount,
+    guestbookCount,
+    postCount,
+    commentCount,
+    songCount,
+    anonymousCount: anonymousPostCount + anonymousCommentCount,
+    titlePurchaseCount,
+    balance: account?.balance || 0
+  };
 }
 
 async function getProfile(userId) {
@@ -385,7 +408,10 @@ async function get(sql, params = []) {
     };
   }
   if (statement.startsWith('select q.*, u.display_name as author_name') && statement.includes('where q.id = ?')) {
-    const row = await selectOne('quotes', (query) => query.eq('id', params[0]));
+    const row = await selectOne('quotes', (query) => {
+      query = query.eq('id', params[0]);
+      return statement.includes('q.is_hidden = 0') ? query.eq('is_hidden', false) : query;
+    });
     return row && (await attachAuthors([row]))[0];
   }
   if (statement.includes('from users u left join user_profiles p on p.user_id = u.id order by random()')) {
@@ -394,7 +420,7 @@ async function get(sql, params = []) {
   }
   if (statement.includes('from quotes q') && statement.includes('order by random()')) {
     const rows = await selectRows('quotes', (query) => query.eq('is_hidden', false));
-    const row = pickRandom(rows);
+    const row = pickRandom(rows.filter((item) => String(item.title || '').trim() && String(item.body || '').trim()));
     return row && (await attachAuthors([row]))[0];
   }
 
@@ -525,6 +551,10 @@ async function cleanupSmokeUsers(prefix) {
   await deleteRows('activity_logs', (query) => query.in('user_id', userIds));
   await deleteRows('user_titles', (query) => query.in('user_id', userIds));
   await deleteRows('daily_checkins', (query) => query.in('user_id', userIds));
+  await deleteRows('daily_mission_bonus_claims', (query) => query.in('user_id', userIds));
+  await deleteRows('daily_mission_progress', (query) => query.in('user_id', userIds));
+  await deleteRows('song_recommendations', (query) => query.in('user_id', userIds));
+  await deleteRows('post_comments', (query) => query.in('user_id', userIds));
   await deleteRows('quotes', (query) => query.in('user_id', userIds));
   await deleteRows('guestbook_entries', (query) => query.in('user_id', userIds));
   await deleteRows('point_accounts', (query) => query.in('user_id', userIds));
@@ -533,12 +563,19 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, gameResults] = await Promise.all([
+  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses] = await Promise.all([
     client().from('titles').select('id', { count: 'exact', head: true }),
-    client().from('game_results').select('id', { count: 'exact', head: true })
+    client().from('game_results').select('id', { count: 'exact', head: true }),
+    client().from('users').select('id,account_status').limit(1),
+    client().from('quotes').select('id,is_anonymous,anonymous_name,category').limit(1),
+    client().from('post_comments').select('id').limit(1),
+    client().from('song_recommendations').select('id').limit(1),
+    client().from('daily_mission_progress').select('id').limit(1),
+    client().from('daily_mission_bonus_claims').select('id').limit(1)
   ]);
-  if (titles.error || gameResults.error) {
-    throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${(titles.error || gameResults.error).message}`);
+  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error;
+  if (schemaError) {
+    throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }
   const rpcProbes = [
     ['apply_point_transaction', { p_user_id: -1, p_amount: 1, p_type: 'probe', p_reason: 'probe', p_source_platform: 'probe', p_source_id: null, p_created_by: null }],
@@ -567,6 +604,11 @@ async function initDatabase() {
       p_state: {},
       p_feed_action: null,
       p_feed_metadata: {}
+    }],
+    ['claim_daily_mission_reward', { p_user_id: -1, p_mission_date: '2000-01-01', p_mission_code: 'probe' }],
+    ['claim_daily_mission_bonus', {
+      p_user_id: -1, p_mission_date: '2000-01-01', p_bonus_code: 'probe',
+      p_required_completed: 1, p_reward_points: 1
     }]
   ];
   const rpcResults = await Promise.all(rpcProbes.map(([name, params]) => client().rpc(name, params)));

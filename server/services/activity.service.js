@@ -11,6 +11,22 @@ async function logActivity({ userId, action, platform = 'hub-admin', metadata = 
   }
 }
 
+function mapPublicActivity(item) {
+  const metadata = typeof item.metadata === 'string' ? JSON.parse(item.metadata || '{}') : (item.metadata || {});
+  const isAnonymous = Boolean(metadata.isAnonymous);
+  return {
+    id: item.id,
+    action: item.action,
+    userId: isAnonymous ? null : item.user_id,
+    displayName: isAnonymous ? '익명' : item.display_name,
+    nickname: isAnonymous ? null : item.nickname,
+    title: isAnonymous ? null : item.title,
+    metadata,
+    createdAt: item.created_at
+  };
+}
+
 module.exports = {
-  logActivity
+  logActivity,
+  mapPublicActivity
 };

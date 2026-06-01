@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>게시글 상세 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/posts.html">게시판</a>
+      <a href="/songs.html">노래추천</a>
+      <a href="/guestbook.html">방명록</a>
+      <a href="/shop.html">칭호 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <p><a href="/posts.html">← 게시판으로 돌아가기</a></p>
+    <section class="card" id="post-detail">
+      <p class="empty-state">게시글을 불러오는 중입니다.</p>
+    </section>
+
+    <section class="card" style="margin-top: 18px;">
+      <h2>댓글</h2>
+      <div id="comments-list"></div>
+    </section>
+    <section class="card" id="comment-form-card" style="margin-top: 18px;"></section>
+    <p class="message" id="post-message"></p>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/post.js"></script>
+</body>
+</html>

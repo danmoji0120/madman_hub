@@ -90,6 +90,8 @@ async function runSupabaseAdminSmoke({ request, ownerAuth, ownerUserId, runPrefi
       headers: ownerAuth,
       body: JSON.stringify({ hidden: true, reason: 'smoke hidden' })
     });
+    await request(`/api/posts/${managedPost.id}`, {}, 404);
+    await request(`/api/posts/${managedPost.id}/comments`, {}, 404);
     const publicPostsAfterHide = await request('/api/posts');
     assert.ok(!publicPostsAfterHide.posts.some((post) => post.id === managedPost.id));
     const hiddenAdminPosts = await request('/api/admin/posts?includeHidden=true', { headers: ownerAuth });

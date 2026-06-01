@@ -4,6 +4,8 @@ const { get, all } = require('../db');
 const { ensurePointAccount } = require('../services/points.service');
 const { getKstDateString } = require('../utils/date');
 const { listPublicRecentGameResults } = require('../repositories/casino.repo');
+const { mapPost } = require('../services/posts.service');
+const { mapPublicActivity } = require('../services/activity.service');
 
 const router = express.Router();
 
@@ -110,25 +112,19 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     }
 
+    const normalizedRandomPost = randomQuote ? mapPost(randomQuote) : null;
+    const normalizedRecentPosts = recentQuotes.map(mapPost);
+
     return res.json({
       success: true,
       me,
       madmanOfTheDay: madmanOfTheDay || null,
-      randomQuote: randomQuote || null,
-      randomPost: randomQuote || null,
+      randomQuote: normalizedRandomPost,
+      randomPost: normalizedRandomPost,
       recentGuestbook,
-      recentQuotes,
-      recentPosts: recentQuotes,
-      recentFeed: recentFeed.map((item) => ({
-        id: item.id,
-        action: item.action,
-        userId: item.user_id,
-        displayName: item.display_name,
-        nickname: item.nickname,
-        title: item.title,
-        metadata: JSON.parse(item.metadata || '{}'),
-        createdAt: item.created_at
-      })),
+      recentQuotes: normalizedRecentPosts,
+      recentPosts: normalizedRecentPosts,
+      recentFeed: recentFeed.map(mapPublicActivity),
       recentAchievements: recentAchievements.map((item) => ({
         ...item,
         unlockedAt: item.unlocked_at

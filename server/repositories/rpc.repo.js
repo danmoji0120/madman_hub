@@ -111,6 +111,24 @@ async function playInstantGameTransaction({
   });
 }
 
+async function claimDailyMissionRewardTransaction({ userId, missionDate, missionCode }) {
+  return callRpc('claim_daily_mission_reward', {
+    p_user_id: userId,
+    p_mission_date: missionDate,
+    p_mission_code: missionCode
+  });
+}
+
+async function claimDailyMissionBonusTransaction({ userId, missionDate, bonusCode, requiredCompleted, rewardPoints }) {
+  return callRpc('claim_daily_mission_bonus', {
+    p_user_id: userId,
+    p_mission_date: missionDate,
+    p_bonus_code: bonusCode,
+    p_required_completed: requiredCompleted,
+    p_reward_points: rewardPoints
+  });
+}
+
 module.exports = {
   callRpc,
   applyPointTransaction,
@@ -119,5 +137,7 @@ module.exports = {
   unlockAchievementTransaction,
   createGameSessionTransaction,
   completeGameSessionTransaction,
-  playInstantGameTransaction
+  playInstantGameTransaction,
+  claimDailyMissionRewardTransaction,
+  claimDailyMissionBonusTransaction
 };

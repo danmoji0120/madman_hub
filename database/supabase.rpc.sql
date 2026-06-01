@@ -427,6 +427,70 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION claim_daily_mission_reward(
+  p_user_id BIGINT,
+  p_mission_date DATE,
+  p_mission_code TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_progress daily_mission_progress%ROWTYPE;
+  v_transaction RECORD;
+BEGIN
+  SELECT * INTO v_progress FROM daily_mission_progress
+  WHERE user_id = p_user_id AND mission_date = p_mission_date AND mission_code = p_mission_code
+  FOR UPDATE;
+  IF NOT FOUND OR NOT v_progress.completed THEN RAISE EXCEPTION 'mission_not_completed'; END IF;
+  IF v_progress.claimed THEN RAISE EXCEPTION 'mission_already_claimed'; END IF;
+  SELECT * INTO v_transaction FROM apply_point_transaction(
+    p_user_id, v_progress.reward_points, 'daily_mission_reward', 'Daily mission reward: ' || p_mission_code,
+    'hub-missions', p_mission_code || ':' || p_mission_date::TEXT, p_user_id
+  );
+  UPDATE daily_mission_progress SET claimed = TRUE, claimed_at = NOW(), updated_at = NOW() WHERE id = v_progress.id;
+  RETURN jsonb_build_object('claimed', TRUE, 'rewardPoints', v_progress.reward_points, 'account', to_jsonb(v_transaction));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION claim_daily_mission_bonus(
+  p_user_id BIGINT,
+  p_mission_date DATE,
+  p_bonus_code TEXT,
+  p_required_completed INTEGER,
+  p_reward_points INTEGER
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_completed INTEGER;
+  v_claim daily_mission_bonus_claims%ROWTYPE;
+  v_transaction RECORD;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('daily_mission_bonus:' || p_user_id || ':' || p_mission_date || ':' || p_bonus_code));
+  SELECT COUNT(*) INTO v_completed FROM daily_mission_progress
+  WHERE user_id = p_user_id AND mission_date = p_mission_date AND completed = TRUE;
+  IF v_completed < p_required_completed THEN RAISE EXCEPTION 'mission_bonus_not_ready'; END IF;
+  SELECT * INTO v_claim FROM daily_mission_bonus_claims
+  WHERE user_id = p_user_id AND mission_date = p_mission_date AND bonus_code = p_bonus_code;
+  IF FOUND AND v_claim.claimed THEN RAISE EXCEPTION 'mission_bonus_already_claimed'; END IF;
+  SELECT * INTO v_transaction FROM apply_point_transaction(
+    p_user_id, p_reward_points, 'daily_mission_bonus', 'Daily mission bonus: ' || p_bonus_code,
+    'hub-missions', p_bonus_code || ':' || p_mission_date::TEXT, p_user_id
+  );
+  INSERT INTO daily_mission_bonus_claims (user_id, mission_date, bonus_code, claimed, reward_points, claimed_at)
+  VALUES (p_user_id, p_mission_date, p_bonus_code, TRUE, p_reward_points, NOW())
+  ON CONFLICT (user_id, mission_date, bonus_code) DO UPDATE
+  SET claimed = TRUE, reward_points = EXCLUDED.reward_points, claimed_at = NOW();
+  RETURN jsonb_build_object('claimed', TRUE, 'rewardPoints', p_reward_points, 'account', to_jsonb(v_transaction));
+END;
+$$;
+
 REVOKE ALL ON FUNCTION apply_point_transaction(BIGINT, INTEGER, TEXT, TEXT, TEXT, TEXT, BIGINT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION buy_title_transaction(BIGINT, BIGINT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION admin_apply_points_transaction(BIGINT, BIGINT, INTEGER, TEXT) FROM PUBLIC, anon, authenticated;
@@ -434,6 +498,8 @@ REVOKE ALL ON FUNCTION unlock_achievement_transaction(BIGINT, TEXT) FROM PUBLIC,
 REVOKE ALL ON FUNCTION create_game_session_transaction(BIGINT, TEXT, INTEGER, JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION complete_game_session_transaction(BIGINT, BIGINT, TEXT, TEXT, JSONB, INTEGER, TEXT, TEXT, JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION play_instant_game_transaction(BIGINT, TEXT, INTEGER, INTEGER, TEXT, TEXT, JSONB, TEXT, JSONB) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION claim_daily_mission_reward(BIGINT, DATE, TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION claim_daily_mission_bonus(BIGINT, DATE, TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION apply_point_transaction(BIGINT, INTEGER, TEXT, TEXT, TEXT, TEXT, BIGINT) TO service_role;
 GRANT EXECUTE ON FUNCTION buy_title_transaction(BIGINT, BIGINT) TO service_role;
@@ -442,3 +508,5 @@ GRANT EXECUTE ON FUNCTION unlock_achievement_transaction(BIGINT, TEXT) TO servic
 GRANT EXECUTE ON FUNCTION create_game_session_transaction(BIGINT, TEXT, INTEGER, JSONB) TO service_role;
 GRANT EXECUTE ON FUNCTION complete_game_session_transaction(BIGINT, BIGINT, TEXT, TEXT, JSONB, INTEGER, TEXT, TEXT, JSONB) TO service_role;
 GRANT EXECUTE ON FUNCTION play_instant_game_transaction(BIGINT, TEXT, INTEGER, INTEGER, TEXT, TEXT, JSONB, TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION claim_daily_mission_reward(BIGINT, DATE, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION claim_daily_mission_bonus(BIGINT, DATE, TEXT, INTEGER, INTEGER) TO service_role;

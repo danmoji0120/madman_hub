@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   display_name TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'member',
+  account_status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_login_at TIMESTAMPTZ
 );
@@ -79,11 +80,80 @@ CREATE TABLE IF NOT EXISTS quotes (
   body TEXT NOT NULL,
   target_name TEXT DEFAULT '',
   tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  category TEXT NOT NULL DEFAULT 'general',
+  is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+  anonymous_name TEXT DEFAULT '',
   is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
   hidden_at TIMESTAMPTZ,
   hidden_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
   hidden_reason TEXT DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS anonymous_name TEXT DEFAULT '';
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'general';
+
+CREATE TABLE IF NOT EXISTS post_comments (
+  id BIGSERIAL PRIMARY KEY,
+  post_id BIGINT NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  body TEXT NOT NULL,
+  is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+  anonymous_name TEXT DEFAULT '',
+  is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+  hidden_at TIMESTAMPTZ,
+  hidden_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  hidden_reason TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS song_recommendations (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  title TEXT NOT NULL,
+  artist TEXT DEFAULT '',
+  url TEXT NOT NULL,
+  reason TEXT DEFAULT '',
+  tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
+  is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+  hidden_at TIMESTAMPTZ,
+  hidden_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  hidden_reason TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS daily_mission_progress (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_date DATE NOT NULL,
+  mission_code TEXT NOT NULL,
+  progress INTEGER NOT NULL DEFAULT 0,
+  target INTEGER NOT NULL DEFAULT 1,
+  completed BOOLEAN NOT NULL DEFAULT FALSE,
+  claimed BOOLEAN NOT NULL DEFAULT FALSE,
+  reward_points INTEGER NOT NULL DEFAULT 0,
+  completed_at TIMESTAMPTZ,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ,
+  UNIQUE(user_id, mission_date, mission_code)
+);
+
+CREATE TABLE IF NOT EXISTS daily_mission_bonus_claims (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_date DATE NOT NULL,
+  bonus_code TEXT NOT NULL,
+  claimed BOOLEAN NOT NULL DEFAULT FALSE,
+  reward_points INTEGER NOT NULL DEFAULT 0,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, mission_date, bonus_code)
 );
 
 CREATE TABLE IF NOT EXISTS guestbook_entries (
@@ -154,6 +224,16 @@ CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_i
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_game_results_game_created ON game_results(game_code, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_post_comments_post_id_created_at ON post_comments(post_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_post_comments_hidden ON post_comments(is_hidden);
+CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date);
+CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code);
 
 -- Service Role access is server-only. RLS policies will be designed when
 -- Supabase Auth is introduced. Do not expose the Service Role key to clients.

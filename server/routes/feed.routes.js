@@ -1,5 +1,6 @@
 const express = require('express');
 const { all } = require('../db');
+const { mapPublicActivity } = require('../services/activity.service');
 
 const router = express.Router();
 
@@ -20,16 +21,7 @@ router.get('/', async (req, res) => {
 
   return res.json({
     success: true,
-    items: rows.map((item) => ({
-      id: item.id,
-      action: item.action,
-      userId: item.user_id,
-      displayName: item.display_name,
-      nickname: item.nickname,
-      title: item.title,
-      metadata: JSON.parse(item.metadata || '{}'),
-      createdAt: item.created_at
-    }))
+    items: rows.map(mapPublicActivity)
   });
 });
 

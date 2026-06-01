@@ -4,6 +4,11 @@ const { addPointTransaction } = require('../services/points.service');
 const { logActivity } = require('../services/activity.service');
 const { checkAndUnlockAchievements } = require('../services/achievement.service');
 const { adminApplyPointsTransaction } = require('./rpc.repo');
+const {
+  listAdminComments: listProviderAdminComments,
+  setCommentHidden: setProviderCommentHidden
+} = require('./comments.repo');
+const { getPostCategory } = require('../config/postCategories.config');
 
 function assertResult(result) {
   if (result.error) {
@@ -74,17 +79,26 @@ function parseTags(tags) {
 function normalizePost(row) {
   if (!row) return row;
   const targetName = row.targetName ?? row.target_name ?? '';
-  const authorName = row.authorName ?? row.author_name ?? null;
+  const realAuthorName = row.realAuthorName ?? row.real_author_name ?? row.authorName ?? row.author_name ?? null;
+  const isAnonymous = Boolean(row.is_anonymous);
+  const authorName = isAnonymous ? '익명' : realAuthorName;
   const createdAt = row.createdAt ?? row.created_at ?? null;
+  const category = row.category || 'general';
   return {
     ...row,
     target_name: targetName,
     targetName,
     author_name: authorName,
     authorName,
+    real_author_name: realAuthorName,
+    realAuthorName,
+    userId: row.user_id,
+    isAnonymous,
     created_at: createdAt,
     createdAt,
-    tags: parseTags(row.tags)
+    tags: parseTags(row.tags),
+    category,
+    categoryLabel: getPostCategory(category)?.label || category
   };
 }
 
@@ -497,15 +511,18 @@ async function adminGrantPoints({ actorUser, userId, amount, reason }) {
   return { account, unlockedAchievements: await checkAndUnlockAchievements(userId) };
 }
 
-async function listSqliteAdminPosts({ includeHidden, q, limit, offset }) {
+async function listSqliteAdminPosts({ includeHidden, q, category, tag, userId, limit, offset }) {
   const params = [];
   const filters = [];
   if (!includeHidden) filters.push('q.is_hidden = 0');
   if (q) {
-    filters.push('(q.title LIKE ? OR q.body LIKE ? OR q.target_name LIKE ?)');
+    filters.push('(q.title LIKE ? OR q.body LIKE ? OR q.target_name LIKE ? OR q.tags LIKE ?)');
     const like = `%${q}%`;
-    params.push(like, like, like);
+    params.push(like, like, like, like);
   }
+  if (category) { filters.push('q.category = ?'); params.push(category); }
+  if (tag) { filters.push('q.tags LIKE ?'); params.push(`%${tag}%`); }
+  if (userId) { filters.push('q.user_id = ?'); params.push(userId); }
   params.push(limit, offset);
   const posts = await all(
     `SELECT q.*, u.display_name AS author_name
@@ -517,10 +534,13 @@ async function listSqliteAdminPosts({ includeHidden, q, limit, offset }) {
   return posts.map(normalizePost);
 }
 
-async function listSupabaseAdminPosts({ includeHidden, q, limit, offset }) {
+async function listSupabaseAdminPosts({ includeHidden, q, category, tag, userId, limit, offset }) {
   let query = getSupabaseAdminClient().from('quotes').select('*');
   if (!includeHidden) query = query.eq('is_hidden', false);
   query = applyTextSearch(query, ['title', 'body', 'target_name'], q);
+  if (category) query = query.eq('category', category);
+  if (tag) query = query.contains('tags', [tag]);
+  if (userId) query = query.eq('user_id', userId);
   const posts = assertResult(await query
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
@@ -637,6 +657,26 @@ async function setGuestbookHidden({ actorUser, entryId, hidden, reason }) {
     metadata: { entryId, reason: hidden ? reason : '' }
   });
   return entry;
+}
+
+async function listAdminComments(options) {
+  return listProviderAdminComments(options);
+}
+
+async function setCommentHidden({ actorUser, commentId, hidden, reason }) {
+  const comment = await setProviderCommentHidden({
+    commentId,
+    actorUserId: actorUser.id,
+    hidden,
+    reason
+  });
+  if (!comment) throw createHttpError(404, 'Comment not found.');
+  await logActivity({
+    userId: actorUser.id,
+    action: hidden ? 'admin_comment_hidden' : 'admin_comment_unhidden',
+    metadata: { commentId, reason: hidden ? reason : '' }
+  });
+  return comment;
 }
 
 async function listSqliteAdminTitles({ includeInactive, q }) {
@@ -793,6 +833,8 @@ module.exports = {
   setPostHidden,
   listAdminGuestbook,
   setGuestbookHidden,
+  listAdminComments,
+  setCommentHidden,
   listAdminTitles,
   createAdminTitle,
   updateAdminTitle,

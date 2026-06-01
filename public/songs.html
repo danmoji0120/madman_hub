@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>노래추천 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/posts.html">게시판</a>
+      <a href="/songs.html">노래추천</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="hero">
+      <span class="badge">MVP 1.2</span>
+      <h1>노래추천</h1>
+      <p>오늘의 음원을 확인하고, 격리소에 어울리는 노래를 추천하세요.</p>
+    </section>
+    <section class="dashboard-grid">
+      <article class="card"><h2>오늘의 노래</h2><div id="today-song"><p class="meta">불러오는 중...</p></div></article>
+      <article class="card"><h2>랜덤 노래</h2><p class="meta">로그인 상태에서는 하루 한 번 보상을 받을 수 있습니다.</p><button class="button secondary" onclick="loadRandomSong(this)">랜덤 노래 듣기</button><div id="random-song"></div></article>
+    </section>
+    <form class="card" style="margin-top: 18px;" onsubmit="recommendSong(event)">
+      <h2>노래 추천하기</h2>
+      <div class="form-grid">
+        <input class="input" id="song-title" maxlength="120" placeholder="노래 제목" required />
+        <input class="input" id="song-artist" maxlength="120" placeholder="아티스트" />
+        <input class="input" id="song-url" placeholder="https://..." required />
+      </div>
+      <textarea class="textarea" id="song-reason" maxlength="1000" placeholder="추천 이유"></textarea>
+      <input class="input" id="song-tags" placeholder="태그: 쉼표로 구분" />
+      <label class="checkbox-label"><input type="checkbox" id="song-anonymous" /> 익명으로 추천 <span id="anonymous-song-cost" class="meta"></span></label>
+      <p class="meta" id="song-reward-policy"></p>
+      <button class="button" type="submit">추천 등록</button>
+      <p class="message" id="song-message"></p>
+    </form>
+    <section class="grid" id="songs-list" style="margin-top: 18px;"></section>
+  </main>
+  <script src="/js/api.js"></script>
+  <script src="/js/songs.js"></script>
+</body>
+</html>

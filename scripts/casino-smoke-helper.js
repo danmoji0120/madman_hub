@@ -38,7 +38,7 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
 
     await addPointTransaction({
       userId,
-      amount: 400,
+      amount: 2000,
       type: 'smoke_test_funding',
       reason: 'casino smoke funding',
       sourcePlatform: 'smoke-test',
@@ -46,8 +46,10 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     });
 
     const before = await request('/api/casino/me/limits', { headers: auth });
-    assert.ok(before.account.balance >= 400);
+    assert.ok(before.account.balance >= 2000);
     assert.strictEqual(before.totalPlayed, 0);
+    assert.strictEqual(before.totalDailyLimit, 0);
+    assert.strictEqual(before.totalRemaining, null);
     await request('/api/casino/roulette/play', {
       method: 'POST',
       headers: auth,
@@ -77,6 +79,13 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     assert.strictEqual(roulette.game, 'roulette');
     assert.ok([0, 0.5, 1, 2, 3, 5, 20].includes(roulette.result.multiplier));
     assert.strictEqual(roulette.result.payoutAmount, Math.floor(10 * roulette.result.multiplier));
+    for (let index = 0; index < 30; index += 1) {
+      await request('/api/casino/roulette/play', {
+        method: 'POST',
+        headers: auth,
+        body: JSON.stringify({ betAmount: 10 })
+      });
+    }
 
     const blackjack = await request('/api/casino/dice-blackjack/start', {
       method: 'POST',
@@ -107,10 +116,23 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
       'Content-Type': 'application/json'
     };
     await request(`/api/casino/dice-blackjack/${blackjack.session.id}/hit`, { method: 'POST', headers: otherAuth }, 403);
-    const blackjackResult = await request(`/api/casino/dice-blackjack/${blackjack.session.id}/stand`, { method: 'POST', headers: auth });
+    const blackjackHit = await request(`/api/casino/dice-blackjack/${blackjack.session.id}/hit`, { method: 'POST', headers: auth });
+    assert.ok(blackjackHit.session.state.playerDice.length >= 3);
+    if (!blackjackHit.result) {
+      assert.strictEqual(blackjackHit.session.state.dealerDicePublic[1], null);
+    }
+    const blackjackResult = blackjackHit.result || await request(`/api/casino/dice-blackjack/${blackjack.session.id}/stand`, { method: 'POST', headers: auth });
     assert.ok(blackjackResult.result);
     assert.ok(blackjackResult.session.state.dealerDicePublic.every((die) => Number.isInteger(die)));
     await request(`/api/casino/dice-blackjack/${blackjack.session.id}/stand`, { method: 'POST', headers: auth }, 409);
+    const nextBlackjack = await request('/api/casino/dice-blackjack/start', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ betAmount: 20 })
+    });
+    assert.notStrictEqual(nextBlackjack.session.id, blackjack.session.id);
+    await request(`/api/casino/dice-blackjack/${nextBlackjack.session.id}/stand`, { method: 'POST', headers: auth });
+    await request(`/api/casino/dice-blackjack/${nextBlackjack.session.id}/hit`, { method: 'POST', headers: auth }, 409);
 
     const crash = await request('/api/casino/crash/start', {
       method: 'POST',
@@ -133,10 +155,15 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     await request(`/api/casino/russian-roulette/${russian.session.id}/cashout`, { method: 'POST', headers: auth }, 400);
     const pulled = await request(`/api/casino/russian-roulette/${russian.session.id}/pull`, { method: 'POST', headers: auth });
     if (!pulled.result) {
+      assert.strictEqual(pulled.session.state.currentChamber, 1);
+      assert.strictEqual(pulled.session.state.survivedCount, 1);
+      assert.strictEqual(Object.hasOwn(pulled.session.state, 'bulletPosition'), false);
       const russianCashout = await request(`/api/casino/russian-roulette/${russian.session.id}/cashout`, { method: 'POST', headers: auth });
       assert.strictEqual(russianCashout.result.result, 'survived');
+      assert.ok(Number.isInteger(russianCashout.session.state.bulletPosition));
     } else {
       assert.ok(['dead', 'survived_max'].includes(pulled.result.result));
+      assert.ok(Number.isInteger(pulled.session.state.bulletPosition));
     }
     await request(`/api/casino/russian-roulette/${russian.session.id}/pull`, { method: 'POST', headers: auth }, 409);
 
@@ -146,10 +173,12 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
       request('/api/me/transactions', { headers: auth }),
       request('/api/me/achievements', { headers: auth })
     ]);
-    assert.ok(history.results.length >= 4);
-    assert.ok(limits.totalPlayed >= 4);
+    assert.ok(history.results.length >= 35);
+    assert.ok(limits.totalPlayed >= 35);
+    assert.strictEqual(limits.totalDailyLimit, 0);
+    assert.strictEqual(limits.totalRemaining, null);
     assert.strictEqual(limits.activeSessions.length, 0);
-    assert.ok(transactions.transactions.filter((item) => item.type === 'game_bet').length >= 4);
+    assert.ok(transactions.transactions.some((item) => item.type === 'game_bet'));
     assert.ok(achievements.unlocked.some((item) => item.code === 'CASINO_FIRST_BET'));
   } catch (error) {
     await debugCasinoState('runCasinoSmoke', request, auth);

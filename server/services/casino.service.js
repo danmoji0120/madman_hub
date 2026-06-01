@@ -17,7 +17,15 @@ const {
 const { ensurePointAccount, addPointTransaction } = require('./points.service');
 const { logActivity } = require('./activity.service');
 const { checkAndUnlockAchievements, unlockAchievementCodes } = require('./achievement.service');
-const { TOTAL_DAILY_LIMIT, games, getGame, getPublicGames } = require('./casino.config');
+const {
+  TOTAL_DAILY_LIMIT,
+  MAX_BET,
+  MAX_BET_BALANCE_RATIO,
+  games,
+  getGame,
+  getPublicGames
+} = require('./casino.config');
+const { incrementMission } = require('./dailyMissions.service');
 
 function casinoError(message, statusCode = 400) {
   const error = new Error(message);
@@ -51,7 +59,14 @@ function sumDice(dice) {
 
 function maxBetFor(account, game) {
   if (game.fixedBet) return game.fixedBet;
-  return Math.min(500, Math.floor(account.balance * 0.5));
+  const limits = [account.balance];
+  if (MAX_BET > 0) limits.push(MAX_BET);
+  if (MAX_BET_BALANCE_RATIO > 0) limits.push(Math.floor(account.balance * MAX_BET_BALANCE_RATIO));
+  return Math.min(...limits);
+}
+
+function remainingFor(limit, count) {
+  return limit > 0 ? Math.max(0, limit - count) : null;
 }
 
 async function validateBet({ userId, gameCode, betAmount, fixedBet = null }) {
@@ -75,14 +90,18 @@ async function validateBet({ userId, gameCode, betAmount, fixedBet = null }) {
     countTodayAllGameResults(userId),
     countTodayGameResults(userId, gameCode)
   ]);
-  if (allPlayed >= TOTAL_DAILY_LIMIT) throw casinoError('오늘의 전체 카지노 플레이 제한을 초과했습니다.', 429);
-  if (gamePlayed >= game.dailyLimit) throw casinoError(`오늘의 ${game.name} 플레이 제한을 초과했습니다.`, 429);
+  if (TOTAL_DAILY_LIMIT > 0 && allPlayed >= TOTAL_DAILY_LIMIT) {
+    throw casinoError('오늘의 전체 카지노 플레이 제한을 초과했습니다.', 429);
+  }
+  if (game.dailyLimit > 0 && gamePlayed >= game.dailyLimit) {
+    throw casinoError(`오늘의 ${game.name} 플레이 제한을 초과했습니다.`, 429);
+  }
 
   return {
     account,
     maxBet,
-    remainingPlays: Math.max(0, game.dailyLimit - gamePlayed),
-    remainingAllPlays: Math.max(0, TOTAL_DAILY_LIMIT - allPlayed)
+    remainingPlays: remainingFor(game.dailyLimit, gamePlayed),
+    remainingAllPlays: remainingFor(TOTAL_DAILY_LIMIT, allPlayed)
   };
 }
 
@@ -191,6 +210,7 @@ async function recordGameResult(input) {
     netAmount: input.payoutAmount - input.betAmount
   });
   await logCasinoFeedIfNeeded(saved);
+  await incrementMission(saved.userId, 'play_casino');
   const [casinoAchievements, coreAchievements] = await Promise.all([
     checkCasinoAchievements(saved.userId),
     checkAndUnlockAchievements(saved.userId)
@@ -283,6 +303,7 @@ async function finalizeSession({ session, status, result, payoutAmount, state, p
       payoutType
     });
     await logCasinoFeedIfNeeded(completed.result);
+    await incrementMission(session.userId, 'play_casino');
     const [casinoAchievements, coreAchievements] = await Promise.all([
       checkCasinoAchievements(session.userId),
       checkAndUnlockAchievements(session.userId)
@@ -338,6 +359,7 @@ async function playRoulette(userId, betAmount) {
       state
     });
     await logCasinoFeedIfNeeded(saved.result);
+    await incrementMission(userId, 'play_casino');
     const [casinoAchievements, coreAchievements] = await Promise.all([
       checkCasinoAchievements(userId),
       checkAndUnlockAchievements(userId)
@@ -586,14 +608,15 @@ async function getMyLimits(userId) {
     account,
     totalDailyLimit: TOTAL_DAILY_LIMIT,
     totalPlayed: allPlayed,
-    totalRemaining: Math.max(0, TOTAL_DAILY_LIMIT - allPlayed),
+    totalRemaining: remainingFor(TOTAL_DAILY_LIMIT, allPlayed),
     games: Object.values(games).map((game, index) => ({
       code: game.code,
       name: game.name,
       minBet: game.minBet,
       maxBet: maxBetFor(account, game),
       played: gameCounts[index],
-      remaining: Math.max(0, game.dailyLimit - gameCounts[index])
+      dailyLimit: game.dailyLimit,
+      remaining: remainingFor(game.dailyLimit, gameCounts[index])
     })),
     activeSessions: activeSessions.map((session) => ({
       id: session.id,

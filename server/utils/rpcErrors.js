@@ -16,7 +16,11 @@ const mappings = [
   ['invalid_payout_amount', 400, '지급 금액이 올바르지 않습니다.'],
   ['invalid_session_status', 400, '게임 세션 상태가 올바르지 않습니다.'],
   ['achievement_not_found', 404, '업적을 찾을 수 없습니다.'],
-  ['inactive_achievement', 400, '비활성 업적입니다.']
+  ['inactive_achievement', 400, '비활성 업적입니다.'],
+  ['mission_not_completed', 409, '미션이 아직 완료되지 않았습니다.'],
+  ['mission_already_claimed', 409, '이미 보상을 받은 미션입니다.'],
+  ['mission_bonus_not_ready', 409, '미션 보너스 조건을 충족하지 못했습니다.'],
+  ['mission_bonus_already_claimed', 409, '이미 받은 미션 보너스입니다.']
 ];
 
 function mapRpcError(error) {

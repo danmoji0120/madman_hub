@@ -91,7 +91,8 @@ router.patch('/profile', authRequired, async (req, res) => {
 });
 
 router.get('/transactions', authRequired, async (req, res) => {
-  const transactions = await getTransactions(req.user.id);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
+  const transactions = await getTransactions(req.user.id, limit);
   return res.json({ success: true, transactions });
 });
 
