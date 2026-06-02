@@ -1,6 +1,6 @@
 const { getSupabaseAdminClient } = require('../supabaseClient');
 
-const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'completed', 'claimed']);
+const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'is_admin_only', 'completed', 'claimed']);
 const jsonColumns = new Set(['metadata', 'tags']);
 
 function client() {
@@ -549,6 +549,8 @@ async function cleanupSmokeUsers(prefix) {
   await deleteRows('game_sessions', (query) => query.in('user_id', userIds));
   await deleteRows('point_transactions', (query) => query.in('user_id', userIds));
   await deleteRows('activity_logs', (query) => query.in('user_id', userIds));
+  await deleteRows('user_cosmetic_equips', (query) => query.in('user_id', userIds));
+  await deleteRows('user_cosmetics', (query) => query.in('user_id', userIds));
   await deleteRows('user_titles', (query) => query.in('user_id', userIds));
   await deleteRows('daily_checkins', (query) => query.in('user_id', userIds));
   await deleteRows('daily_mission_bonus_claims', (query) => query.in('user_id', userIds));
@@ -563,7 +565,7 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses] = await Promise.all([
+  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips] = await Promise.all([
     client().from('titles').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
     client().from('users').select('id,account_status').limit(1),
@@ -571,15 +573,19 @@ async function initDatabase() {
     client().from('post_comments').select('id').limit(1),
     client().from('song_recommendations').select('id').limit(1),
     client().from('daily_mission_progress').select('id').limit(1),
-    client().from('daily_mission_bonus_claims').select('id').limit(1)
+    client().from('daily_mission_bonus_claims').select('id').limit(1),
+    client().from('cosmetic_items').select('id').limit(1),
+    client().from('user_cosmetics').select('id').limit(1),
+    client().from('user_cosmetic_equips').select('user_id').limit(1)
   ]);
-  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error;
+  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }
   const rpcProbes = [
     ['apply_point_transaction', { p_user_id: -1, p_amount: 1, p_type: 'probe', p_reason: 'probe', p_source_platform: 'probe', p_source_id: null, p_created_by: null }],
     ['buy_title_transaction', { p_user_id: -1, p_title_id: -1 }],
+    ['buy_cosmetic_transaction', { p_user_id: -1, p_cosmetic_id: -1 }],
     ['admin_apply_points_transaction', { p_actor_user_id: -1, p_target_user_id: -1, p_amount: 1, p_reason: 'probe' }],
     ['unlock_achievement_transaction', { p_user_id: -1, p_achievement_code: 'PROBE' }],
     ['create_game_session_transaction', { p_user_id: -1, p_game_code: 'probe', p_bet_amount: 1, p_state: {} }],

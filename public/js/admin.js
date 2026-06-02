@@ -1,5 +1,6 @@
 const adminMessage = document.querySelector('#admin-message');
 let loadedAdminTitles = [];
+let loadedAdminCosmetics = [];
 
 function showAdminMessage(message = '') {
   adminMessage.textContent = message;
@@ -266,6 +267,53 @@ async function loadAdminTitles() {
   }
 }
 
+async function loadAdminCosmetics() {
+  const query = encodeURIComponent(document.querySelector('#cosmetic-search').value.trim());
+  try {
+    const data = await API.request(`/api/admin/cosmetics?q=${query}`);
+    loadedAdminCosmetics = data.items;
+    document.querySelector('#admin-cosmetics').innerHTML = data.items.map((item) => `
+      <tr class="${item.isActive ? '' : 'status-inactive'}">
+        <td>${item.id}</td><td><strong>${API.escape(item.name)}</strong><br /><span class="meta">${API.escape(item.code)} · ${API.escape(item.cssClass)}</span></td>
+        <td>${API.escape(item.type)}<br /><span class="badge">${API.escape(item.rarity)}</span></td>
+        <td>${item.price}P</td><td>${item.isActive ? '활성' : '비활성'}</td>
+        <td><button class="button secondary small-button" onclick="editCosmetic(${item.id})">수정</button>
+        <button class="button secondary small-button ${item.isActive ? 'danger-button' : ''}" onclick="toggleCosmetic(${item.id}, ${!item.isActive})">${item.isActive ? '비활성화' : '활성화'}</button></td>
+      </tr>
+    `).join('');
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function createCosmetic(event) {
+  event.preventDefault();
+  try {
+    await API.request('/api/admin/cosmetics', { method: 'POST', body: JSON.stringify({
+      code: document.querySelector('#new-cosmetic-code').value, name: document.querySelector('#new-cosmetic-name').value,
+      type: document.querySelector('#new-cosmetic-type').value, rarity: document.querySelector('#new-cosmetic-rarity').value,
+      price: Number(document.querySelector('#new-cosmetic-price').value), cssClass: document.querySelector('#new-cosmetic-class').value
+    }) });
+    event.target.reset(); showAdminMessage('꾸미기 아이템을 생성했습니다.'); await loadAdminCosmetics();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function editCosmetic(id) {
+  const item = loadedAdminCosmetics.find((entry) => entry.id === id);
+  if (!item) return;
+  const name = prompt('이름', item.name); if (name === null) return;
+  const cssClass = prompt('CSS class', item.cssClass); if (cssClass === null) return;
+  try {
+    await API.request(`/api/admin/cosmetics/${id}`, { method: 'PATCH', body: JSON.stringify({ name, cssClass }) });
+    showAdminMessage('꾸미기 아이템을 수정했습니다.'); await loadAdminCosmetics();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function toggleCosmetic(id, isActive) {
+  try {
+    await API.request(`/api/admin/cosmetics/${id}/active`, { method: 'PATCH', body: JSON.stringify({ isActive }) });
+    showAdminMessage('꾸미기 활성 상태를 변경했습니다.'); await loadAdminCosmetics();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
 async function createTitle(event) {
   event.preventDefault();
   try {
@@ -325,7 +373,7 @@ async function toggleTitle(titleId, isActive) {
 }
 
 async function refreshAdmin() {
-  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles()]);
+  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics()]);
 }
 
 refreshAdmin();

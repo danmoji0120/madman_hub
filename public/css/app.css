@@ -593,6 +593,38 @@ button {
   font-size: 13px;
 }
 
+.cosmetic-item-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+}
+
+.cosmetic-preview {
+  display: grid;
+  min-height: 76px;
+  place-items: center;
+  margin: 14px 0;
+  border-radius: 14px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+  font-weight: 900;
+}
+
+.cosmetic-frame-default { border-color: var(--line); }
+.cosmetic-frame-neon { border-color: rgba(83, 245, 255, 0.72); box-shadow: 0 0 18px rgba(83, 245, 255, 0.2); }
+.cosmetic-frame-casino-gold { border-color: rgba(255, 209, 90, 0.78); box-shadow: 0 0 18px rgba(255, 209, 90, 0.18); }
+.cosmetic-frame-bb-monitor { border-color: rgba(141, 255, 159, 0.78); box-shadow: inset 0 0 0 2px rgba(141, 255, 159, 0.12); }
+.cosmetic-bg-default { background-color: var(--panel); }
+.cosmetic-bg-isolation-room { background: linear-gradient(145deg, rgba(77, 95, 120, 0.28), rgba(18, 18, 34, 0.9)); }
+.cosmetic-bg-casino-table { background: linear-gradient(145deg, rgba(12, 88, 58, 0.38), rgba(18, 18, 34, 0.92)); }
+.cosmetic-bg-abyss-neon { background: linear-gradient(145deg, rgba(72, 16, 104, 0.48), rgba(6, 8, 28, 0.96)); }
+.cosmetic-name-default { color: inherit; }
+.cosmetic-name-blue { color: #7bdcff; }
+.cosmetic-name-purple { color: #d69cff; }
+.cosmetic-name-gold { color: #ffd76a; }
+.cosmetic-name-danger-red { color: #ff7388; }
+
 @media (max-width: 720px) {
   .nav {
     align-items: flex-start;

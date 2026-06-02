@@ -11,7 +11,7 @@ function renderPost(post) {
     <span class="badge">${API.escape(post.targetName || '관련 대상 없음')}</span>
     <h1>${API.escape(post.title)}</h1>
     <p>${API.escape(post.body)}</p>
-    <p class="meta">작성자 ${API.escape(post.authorName || '알 수 없음')} · ${API.escape(post.createdAt)}</p>
+    <p class="meta">작성자 <span class="${API.escape(post.cosmetics?.nicknameColorClass || '')}">${API.escape(post.authorName || '알 수 없음')}</span> · ${API.escape(post.createdAt)}</p>
     ${post.tags.length ? `<p>${tagBadges(post.tags)}</p>` : ''}
   `;
 }
@@ -19,7 +19,7 @@ function renderPost(post) {
 function renderComments(comments) {
   document.querySelector('#comments-list').innerHTML = comments.map((comment) => `
     <article class="comment-item">
-      <strong>${API.escape(comment.authorName)}</strong>
+      <strong class="${API.escape(comment.cosmetics?.nicknameColorClass || '')}">${API.escape(comment.authorName)}</strong>
       <p>${API.escape(comment.body)}</p>
       <span class="meta">${API.escape(comment.createdAt)}</span>
     </article>

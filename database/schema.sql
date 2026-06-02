@@ -79,6 +79,44 @@ CREATE TABLE IF NOT EXISTS user_titles (
   FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS cosmetic_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  type TEXT NOT NULL,
+  rarity TEXT NOT NULL DEFAULT 'common',
+  price INTEGER NOT NULL DEFAULT 0,
+  css_class TEXT NOT NULL,
+  preview_text TEXT DEFAULT '',
+  is_active INTEGER NOT NULL DEFAULT 1,
+  is_admin_only INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_cosmetics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  cosmetic_id INTEGER NOT NULL,
+  purchased_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, cosmetic_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (cosmetic_id) REFERENCES cosmetic_items(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_cosmetic_equips (
+  user_id INTEGER PRIMARY KEY,
+  profile_frame_id INTEGER,
+  profile_background_id INTEGER,
+  nickname_color_id INTEGER,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (profile_frame_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+  FOREIGN KEY (profile_background_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+  FOREIGN KEY (nickname_color_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS quotes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
@@ -245,6 +283,8 @@ CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_post_comments_hidden ON post_comments(is_hidden);
 CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at);
 CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at);
+CREATE INDEX IF NOT EXISTS idx_cosmetic_items_type_active ON cosmetic_items(type, is_active);
+CREATE INDEX IF NOT EXISTS idx_user_cosmetics_user_id ON user_cosmetics(user_id);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at);

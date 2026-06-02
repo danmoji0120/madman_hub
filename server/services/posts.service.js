@@ -63,7 +63,8 @@ function mapPost(row) {
     createdAt,
     isAnonymous,
     category,
-    categoryLabel: getPostCategory(category)?.label || category
+    categoryLabel: getPostCategory(category)?.label || category,
+    cosmetics: isAnonymous ? undefined : row.cosmetics
   };
 }
 

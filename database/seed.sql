@@ -29,6 +29,21 @@ SELECT u.id, t.id, 'default'
 FROM users u
 JOIN titles t ON t.name = '신규 격리 대상';
 
+INSERT OR IGNORE INTO cosmetic_items (code, name, description, type, rarity, price, css_class, preview_text) VALUES
+  ('default_frame', '기본 테두리', '차분한 기본 프로필 테두리', 'profile_frame', 'common', 0, 'cosmetic-frame-default', '기본'),
+  ('neon_frame', '네온 테두리', '은은하게 빛나는 네온 프로필 테두리', 'profile_frame', 'rare', 500, 'cosmetic-frame-neon', 'NEON'),
+  ('casino_gold_frame', '카지노 골드 테두리', '카지노 테이블의 금빛을 담은 테두리', 'profile_frame', 'epic', 1500, 'cosmetic-frame-casino-gold', 'GOLD'),
+  ('bb_monitor_frame', 'BB챗 감시 테두리', '감시 화면처럼 선명한 전설 테두리', 'profile_frame', 'legendary', 10000, 'cosmetic-frame-bb-monitor', 'MONITOR'),
+  ('default_profile_bg', '기본 배경', '기본 프로필 카드 배경', 'profile_background', 'common', 0, 'cosmetic-bg-default', 'DEFAULT'),
+  ('isolation_room_bg', '격리실 배경', '고요한 격리실 분위기의 배경', 'profile_background', 'rare', 700, 'cosmetic-bg-isolation-room', 'ROOM'),
+  ('casino_table_bg', '카지노 테이블 배경', '카지노 테이블을 닮은 배경', 'profile_background', 'epic', 1800, 'cosmetic-bg-casino-table', 'TABLE'),
+  ('abyss_neon_bg', '심연의 네온 배경', '깊은 심연에서 번지는 네온 배경', 'profile_background', 'legendary', 8000, 'cosmetic-bg-abyss-neon', 'ABYSS'),
+  ('default_name', '기본 닉네임', '기본 닉네임 색상', 'nickname_color', 'common', 0, 'cosmetic-name-default', 'NAME'),
+  ('blue_name', '파란 닉네임', '선명한 파란색 닉네임', 'nickname_color', 'rare', 500, 'cosmetic-name-blue', 'BLUE'),
+  ('purple_name', '보라 닉네임', '네온 보라색 닉네임', 'nickname_color', 'rare', 800, 'cosmetic-name-purple', 'PURPLE'),
+  ('gold_name', '금색 닉네임', '금빛 닉네임', 'nickname_color', 'epic', 3000, 'cosmetic-name-gold', 'GOLD'),
+  ('danger_red_name', '위험 등급 레드', '위험 표지처럼 붉은 닉네임', 'nickname_color', 'epic', 3500, 'cosmetic-name-danger-red', 'DANGER');
+
 INSERT OR IGNORE INTO achievements (code, name, description, category, reward_points) VALUES
   ('FIRST_CHECKIN', '첫 출석', '처음으로 출석했습니다.', 'checkin', 5),
   ('FIRST_GUESTBOOK', '첫 방명록', '처음으로 방명록을 남겼습니다.', 'social', 5),

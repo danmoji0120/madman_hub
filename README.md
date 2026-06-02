@@ -157,6 +157,39 @@ COMMENT_REWARD_DAILY_LIMIT=5
 2. `database/supabase.seed.sql`
 3. `database/supabase.rpc.sql`
 
+## MVP 1.4 꾸미기 상점
+
+`/cosmetics.html`에서 포인트로 프로필 테두리, 프로필 배경, 닉네임 색상을 구매하고 장착할 수 있습니다. 장착 효과는 프로필, 거주민 목록, dashboard 카드, 랭킹, 게시글 작성자, 댓글 작성자에 가볍게 반영됩니다.
+
+DB 테이블:
+
+- `cosmetic_items`: 판매 가능한 꾸미기 아이템
+- `user_cosmetics`: 사용자 보유 아이템
+- `user_cosmetic_equips`: 타입별 현재 장착 슬롯
+
+주요 API:
+
+- `GET /api/cosmetics/shop?type=&rarity=`
+- `POST /api/cosmetics/:id/buy`
+- `GET /api/me/cosmetics`
+- `GET /api/me/cosmetics/equips`
+- `POST /api/me/cosmetics/equip`
+- `POST /api/me/cosmetics/unequip`
+- `GET /api/admin/cosmetics`
+- `POST /api/admin/cosmetics`
+- `PATCH /api/admin/cosmetics/:id`
+- `PATCH /api/admin/cosmetics/:id/active`
+
+SQLite 구매는 로컬 트랜잭션으로 처리합니다. Supabase 구매는 `buy_cosmetic_transaction` RPC에서 advisory lock을 잡고 보유 여부 확인, 포인트 차감, 거래 내역 기록, 보유 목록 추가를 한 번에 처리합니다. 같은 아이템을 동시에 구매해도 포인트가 중복 차감되지 않습니다.
+
+기존 Supabase 프로젝트에는 MVP 1.3의 `quotes.category`와 MVP 1.4 꾸미기 테이블 및 RPC를 함께 반영해야 합니다. SQL Editor에서 아래 순서로 다시 실행하세요.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
+익명 게시글과 익명 댓글 응답에는 실제 작성자의 꾸미기 장착 정보를 포함하지 않습니다. `SUPABASE_SERVICE_ROLE_KEY`도 공개 파일이나 클라이언트 코드에 포함하지 마세요.
+
 ## MVP 1.3 게시판 카테고리와 검색
 
 게시판은 글 작성 시 카테고리를 선택하고, 목록에서 검색어, 카테고리, 태그, 정렬 조건으로 글을 찾을 수 있습니다. 랜덤 게시글도 현재 선택한 카테고리와 태그 조건 안에서 조회합니다.

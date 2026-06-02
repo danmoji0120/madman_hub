@@ -6,6 +6,7 @@ const { getKstDateString } = require('../utils/date');
 const { listPublicRecentGameResults } = require('../repositories/casino.repo');
 const { mapPost } = require('../services/posts.service');
 const { mapPublicActivity } = require('../services/activity.service');
+const { decoratePublicUsers, decorateAuthorRows, getEquippedCosmetics } = require('../repositories/cosmetics.repo');
 
 const router = express.Router();
 
@@ -107,18 +108,22 @@ router.get('/', optionalAuth, async (req, res) => {
         me = {
           ...user,
           points,
-          checkedInToday: Boolean(checkin)
+          checkedInToday: Boolean(checkin),
+          cosmetics: await getEquippedCosmetics(req.user.id)
         };
       }
     }
 
-    const normalizedRandomPost = randomQuote ? mapPost(randomQuote) : null;
-    const normalizedRecentPosts = recentQuotes.map(mapPost);
+    const decoratedRandomPost = randomQuote ? (await decorateAuthorRows([randomQuote]))[0] : null;
+    const normalizedRandomPost = decoratedRandomPost ? mapPost(decoratedRandomPost) : null;
+    const normalizedRecentPosts = (await decorateAuthorRows(recentQuotes)).map(mapPost);
+    const decoratedMadman = madmanOfTheDay ? (await decoratePublicUsers([madmanOfTheDay]))[0] : null;
+    const decoratedLeaderboard = await decoratePublicUsers(leaderboard);
 
     return res.json({
       success: true,
       me,
-      madmanOfTheDay: madmanOfTheDay || null,
+      madmanOfTheDay: decoratedMadman,
       randomQuote: normalizedRandomPost,
       randomPost: normalizedRandomPost,
       recentGuestbook,
@@ -130,7 +135,7 @@ router.get('/', optionalAuth, async (req, res) => {
         unlockedAt: item.unlocked_at
       })),
       recentCasinoResults,
-      leaderboard
+      leaderboard: decoratedLeaderboard
     });
   } catch (error) {
     console.error(error);

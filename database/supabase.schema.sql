@@ -73,6 +73,38 @@ CREATE TABLE IF NOT EXISTS user_titles (
   PRIMARY KEY (user_id, title_id)
 );
 
+CREATE TABLE IF NOT EXISTS cosmetic_items (
+  id BIGSERIAL PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  type TEXT NOT NULL,
+  rarity TEXT NOT NULL DEFAULT 'common',
+  price INTEGER NOT NULL DEFAULT 0,
+  css_class TEXT NOT NULL,
+  preview_text TEXT DEFAULT '',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  is_admin_only BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_cosmetics (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cosmetic_id BIGINT NOT NULL REFERENCES cosmetic_items(id) ON DELETE CASCADE,
+  purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, cosmetic_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_cosmetic_equips (
+  user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  profile_frame_id BIGINT REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+  profile_background_id BIGINT REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+  nickname_color_id BIGINT REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS quotes (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -229,6 +261,8 @@ CREATE INDEX IF NOT EXISTS idx_post_comments_user_id ON post_comments(user_id);
 CREATE INDEX IF NOT EXISTS idx_post_comments_hidden ON post_comments(is_hidden);
 CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cosmetic_items_type_active ON cosmetic_items(type, is_active);
+CREATE INDEX IF NOT EXISTS idx_user_cosmetics_user_id ON user_cosmetics(user_id);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at DESC);

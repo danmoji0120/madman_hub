@@ -179,6 +179,36 @@
       </div>
     </section>
 
+    <section class="admin-section" id="cosmetics">
+      <h2>꾸미기 아이템 관리</h2>
+      <form class="card" onsubmit="createCosmetic(event)">
+        <div class="form-grid">
+          <input class="input" id="new-cosmetic-code" placeholder="code" required />
+          <input class="input" id="new-cosmetic-name" placeholder="이름" required />
+          <select class="input" id="new-cosmetic-type">
+            <option value="profile_frame">테두리</option>
+            <option value="profile_background">배경</option>
+            <option value="nickname_color">닉네임 색상</option>
+          </select>
+          <select class="input" id="new-cosmetic-rarity">
+            <option value="common">common</option><option value="rare">rare</option>
+            <option value="epic">epic</option><option value="legendary">legendary</option><option value="event">event</option>
+          </select>
+          <input class="input" id="new-cosmetic-price" type="number" min="0" value="0" placeholder="가격" />
+          <input class="input" id="new-cosmetic-class" placeholder="CSS class" required />
+        </div>
+        <button class="button inline" type="submit">생성</button>
+      </form>
+      <div class="admin-toolbar">
+        <input class="input" id="cosmetic-search" placeholder="code, 이름, 설명 검색" />
+        <button class="button secondary inline small-button" onclick="loadAdminCosmetics()">검색</button>
+      </div>
+      <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>ID</th><th>아이템</th><th>타입</th><th>가격</th><th>상태</th><th>작업</th></tr></thead>
+        <tbody id="admin-cosmetics"></tbody>
+      </table></div>
+    </section>
+
     <section class="admin-section" id="titles">
       <h2>칭호 관리</h2>
       <form class="card" onsubmit="createTitle(event)">

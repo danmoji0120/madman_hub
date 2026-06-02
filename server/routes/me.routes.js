@@ -3,6 +3,12 @@ const authRequired = require('../middleware/auth');
 const { get, run, all } = require('../db');
 const { ensurePointAccount, getTransactions } = require('../services/points.service');
 const { logActivity } = require('../services/activity.service');
+const {
+  getMyCosmetics,
+  getEquippedCosmetics,
+  equipCosmetic,
+  unequipCosmetic
+} = require('../services/cosmetics.service');
 
 const router = express.Router();
 
@@ -42,9 +48,35 @@ function getProfile(userId) {
 
 router.get('/', authRequired, async (req, res) => {
   const user = await getProfile(req.user.id);
-
+  user.cosmetics = await getEquippedCosmetics(req.user.id);
   const points = await ensurePointAccount(req.user.id);
   return res.json({ success: true, user, points });
+});
+
+router.get('/cosmetics', authRequired, async (req, res) => {
+  return res.json({ success: true, ...(await getMyCosmetics(req.user.id)) });
+});
+
+router.get('/cosmetics/equips', authRequired, async (req, res) => {
+  return res.json({ success: true, equips: await getEquippedCosmetics(req.user.id) });
+});
+
+router.post('/cosmetics/equip', authRequired, async (req, res) => {
+  try {
+    const cosmeticId = Number(req.body.cosmeticId);
+    if (!Number.isInteger(cosmeticId) || cosmeticId < 1) throw Object.assign(new Error('올바른 꾸미기 아이템 ID가 필요합니다.'), { status: 400 });
+    return res.json({ success: true, equips: await equipCosmetic({ userId: req.user.id, type: req.body.type, cosmeticId }) });
+  } catch (error) {
+    return res.status(error.status || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/cosmetics/unequip', authRequired, async (req, res) => {
+  try {
+    return res.json({ success: true, equips: await unequipCosmetic({ userId: req.user.id, type: req.body.type }) });
+  } catch (error) {
+    return res.status(error.status || 500).json({ success: false, message: error.message });
+  }
 });
 
 router.patch('/profile', authRequired, async (req, res) => {

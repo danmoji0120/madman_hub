@@ -1,6 +1,7 @@
 const { provider, run, get, all } = require('../db');
 const { getSupabaseAdminClient } = require('../supabaseClient');
 const { getKstDateString } = require('../utils/date');
+const { decorateAuthorRows } = require('./cosmetics.repo');
 
 function assertResult(result) {
   if (result.error) throw result.error;
@@ -15,7 +16,8 @@ function publicComment(row) {
     body: row.body,
     authorName: isAnonymous ? '익명' : (row.author_name || '알 수 없음'),
     isAnonymous,
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    cosmetics: isAnonymous ? undefined : row.cosmetics
   };
 }
 
@@ -96,7 +98,7 @@ async function listPublicComments(postId) {
       ? assertResult(await getSupabaseAdminClient().from('users').select('id,display_name').in('id', ids)) || []
       : [];
     const names = new Map(users.map((user) => [user.id, user.display_name]));
-    return rows.map((row) => publicComment({ ...row, author_name: names.get(row.user_id) }));
+    return (await decorateAuthorRows(rows.map((row) => ({ ...row, author_name: names.get(row.user_id) })))).map(publicComment);
   }
   const rows = await all(
     `SELECT c.*, u.display_name AS author_name
@@ -106,7 +108,7 @@ async function listPublicComments(postId) {
      ORDER BY c.created_at ASC, c.id ASC`,
     [postId]
   );
-  return rows.map(publicComment);
+  return (await decorateAuthorRows(rows)).map(publicComment);
 }
 
 async function countTodayCommentRewards(userId) {

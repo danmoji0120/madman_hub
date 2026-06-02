@@ -33,6 +33,7 @@ const { runCasinoSmoke } = require('./casino-smoke-helper');
 const { runCommunitySmoke } = require('./community-smoke-helper');
 const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
 const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
+const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -553,12 +554,15 @@ async function main() {
       ownerAuth,
       runPrefix: `sqlite-categories-${Date.now()}-`
     });
-
     await runCommunitySmoke({
       request,
       auth,
       ownerAuth,
       runPrefix: `sqlite-community-${Date.now()}-`
+    });
+    await runCosmeticsSmoke({
+      request, auth, ownerAuth, userId: registered.user.id,
+      runPrefix: `sqlite-cosmetics-${Date.now()}-`
     });
 
     await runCasinoSmoke({

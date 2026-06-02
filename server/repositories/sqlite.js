@@ -89,6 +89,35 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at)');
   await run(
+    `CREATE TABLE IF NOT EXISTS cosmetic_items (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
+       description TEXT DEFAULT '', type TEXT NOT NULL, rarity TEXT NOT NULL DEFAULT 'common',
+       price INTEGER NOT NULL DEFAULT 0, css_class TEXT NOT NULL, preview_text TEXT DEFAULT '',
+       is_active INTEGER NOT NULL DEFAULT 1, is_admin_only INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_cosmetics (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, cosmetic_id INTEGER NOT NULL,
+       purchased_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, cosmetic_id),
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+       FOREIGN KEY (cosmetic_id) REFERENCES cosmetic_items(id) ON DELETE CASCADE
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_cosmetic_equips (
+       user_id INTEGER PRIMARY KEY, profile_frame_id INTEGER, profile_background_id INTEGER,
+       nickname_color_id INTEGER, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+       FOREIGN KEY (profile_frame_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+       FOREIGN KEY (profile_background_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL,
+       FOREIGN KEY (nickname_color_id) REFERENCES cosmetic_items(id) ON DELETE SET NULL
+     )`
+  );
+  await run('CREATE INDEX IF NOT EXISTS idx_cosmetic_items_type_active ON cosmetic_items(type, is_active)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_cosmetics_user_id ON user_cosmetics(user_id)');
+  await run(
     `CREATE TABLE IF NOT EXISTS song_recommendations (
        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT NOT NULL, artist TEXT DEFAULT '',
        url TEXT NOT NULL, reason TEXT DEFAULT '', tags TEXT NOT NULL DEFAULT '[]',

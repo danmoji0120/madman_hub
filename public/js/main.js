@@ -32,10 +32,12 @@ function renderMyStatus(me) {
     return;
   }
 
+  card.className = `card ${me.cosmetics?.profileFrameClass || ''} ${me.cosmetics?.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h2>내 상태</h2>
     <span class="badge">${escapeHtml(me.title || '수상한 거주민')}</span>
-    <h3>${escapeHtml(me.nickname || me.display_name)}</h3>
+    <h3 class="${escapeHtml(me.cosmetics?.nicknameColorClass || '')}">${escapeHtml(me.nickname || me.display_name)}</h3>
+    <a class="meta" href="/cosmetics.html">꾸미기 상점 보기</a>
     <div class="stat-row">
       <span>보유 포인트</span>
       <strong class="point">${me.points.balance}P</strong>
@@ -55,9 +57,10 @@ function renderMadman(member) {
     return;
   }
 
+  card.className = `card ${member.cosmetics?.profileFrameClass || ''} ${member.cosmetics?.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h2>오늘의 미친놈</h2>
-    <p class="point">${escapeHtml(member.nickname || member.display_name)}</p>
+    <p class="point ${escapeHtml(member.cosmetics?.nicknameColorClass || '')}">${escapeHtml(member.nickname || member.display_name)}</p>
     <p>${escapeHtml(member.title || '수상한 거주민')}</p>
     <p class="meta">위험도: ${'★'.repeat(member.danger_level || 1)}</p>
   `;
@@ -205,7 +208,7 @@ function renderLeaderboard(leaderboard) {
 
   root.innerHTML = leaderboard.map((member, index) => `
     <div class="rank-item">
-      <strong>${index + 1}. ${escapeHtml(member.nickname || member.display_name)}</strong>
+      <strong class="${escapeHtml(member.cosmetics?.nicknameColorClass || '')}">${index + 1}. ${escapeHtml(member.nickname || member.display_name)}</strong>
       <span>${member.balance}P</span>
     </div>
   `).join('') || '<p class="empty-state">아직 랭킹이 비어 있습니다.</p>';

@@ -1,5 +1,6 @@
 const express = require('express');
 const { all } = require('../db');
+const { decoratePublicUsers } = require('../repositories/cosmetics.repo');
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
      ORDER BY pa.balance DESC, u.created_at ASC`
   );
 
-  return res.json({ success: true, members });
+  return res.json({ success: true, members: await decoratePublicUsers(members) });
 });
 
 module.exports = router;

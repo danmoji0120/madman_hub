@@ -38,6 +38,13 @@ async function buyTitleTransaction(userId, titleId) {
   });
 }
 
+async function buyCosmeticTransaction(userId, cosmeticId) {
+  return callRpc('buy_cosmetic_transaction', {
+    p_user_id: userId,
+    p_cosmetic_id: cosmeticId
+  });
+}
+
 async function adminApplyPointsTransaction({ actorUserId, targetUserId, amount, reason }) {
   return callRpc('admin_apply_points_transaction', {
     p_actor_user_id: actorUserId,
@@ -133,6 +140,7 @@ module.exports = {
   callRpc,
   applyPointTransaction,
   buyTitleTransaction,
+  buyCosmeticTransaction,
   adminApplyPointsTransaction,
   unlockAchievementTransaction,
   createGameSessionTransaction,

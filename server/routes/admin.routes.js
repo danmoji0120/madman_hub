@@ -20,6 +20,12 @@ const {
 } = require('../repositories/admin.repo');
 const { listAdminSongs, adminSetSongHidden } = require('../services/songs.service');
 const { getPostCategory } = require('../config/postCategories.config');
+const {
+  listAdminCosmetics,
+  createAdminCosmetic,
+  updateAdminCosmetic,
+  setAdminCosmeticActive
+} = require('../services/cosmetics.service');
 
 const router = express.Router();
 const allowedRoles = ['owner', 'admin', 'member', 'guest'];
@@ -221,6 +227,27 @@ safe('get', '/titles', async (req, res) => {
     q: typeof req.query.q === 'string' ? req.query.q.trim() : ''
   });
   return res.json({ success: true, titles });
+});
+
+safe('get', '/cosmetics', async (req, res) => {
+  const items = await listAdminCosmetics({
+    q: typeof req.query.q === 'string' ? req.query.q.trim() : '',
+    type: typeof req.query.type === 'string' ? req.query.type.trim() : '',
+    rarity: typeof req.query.rarity === 'string' ? req.query.rarity.trim() : ''
+  });
+  return res.json({ success: true, items });
+});
+
+safe('post', '/cosmetics', async (req, res) => {
+  return res.status(201).json({ success: true, item: await createAdminCosmetic(req.body) });
+});
+
+safe('patch', '/cosmetics/:id', async (req, res) => {
+  return res.json({ success: true, item: await updateAdminCosmetic(parseId(req.params.id, 'cosmetic id'), req.body) });
+});
+
+safe('patch', '/cosmetics/:id/active', async (req, res) => {
+  return res.json({ success: true, item: await setAdminCosmeticActive(parseId(req.params.id, 'cosmetic id'), req.body.isActive) });
 });
 
 safe('post', '/titles', async (req, res) => {

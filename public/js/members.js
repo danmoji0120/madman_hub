@@ -3,9 +3,9 @@ async function loadMembers() {
   const data = await API.request('/api/members');
 
   root.innerHTML = data.members.map((member) => `
-    <article class="card">
+    <article class="card ${API.escape(member.cosmetics?.profileFrameClass || '')} ${API.escape(member.cosmetics?.profileBackgroundClass || '')}">
       <span class="badge">${API.escape(member.role)}</span>
-      <h2>${API.escape(member.nickname || member.display_name)}</h2>
+      <h2 class="${API.escape(member.cosmetics?.nicknameColorClass || '')}">${API.escape(member.nickname || member.display_name)}</h2>
       <h3>${API.escape(member.title || '수상한 거주민')}</h3>
       <p>${API.escape(member.bio || '설명 없음')}</p>
       <p class="meta">위험도: ${'★'.repeat(member.danger_level || 1)}</p>

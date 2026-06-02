@@ -123,6 +123,52 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION buy_cosmetic_transaction(
+  p_user_id BIGINT,
+  p_cosmetic_id BIGINT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_cosmetic cosmetic_items%ROWTYPE;
+  v_account point_accounts%ROWTYPE;
+  v_transaction RECORD;
+  v_transaction_id BIGINT;
+  v_role TEXT;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtext('buy_cosmetic:' || p_user_id || ':' || p_cosmetic_id));
+  SELECT role INTO v_role FROM users WHERE id = p_user_id;
+  IF v_role IS NULL THEN RAISE EXCEPTION 'invalid_user'; END IF;
+  SELECT * INTO v_cosmetic FROM cosmetic_items WHERE id = p_cosmetic_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'cosmetic_not_found'; END IF;
+  IF NOT v_cosmetic.is_active THEN RAISE EXCEPTION 'inactive_cosmetic'; END IF;
+  IF v_cosmetic.is_admin_only AND v_role NOT IN ('admin', 'owner') THEN RAISE EXCEPTION 'admin_cosmetic_not_buyable'; END IF;
+  INSERT INTO point_accounts (user_id, balance, total_earned, total_spent)
+  VALUES (p_user_id, 0, 0, 0)
+  ON CONFLICT ON CONSTRAINT point_accounts_pkey DO NOTHING;
+  IF EXISTS (SELECT 1 FROM user_cosmetics WHERE user_id = p_user_id AND cosmetic_id = p_cosmetic_id) THEN
+    SELECT * INTO v_account FROM point_accounts WHERE user_id = p_user_id;
+    RETURN jsonb_build_object('purchased', FALSE, 'alreadyOwned', TRUE, 'cosmetic', to_jsonb(v_cosmetic), 'account', to_jsonb(v_account));
+  END IF;
+  IF v_cosmetic.price > 0 THEN
+    SELECT * INTO v_transaction FROM apply_point_transaction(
+      p_user_id, -v_cosmetic.price, 'cosmetic_purchase', 'Cosmetic purchase: ' || v_cosmetic.name,
+      'hub-cosmetics', p_cosmetic_id::TEXT, p_user_id
+    );
+    v_transaction_id := v_transaction.transaction_id;
+  END IF;
+  INSERT INTO user_cosmetics (user_id, cosmetic_id) VALUES (p_user_id, p_cosmetic_id);
+  SELECT * INTO v_account FROM point_accounts WHERE user_id = p_user_id;
+  RETURN jsonb_build_object(
+    'purchased', TRUE, 'alreadyOwned', FALSE, 'cosmetic', to_jsonb(v_cosmetic),
+    'account', to_jsonb(v_account), 'transactionId', v_transaction_id
+  );
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION admin_apply_points_transaction(
   p_actor_user_id BIGINT,
   p_target_user_id BIGINT,

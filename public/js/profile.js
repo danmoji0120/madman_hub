@@ -11,8 +11,11 @@ function renderProfile(user) {
   const tags = parseTags(user.tags);
   const tagList = tags.map((tag) => `<span class="tag">${API.escape(tag)}</span>`).join('');
 
-  document.querySelector('#profile-card').innerHTML = `
-    <h1>${API.escape(user.nickname || user.display_name)}</h1>
+  const card = document.querySelector('#profile-card');
+  const cosmetics = user.cosmetics || {};
+  card.className = `card ${cosmetics.profileFrameClass || ''} ${cosmetics.profileBackgroundClass || ''}`;
+  card.innerHTML = `
+    <h1 class="${API.escape(cosmetics.nicknameColorClass || '')}">${API.escape(user.nickname || user.display_name)}</h1>
     <span class="badge">${API.escape(user.title || '수상한 거주민')}</span>
     <p>${API.escape(user.bio || '자기소개가 없습니다.')}</p>
     <p class="meta">위험도: ${'★'.repeat(user.danger_level || 1)}</p>
@@ -28,6 +31,18 @@ function renderProfile(user) {
   document.querySelector('#profile-tags').value = tags.join(', ');
   document.querySelector('#profile-theme').value = user.profile_theme || 'neon';
   document.querySelector('#profile-avatar-url').value = user.avatar_url || '';
+}
+
+function renderCosmetics(data) {
+  document.querySelector('#owned-cosmetics').innerHTML = data.items.map((item) => `
+    <article class="cosmetic-item-card ${API.escape(item.type === 'nickname_color' ? '' : item.cssClass)}">
+      <span class="badge">${API.escape(item.rarity)}</span>
+      <h3 class="${item.type === 'nickname_color' ? API.escape(item.cssClass) : ''}">${API.escape(item.name)}</h3>
+      <button class="button secondary" onclick="${item.equipped ? `unequipCosmetic('${item.type}')` : `equipCosmetic('${item.type}', ${item.id})`}">
+        ${item.equipped ? '장착 중 / 해제' : '장착'}
+      </button>
+    </article>
+  `).join('') || '<p class="empty-state">보유한 꾸미기 아이템이 없습니다.</p>';
 }
 
 function renderTitles(data) {
@@ -71,20 +86,40 @@ function renderAchievements(data) {
 
 async function loadProfile() {
   try {
-    const [data, tx, titleData, achievementData] = await Promise.all([
+    const [data, tx, titleData, achievementData, cosmeticsData] = await Promise.all([
       API.request('/api/me'),
       API.request('/api/me/transactions'),
       API.request('/api/me/titles'),
-      API.request('/api/me/achievements')
+      API.request('/api/me/achievements'),
+      API.request('/api/me/cosmetics')
     ]);
 
     renderProfile(data.user);
     renderTitles(titleData);
     renderTransactions(tx.transactions);
     renderAchievements(achievementData);
+    renderCosmetics(cosmeticsData);
     document.querySelector('#points-card .point').textContent = `${data.points.balance}P`;
   } catch (error) {
     location.href = '/login.html';
+  }
+}
+
+async function equipCosmetic(type, cosmeticId) {
+  await updateCosmeticEquip('/api/me/cosmetics/equip', { type, cosmeticId }, '꾸미기 아이템을 장착했습니다.');
+}
+
+async function unequipCosmetic(type) {
+  await updateCosmeticEquip('/api/me/cosmetics/unequip', { type }, '꾸미기 아이템 장착을 해제했습니다.');
+}
+
+async function updateCosmeticEquip(path, body, message) {
+  try {
+    await API.request(path, { method: 'POST', body: JSON.stringify(body) });
+    document.querySelector('#profile-message').textContent = message;
+    await loadProfile();
+  } catch (error) {
+    document.querySelector('#profile-message').textContent = error.message;
   }
 }
 

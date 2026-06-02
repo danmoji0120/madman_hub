@@ -1,5 +1,6 @@
 const { provider, run, get, all } = require('../db');
 const { getSupabaseAdminClient } = require('../supabaseClient');
+const { decorateAuthorRows } = require('./cosmetics.repo');
 
 function assertResult(result) {
   if (result.error) throw result.error;
@@ -21,7 +22,8 @@ function attachAuthor(rows, mapper) {
   return getSupabaseAdminClient().from('users').select('id,display_name').in('id', ids).then((result) => {
     const users = assertResult(result) || [];
     const names = new Map(users.map((user) => [user.id, user.display_name]));
-    return rows.map((row) => mapper({ ...row, author_name: names.get(row.user_id) || null }));
+    return decorateAuthorRows(rows.map((row) => ({ ...row, author_name: names.get(row.user_id) || null })))
+      .then((decorated) => decorated.map(mapper));
   });
 }
 
@@ -80,7 +82,7 @@ async function listPublicPosts({ q = '', category = '', tag = '', author = '', s
      LIMIT ? OFFSET ?`,
     params
   );
-  return { posts: rows.slice(0, limit).map(mapper), hasMore: rows.length > limit };
+  return { posts: (await decorateAuthorRows(rows.slice(0, limit))).map(mapper), hasMore: rows.length > limit };
 }
 
 async function getPublicPost(postId, mapper) {
@@ -93,7 +95,7 @@ async function getPublicPost(postId, mapper) {
      WHERE q.id = ? AND q.is_hidden = 0`,
     [postId]
   );
-  return row ? mapper(row) : null;
+  return row ? mapper((await decorateAuthorRows([row]))[0]) : null;
 }
 
 async function getRandomPublicPost({ category = '', tag = '' }, mapper) {
@@ -114,7 +116,7 @@ async function getRandomPublicPost({ category = '', tag = '' }, mapper) {
      WHERE ${filters.join(' AND ')} ORDER BY RANDOM() LIMIT 1`,
     params
   );
-  return row ? mapper(row) : null;
+  return row ? mapper((await decorateAuthorRows([row]))[0]) : null;
 }
 
 module.exports = { parseTags, createPostRecord, listPublicPosts, getPublicPost, getRandomPublicPost };
