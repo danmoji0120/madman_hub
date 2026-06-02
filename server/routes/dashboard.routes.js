@@ -7,6 +7,7 @@ const { listPublicRecentGameResults } = require('../repositories/casino.repo');
 const { mapPost } = require('../services/posts.service');
 const { mapPublicActivity } = require('../services/activity.service');
 const { decoratePublicUsers, decorateAuthorRows, getEquippedCosmetics } = require('../repositories/cosmetics.repo');
+const { getPublicRankingSummary } = require('../services/seasons.service');
 
 const router = express.Router();
 
@@ -21,7 +22,8 @@ router.get('/', optionalAuth, async (req, res) => {
       leaderboard,
       recentFeed,
       recentAchievements,
-      recentCasinoResults
+      recentCasinoResults,
+      seasonSummary
     ] = await Promise.all([
       get(
         `SELECT u.id, u.display_name, p.nickname, p.title, p.danger_level
@@ -82,7 +84,8 @@ router.get('/', optionalAuth, async (req, res) => {
          ORDER BY ua.unlocked_at DESC, a.id DESC
          LIMIT 5`
       ),
-      listPublicRecentGameResults(8)
+      listPublicRecentGameResults(8),
+      getPublicRankingSummary({ limit: 3 })
     ]);
 
     let me = null;
@@ -135,7 +138,8 @@ router.get('/', optionalAuth, async (req, res) => {
         unlockedAt: item.unlocked_at
       })),
       recentCasinoResults,
-      leaderboard: decoratedLeaderboard
+      leaderboard: decoratedLeaderboard,
+      seasonSummary
     });
   } catch (error) {
     console.error(error);

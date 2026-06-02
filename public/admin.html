@@ -16,6 +16,7 @@
       <a href="#content">콘텐츠</a>
       <a href="#comments">댓글</a>
       <a href="#titles">칭호</a>
+      <a href="#seasons">시즌</a>
       <a href="/casino.html">카지노</a>
       <a href="/profile.html">내 프로필</a>
     </nav>
@@ -206,6 +207,24 @@
       <div class="admin-table-wrap"><table class="admin-table">
         <thead><tr><th>ID</th><th>아이템</th><th>타입</th><th>가격</th><th>상태</th><th>작업</th></tr></thead>
         <tbody id="admin-cosmetics"></tbody>
+      </table></div>
+    </section>
+
+    <section class="admin-section" id="seasons">
+      <h2>시즌 관리</h2>
+      <form class="card" onsubmit="createSeason(event)">
+        <div class="form-grid">
+          <input class="input" id="new-season-code" placeholder="season_code" required />
+          <input class="input" id="new-season-name" placeholder="시즌 이름" required />
+          <input class="input" id="new-season-start" type="datetime-local" required />
+          <input class="input" id="new-season-end" type="datetime-local" required />
+        </div>
+        <input class="input" id="new-season-description" placeholder="설명" />
+        <button class="button inline" type="submit">시즌 생성</button>
+      </form>
+      <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>ID</th><th>시즌</th><th>기간</th><th>상태</th><th>작업</th></tr></thead>
+        <tbody id="admin-seasons"></tbody>
       </table></div>
     </section>
 

@@ -545,6 +545,7 @@ async function cleanupSmokeUsers(prefix) {
   if (!userIds.length) return;
 
   await deleteRows('user_achievements', (query) => query.in('user_id', userIds));
+  await deleteRows('season_hall_of_fame', (query) => query.in('user_id', userIds));
   await deleteRows('game_results', (query) => query.in('user_id', userIds));
   await deleteRows('game_sessions', (query) => query.in('user_id', userIds));
   await deleteRows('point_transactions', (query) => query.in('user_id', userIds));
@@ -565,7 +566,7 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips] = await Promise.all([
+  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame] = await Promise.all([
     client().from('titles').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
     client().from('users').select('id,account_status').limit(1),
@@ -576,9 +577,11 @@ async function initDatabase() {
     client().from('daily_mission_bonus_claims').select('id').limit(1),
     client().from('cosmetic_items').select('id').limit(1),
     client().from('user_cosmetics').select('id').limit(1),
-    client().from('user_cosmetic_equips').select('user_id').limit(1)
+    client().from('user_cosmetic_equips').select('user_id').limit(1),
+    client().from('seasons').select('id').limit(1),
+    client().from('season_hall_of_fame').select('id').limit(1)
   ]);
-  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error;
+  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }
@@ -615,7 +618,8 @@ async function initDatabase() {
     ['claim_daily_mission_bonus', {
       p_user_id: -1, p_mission_date: '2000-01-01', p_bonus_code: 'probe',
       p_required_completed: 1, p_reward_points: 1
-    }]
+    }],
+    ['end_season_transaction', { p_season_id: -1, p_entries: [] }]
   ];
   const rpcResults = await Promise.all(rpcProbes.map(([name, params]) => client().rpc(name, params)));
   const missingRpc = rpcResults.find((result) => result.error?.code === 'PGRST202');

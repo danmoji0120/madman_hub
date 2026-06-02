@@ -85,7 +85,7 @@ async function listPublicSongs({ q = '', tag = '', limit = 50, offset = 0 } = {}
   if (provider === 'supabase') {
     let query = getSupabaseAdminClient().from('song_recommendations').select('*').eq('is_hidden', false);
     if (q) query = query.or(['title', 'artist', 'reason'].map((column) => `${column}.ilike.*${q.replace(/[%*,]/g, '')}*`).join(','));
-    if (tag) query = query.contains('tags', [tag]);
+    if (tag) query = query.contains('tags', JSON.stringify([tag]));
     const rows = assertResult(await query.order('created_at', { ascending: false }).order('id', { ascending: false })
       .range(offset, offset + limit - 1)) || [];
     return attachNames(rows, publicSong);

@@ -537,8 +537,45 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION end_season_transaction(
+  p_season_id BIGINT,
+  p_entries JSONB
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_season seasons%ROWTYPE;
+BEGIN
+  SELECT * INTO v_season FROM seasons WHERE id = p_season_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'season_not_found'; END IF;
+  IF v_season.status IN ('ended', 'archived') THEN RAISE EXCEPTION 'season_already_ended'; END IF;
+
+  DELETE FROM season_hall_of_fame WHERE season_id = p_season_id;
+  INSERT INTO season_hall_of_fame (season_id, category, rank, user_id, score, metadata_json)
+  SELECT
+    p_season_id,
+    entry->>'category',
+    (entry->>'rank')::INTEGER,
+    (entry->>'userId')::BIGINT,
+    (entry->>'score')::INTEGER,
+    COALESCE(entry->'metadata', '{}'::JSONB)
+  FROM jsonb_array_elements(COALESCE(p_entries, '[]'::JSONB)) AS entry;
+
+  UPDATE seasons
+  SET status = 'ended', is_active = FALSE, updated_at = NOW()
+  WHERE id = p_season_id
+  RETURNING * INTO v_season;
+
+  RETURN to_jsonb(v_season);
+END;
+$$;
+
 REVOKE ALL ON FUNCTION apply_point_transaction(BIGINT, INTEGER, TEXT, TEXT, TEXT, TEXT, BIGINT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION buy_title_transaction(BIGINT, BIGINT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION buy_cosmetic_transaction(BIGINT, BIGINT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION admin_apply_points_transaction(BIGINT, BIGINT, INTEGER, TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION unlock_achievement_transaction(BIGINT, TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION create_game_session_transaction(BIGINT, TEXT, INTEGER, JSONB) FROM PUBLIC, anon, authenticated;
@@ -546,9 +583,11 @@ REVOKE ALL ON FUNCTION complete_game_session_transaction(BIGINT, BIGINT, TEXT, T
 REVOKE ALL ON FUNCTION play_instant_game_transaction(BIGINT, TEXT, INTEGER, INTEGER, TEXT, TEXT, JSONB, TEXT, JSONB) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION claim_daily_mission_reward(BIGINT, DATE, TEXT) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION claim_daily_mission_bonus(BIGINT, DATE, TEXT, INTEGER, INTEGER) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION end_season_transaction(BIGINT, JSONB) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION apply_point_transaction(BIGINT, INTEGER, TEXT, TEXT, TEXT, TEXT, BIGINT) TO service_role;
 GRANT EXECUTE ON FUNCTION buy_title_transaction(BIGINT, BIGINT) TO service_role;
+GRANT EXECUTE ON FUNCTION buy_cosmetic_transaction(BIGINT, BIGINT) TO service_role;
 GRANT EXECUTE ON FUNCTION admin_apply_points_transaction(BIGINT, BIGINT, INTEGER, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION unlock_achievement_transaction(BIGINT, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION create_game_session_transaction(BIGINT, TEXT, INTEGER, JSONB) TO service_role;
@@ -556,3 +595,4 @@ GRANT EXECUTE ON FUNCTION complete_game_session_transaction(BIGINT, BIGINT, TEXT
 GRANT EXECUTE ON FUNCTION play_instant_game_transaction(BIGINT, TEXT, INTEGER, INTEGER, TEXT, TEXT, JSONB, TEXT, JSONB) TO service_role;
 GRANT EXECUTE ON FUNCTION claim_daily_mission_reward(BIGINT, DATE, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION claim_daily_mission_bonus(BIGINT, DATE, TEXT, INTEGER, INTEGER) TO service_role;
+GRANT EXECUTE ON FUNCTION end_season_transaction(BIGINT, JSONB) TO service_role;

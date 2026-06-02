@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>시즌 랭킹 | MADMEN HUB</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="/">MADMEN HUB</a>
+    <nav class="nav-links">
+      <a href="/members.html">거주민</a>
+      <a href="/posts.html">게시판</a>
+      <a href="/songs.html">노래추천</a>
+      <a href="/cosmetics.html">꾸미기 상점</a>
+      <a href="/casino.html">카지노</a>
+      <a href="/seasons.html">시즌 랭킹</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="badge">MVP 1.5</span>
+      <h1>시즌 랭킹 / 명예의 전당</h1>
+      <p>시즌 기간의 활동과 포인트 흐름을 집계합니다. 종료된 시즌은 최종 순위가 그대로 보관됩니다.</p>
+    </section>
+
+    <p class="message" id="season-message"></p>
+
+    <section class="season-toolbar">
+      <select class="input" id="season-select"></select>
+      <select class="input" id="season-category"></select>
+      <button class="button inline" id="season-load">랭킹 보기</button>
+    </section>
+
+    <section class="card season-summary" id="season-summary">
+      <p class="meta">시즌 정보를 불러오는 중...</p>
+    </section>
+
+    <section class="admin-section">
+      <h2>현재 시즌 요약</h2>
+      <div class="season-ranking-summary" id="season-ranking-summary"></div>
+    </section>
+
+    <section class="admin-section">
+      <div class="section-heading">
+        <h2 id="ranking-title">시즌 랭킹</h2>
+        <span class="badge" id="ranking-mode">LIVE</span>
+      </div>
+      <div class="season-ranking-list" id="season-ranking-list"></div>
+    </section>
+
+    <section class="admin-section">
+      <h2>명예의 전당</h2>
+      <p class="meta">종료된 시즌의 category별 top 3 기록입니다.</p>
+      <div class="hall-of-fame-grid" id="hall-of-fame-list"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/seasons.js"></script>
+</body>
+</html>

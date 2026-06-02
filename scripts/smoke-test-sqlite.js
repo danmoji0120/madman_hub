@@ -34,6 +34,7 @@ const { runCommunitySmoke } = require('./community-smoke-helper');
 const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
 const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
+const { runSeasonsSmoke } = require('./seasons-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -81,6 +82,7 @@ async function main() {
     const shopHtml = await requestText('/shop.html');
     const adminHtml = await requestText('/admin.html');
     const casinoHtml = await requestText('/casino.html');
+    const seasonsHtml = await requestText('/seasons.html');
     const css = await requestText('/css/app.css');
     const apiJs = await requestText('/js/api.js');
     const mainJs = await requestText('/js/main.js');
@@ -90,6 +92,7 @@ async function main() {
     const shopJs = await requestText('/js/shop.js');
     const adminJs = await requestText('/js/admin.js');
     const casinoJs = await requestText('/js/casino.js');
+    const seasonsJs = await requestText('/js/seasons.js');
     assert.ok(home.includes('<title>MADMEN HUB</title>'));
     assert.ok(profileHtml.includes('프로필 수정'));
     assert.ok(postsHtml.includes('<title>게시판 | MADMEN HUB</title>'));
@@ -97,6 +100,7 @@ async function main() {
     assert.ok(shopHtml.includes('<title>칭호 상점 | MADMEN HUB</title>'));
     assert.ok(adminHtml.includes('<title>관리자 | MADMEN HUB</title>'));
     assert.ok(casinoHtml.includes('<title>포인트 카지노 | MADMEN HUB</title>'));
+    assert.ok(seasonsHtml.includes('<title>시즌 랭킹 | MADMEN HUB</title>'));
     assert.ok(css.includes('.dashboard-grid'));
     assert.ok(css.includes('.shop-grid'));
     assert.ok(apiJs.includes('escape(value)'));
@@ -107,6 +111,7 @@ async function main() {
     assert.ok(shopJs.includes("API.request('/api/shop/titles'"));
     assert.ok(adminJs.includes("API.request('/api/admin/overview'"));
     assert.ok(casinoJs.includes("API.request('/api/casino/games'"));
+    assert.ok(seasonsJs.includes("API.request('/api/seasons'"));
 
     const publicDashboard = await request('/api/dashboard');
     assert.strictEqual(publicDashboard.me, null);
@@ -572,6 +577,10 @@ async function main() {
       runPrefix: `sqlite-${Date.now()}-`
     });
     await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix: 'sqlite-smoke-' });
+    await runSeasonsSmoke({
+      request, auth, ownerAuth, userId: registered.user.id,
+      runPrefix: `sqlite-seasons-${Date.now()}-`
+    });
 
     console.log('Smoke test passed.');
   } finally {

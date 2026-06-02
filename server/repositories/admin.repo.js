@@ -539,7 +539,7 @@ async function listSupabaseAdminPosts({ includeHidden, q, category, tag, userId,
   if (!includeHidden) query = query.eq('is_hidden', false);
   query = applyTextSearch(query, ['title', 'body', 'target_name'], q);
   if (category) query = query.eq('category', category);
-  if (tag) query = query.contains('tags', [tag]);
+  if (tag) query = query.contains('tags', JSON.stringify([tag]));
   if (userId) query = query.eq('user_id', userId);
   const posts = assertResult(await query
     .order('created_at', { ascending: false })

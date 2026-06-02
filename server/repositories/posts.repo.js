@@ -46,7 +46,7 @@ async function listPublicPosts({ q = '', category = '', tag = '', author = '', s
   if (provider === 'supabase') {
     let query = getSupabaseAdminClient().from('quotes').select('*').eq('is_hidden', false);
     if (category) query = query.eq('category', category);
-    if (tag) query = query.contains('tags', [tag]);
+    if (tag) query = query.contains('tags', JSON.stringify([tag]));
     const ascending = sort === 'oldest';
     if (!q && !author) query = query.range(offset, offset + limit);
     const rows = assertResult(await query.order('created_at', { ascending }).order('id', { ascending })) || [];
@@ -102,7 +102,7 @@ async function getRandomPublicPost({ category = '', tag = '' }, mapper) {
   if (provider === 'supabase') {
     let query = getSupabaseAdminClient().from('quotes').select('*').eq('is_hidden', false);
     if (category) query = query.eq('category', category);
-    if (tag) query = query.contains('tags', [tag]);
+    if (tag) query = query.contains('tags', JSON.stringify([tag]));
     const rows = assertResult(await query) || [];
     if (!rows.length) return null;
     return (await attachAuthor([rows[Math.floor(Math.random() * rows.length)]], mapper))[0];

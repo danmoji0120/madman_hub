@@ -71,3 +71,15 @@ INSERT INTO achievements (code, name, description, category, reward_points) VALU
   ('DAILY_MISSION_FIRST', '첫 일일 미션', '처음으로 일일 미션 보상을 받았습니다.', 'missions', 5),
   ('DAILY_MISSION_ALL', '오늘의 관찰 완료', '하루의 모든 일일 미션을 완료했습니다.', 'missions', 15)
 ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO seasons (code, name, description, starts_at, ends_at, status, is_active)
+VALUES (
+  'season_1',
+  '시즌 1 - 격리소 개장전',
+  'MADMEN HUB 첫 시즌',
+  NOW() - INTERVAL '1 day',
+  NOW() + INTERVAL '29 days',
+  'active',
+  TRUE
+)
+ON CONFLICT DO NOTHING;

@@ -625,6 +625,59 @@ button {
 .cosmetic-name-gold { color: #ffd76a; }
 .cosmetic-name-danger-red { color: #ff7388; }
 
+.season-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.season-summary {
+  margin-bottom: 18px;
+}
+
+.season-ranking-list {
+  display: grid;
+  gap: 10px;
+}
+
+.season-rank-card {
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background-color: var(--panel);
+}
+
+.season-rank-number,
+.season-rank-score {
+  color: var(--neon-2);
+  font-size: 20px;
+}
+
+.season-dashboard-grid,
+.hall-of-fame-grid,
+.season-ranking-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.hall-of-fame-card {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.ranking-rank {
+  color: var(--neon-2);
+  font-weight: 900;
+}
+
 @media (max-width: 720px) {
   .nav {
     align-items: flex-start;

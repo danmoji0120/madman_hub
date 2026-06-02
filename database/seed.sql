@@ -67,3 +67,14 @@ INSERT OR IGNORE INTO achievements (code, name, description, category, reward_po
   ('SONG_FIRST_RECOMMEND', '첫 노래추천', '처음으로 노래를 추천했습니다.', 'songs', 5),
   ('DAILY_MISSION_FIRST', '첫 일일 미션', '처음으로 일일 미션 보상을 받았습니다.', 'missions', 5),
   ('DAILY_MISSION_ALL', '오늘의 관찰 완료', '하루의 모든 일일 미션을 완료했습니다.', 'missions', 15);
+
+INSERT OR IGNORE INTO seasons (code, name, description, starts_at, ends_at, status, is_active)
+VALUES (
+  'season_1',
+  '시즌 1 - 격리소 개장전',
+  'MADMEN HUB 첫 시즌',
+  DATETIME('now', '-1 day'),
+  DATETIME('now', '+29 day'),
+  'active',
+  1
+);

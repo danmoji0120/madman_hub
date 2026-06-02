@@ -157,6 +157,47 @@ COMMENT_REWARD_DAILY_LIMIT=5
 2. `database/supabase.seed.sql`
 3. `database/supabase.rpc.sql`
 
+## MVP 1.5 시즌 랭킹 / 명예의 전당
+
+`/seasons.html`에서 현재 시즌의 실시간 랭킹과 종료된 시즌의 명예의 전당을 확인할 수 있습니다.
+
+집계 카테고리:
+
+- 활동 종합, 포인트 획득, 포인트 소비, 포인트 순증감
+- 카지노 수익, 카지노 대참사, 카지노 플레이
+- 게시글, 댓글, 노래추천, 일일 미션, 꾸미기 소비, 출석
+
+공개 API:
+
+- `GET /api/seasons`
+- `GET /api/seasons?status=active`
+- `GET /api/seasons/current`
+- `GET /api/seasons/current/rankings`
+- `GET /api/seasons/current/rankings/:category`
+- `GET /api/seasons/:id/rankings?category=point_earned`
+- `GET /api/seasons/:id/rankings/:category`
+- `GET /api/seasons/hall-of-fame?seasonId=1&category=casino_loss`
+- `GET /api/seasons/:id/hall-of-fame`
+- `GET /api/me/season-summary`
+
+관리자 API:
+
+- `GET /api/admin/seasons`
+- `POST /api/admin/seasons`
+- `PATCH /api/admin/seasons/:id`
+- `POST /api/admin/seasons/:id/activate`
+- `POST /api/admin/seasons/:id/end`
+- `GET /api/admin/seasons/:id/preview-rankings`
+- `POST /api/admin/seasons/:id/generate-hall-of-fame`
+
+시즌 종료 시 각 카테고리 top 3 기록을 `season_hall_of_fame`에 고정 저장합니다. 기록에는 표시 이름, 닉네임, 칭호, 아바타, 꾸미기 스냅샷이 포함되므로 이후 프로필이 바뀌어도 종료 시점의 표시를 유지할 수 있습니다.
+
+초기 seed는 `season_1`을 활성 시즌으로 추가하지만, 기존 시즌을 덮어쓰지 않습니다. 활성 시즌은 동시에 하나만 허용됩니다. 운영 환경에서 MVP 1.5를 적용할 때 Supabase SQL Editor에서 다음 순서로 다시 실행하세요.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
 ## MVP 1.4 꾸미기 상점
 
 `/cosmetics.html`에서 포인트로 프로필 테두리, 프로필 배경, 닉네임 색상을 구매하고 장착할 수 있습니다. 장착 효과는 프로필, 거주민 목록, dashboard 카드, 랭킹, 게시글 작성자, 댓글 작성자에 가볍게 반영됩니다.

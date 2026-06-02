@@ -9,6 +9,7 @@ const {
   equipCosmetic,
   unequipCosmetic
 } = require('../services/cosmetics.service');
+const { getMySeasonSummary } = require('../services/seasons.service');
 
 const router = express.Router();
 
@@ -126,6 +127,10 @@ router.get('/transactions', authRequired, async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 30, 1), 100);
   const transactions = await getTransactions(req.user.id, limit);
   return res.json({ success: true, transactions });
+});
+
+router.get('/season-summary', authRequired, async (req, res) => {
+  return res.json({ success: true, ...(await getMySeasonSummary(req.user.id)) });
 });
 
 router.get('/titles', authRequired, async (req, res) => {

@@ -214,6 +214,24 @@ function renderLeaderboard(leaderboard) {
   `).join('') || '<p class="empty-state">아직 랭킹이 비어 있습니다.</p>';
 }
 
+function renderSeasonSummary(summary) {
+  const card = document.querySelector('#season-summary-card');
+  if (!summary?.season) {
+    card.innerHTML = '<h2>현재 시즌 랭킹</h2><p class="empty-state">진행 중인 시즌이 없습니다.</p>';
+    return;
+  }
+  const earned = summary.rankings.pointEarned || [];
+  const activity = summary.rankings.activityScore || [];
+  card.innerHTML = `
+    <div class="section-heading"><h2>${escapeHtml(summary.season.name)}</h2><a class="meta" href="/seasons.html">전체 랭킹 보기</a></div>
+    <p class="meta">${escapeHtml(summary.season.startsAt)} ~ ${escapeHtml(summary.season.endsAt)}</p>
+    <div class="season-dashboard-grid">
+      <div><strong>포인트 획득 TOP 3</strong>${earned.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+      <div><strong>활동 종합 TOP 3</strong>${activity.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+    </div>
+  `;
+}
+
 async function loadDashboard() {
   const message = document.querySelector('#dashboard-message');
 
@@ -229,6 +247,7 @@ async function loadDashboard() {
     renderFeed(data.recentFeed);
     renderAchievements(data.recentAchievements);
     renderCasinoResults(data.recentCasinoResults || []);
+    renderSeasonSummary(data.seasonSummary);
     await loadDailyMissions();
   } catch (error) {
     console.error('대시보드 로딩 실패', error);

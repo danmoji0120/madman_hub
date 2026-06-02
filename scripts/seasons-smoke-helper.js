@@ -1,0 +1,118 @@
+const assert = require('assert');
+const { provider, run } = require('../server/db');
+const { getSupabaseAdminClient } = require('../server/supabaseClient');
+
+async function cleanupSeason(seasonId) {
+  if (!seasonId) return;
+  if (provider === 'supabase') {
+    const client = getSupabaseAdminClient();
+    const { error: hallError } = await client.from('season_hall_of_fame').delete().eq('season_id', seasonId);
+    if (hallError) throw hallError;
+    const { error: seasonError } = await client.from('seasons').delete().eq('id', seasonId);
+    if (seasonError) throw seasonError;
+    return;
+  }
+  await run('DELETE FROM season_hall_of_fame WHERE season_id = ?', [seasonId]);
+  await run('DELETE FROM seasons WHERE id = ?', [seasonId]);
+}
+
+async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
+  let createdSeasonId;
+  try {
+    const seasons = await request('/api/seasons');
+    assert.ok(Array.isArray(seasons.seasons));
+    assert.ok(seasons.currentSeason);
+    assert.ok(seasons.categories.some((category) => category.code === 'activity_score'));
+    assert.ok(seasons.categories.some((category) => category.code === 'casino_loss'));
+    assert.ok(seasons.categories.some((category) => category.code === 'cosmetic_spent'));
+    const current = await request('/api/seasons/current');
+    assert.strictEqual(current.season.id, seasons.currentSeason.id);
+    const activeSeasons = await request('/api/seasons?status=active');
+    assert.ok(activeSeasons.seasons.every((season) => season.status === 'active'));
+    const detail = await request(`/api/seasons/${current.season.id}`);
+    assert.strictEqual(detail.season.code, current.season.code);
+    const summary = await request('/api/seasons/current/rankings?limit=3');
+    assert.strictEqual(summary.season.id, current.season.id);
+    assert.ok(Array.isArray(summary.rankings.pointEarned));
+    assert.deepStrictEqual(summary.rankings.pointEarned, summary.rankings.point_earned);
+
+    const earned = await request('/api/seasons/current?category=point_earned');
+    assert.strictEqual(earned.category.code, 'point_earned');
+    assert.ok(earned.rankings.some((entry) => entry.userId === userId && entry.score > 0));
+    assert.ok(earned.rankings.every((entry) => entry.formattedScore.endsWith('P')));
+    const categoryEarned = await request('/api/seasons/current/rankings/point_earned?limit=3&offset=0');
+    assert.ok(categoryEarned.rankings.some((entry) => entry.userId === userId));
+    await request('/api/seasons/current/rankings/not_real', {}, 400);
+    await request('/api/seasons/current/rankings/point_earned?offset=-1', {}, 400);
+    const mySummary = await request('/api/me/season-summary', { headers: auth });
+    assert.strictEqual(mySummary.season.id, current.season.id);
+    assert.ok(mySummary.stats.point_earned > 0);
+
+    await request('/api/admin/seasons', { headers: auth }, 403);
+    const now = Date.now();
+    const code = `${runPrefix}season`.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 55);
+    const created = await request('/api/admin/seasons', {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({
+        code,
+        name: `${runPrefix} season`,
+        description: 'season smoke',
+        startsAt: new Date(now - 60 * 60 * 1000).toISOString(),
+        endsAt: new Date(now + 60 * 60 * 1000).toISOString()
+      })
+    }, 201);
+    createdSeasonId = created.season.id;
+    assert.strictEqual(created.season.status, 'scheduled');
+
+    await request('/api/admin/seasons', {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({
+        code,
+        name: 'duplicate',
+        startsAt: new Date(now - 60 * 60 * 1000).toISOString(),
+        endsAt: new Date(now + 60 * 60 * 1000).toISOString()
+      })
+    }, 409);
+
+    const updated = await request(`/api/admin/seasons/${createdSeasonId}`, {
+      method: 'PATCH',
+      headers: ownerAuth,
+      body: JSON.stringify({ description: 'season smoke updated' })
+    });
+    assert.strictEqual(updated.season.description, 'season smoke updated');
+    const preview = await request(`/api/admin/seasons/${createdSeasonId}/preview-rankings?limit=3`, { headers: ownerAuth });
+    assert.ok(Array.isArray(preview.rankings.pointEarned));
+
+    await request(`/api/admin/seasons/${createdSeasonId}/activate`, { method: 'POST', headers: ownerAuth }, 409);
+    const ended = await request(`/api/admin/seasons/${createdSeasonId}/end`, { method: 'POST', headers: ownerAuth });
+    assert.strictEqual(ended.season.status, 'ended');
+    assert.ok(ended.hallOfFameEntries > 0);
+
+    const hall = await request(`/api/seasons/hall-of-fame?seasonId=${createdSeasonId}&category=point_earned`);
+    assert.strictEqual(hall.season.status, 'ended');
+    assert.ok(hall.entries.some((entry) => entry.userId === userId && entry.score > 0));
+    assert.ok(hall.entries.every((entry) => entry.metadata.nickname));
+    assert.ok(hall.entries.every((entry) => entry.formattedScore.endsWith('P')));
+    const hallBySeason = await request(`/api/seasons/${createdSeasonId}/hall-of-fame?category=point_earned`);
+    assert.deepStrictEqual(hallBySeason.entries, hall.entries);
+    const hallSummary = await request('/api/seasons/hall-of-fame');
+    assert.ok(hallSummary.seasons.some((season) => season.id === createdSeasonId));
+    const allHall = await request(`/api/seasons/${createdSeasonId}/hall-of-fame`);
+    const hallCounts = allHall.entries.reduce((counts, entry) => {
+      counts[entry.category] = (counts[entry.category] || 0) + 1;
+      return counts;
+    }, {});
+    assert.ok(Object.values(hallCounts).every((count) => count <= 3));
+    const regenerated = await request(`/api/admin/seasons/${createdSeasonId}/generate-hall-of-fame`, {
+      method: 'POST', headers: ownerAuth
+    });
+    assert.ok(regenerated.hallOfFameEntries > 0);
+    await request(`/api/admin/seasons/${createdSeasonId}/activate`, { method: 'POST', headers: ownerAuth }, 409);
+  } finally {
+    await cleanupSeason(createdSeasonId);
+  }
+}
+
+module.exports = { runSeasonsSmoke };

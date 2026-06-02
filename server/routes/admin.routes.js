@@ -26,6 +26,15 @@ const {
   updateAdminCosmetic,
   setAdminCosmeticActive
 } = require('../services/cosmetics.service');
+const {
+  getPublicSeasons,
+  createAdminSeason,
+  updateAdminSeason,
+  activateAdminSeason,
+  endAdminSeason,
+  previewAdminSeasonRankings,
+  generateAdminHallOfFame
+} = require('../services/seasons.service');
 
 const router = express.Router();
 const allowedRoles = ['owner', 'admin', 'member', 'guest'];
@@ -248,6 +257,49 @@ safe('patch', '/cosmetics/:id', async (req, res) => {
 
 safe('patch', '/cosmetics/:id/active', async (req, res) => {
   return res.json({ success: true, item: await setAdminCosmeticActive(parseId(req.params.id, 'cosmetic id'), req.body.isActive) });
+});
+
+safe('get', '/seasons', async (req, res) => {
+  return res.json({ success: true, ...(await getPublicSeasons()) });
+});
+
+safe('post', '/seasons', async (req, res) => {
+  return res.status(201).json({ success: true, season: await createAdminSeason(req.user, req.body) });
+});
+
+safe('patch', '/seasons/:id', async (req, res) => {
+  return res.json({
+    success: true,
+    season: await updateAdminSeason(req.user, parseId(req.params.id, 'season id'), req.body)
+  });
+});
+
+safe('post', '/seasons/:id/activate', async (req, res) => {
+  return res.json({
+    success: true,
+    season: await activateAdminSeason(req.user, parseId(req.params.id, 'season id'))
+  });
+});
+
+safe('post', '/seasons/:id/end', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await endAdminSeason(req.user, parseId(req.params.id, 'season id')))
+  });
+});
+
+safe('get', '/seasons/:id/preview-rankings', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await previewAdminSeasonRankings(parseId(req.params.id, 'season id'), parseLimit(req.query.limit, 5)))
+  });
+});
+
+safe('post', '/seasons/:id/generate-hall-of-fame', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await generateAdminHallOfFame(req.user, parseId(req.params.id, 'season id')))
+  });
 });
 
 safe('post', '/titles', async (req, res) => {

@@ -23,6 +23,7 @@ const casinoRoutes = require('./routes/casino.routes');
 const songsRoutes = require('./routes/songs.routes');
 const missionsRoutes = require('./routes/missions.routes');
 const cosmeticsRoutes = require('./routes/cosmetics.routes');
+const seasonsRoutes = require('./routes/seasons.routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -53,6 +54,7 @@ app.use('/api/casino', casinoRoutes);
 app.use('/api/songs', songsRoutes);
 app.use('/api/missions', missionsRoutes);
 app.use('/api/cosmetics', cosmeticsRoutes);
+app.use('/api/seasons', seasonsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: '찾을 수 없는 경로입니다.' });

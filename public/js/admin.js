@@ -1,6 +1,7 @@
 const adminMessage = document.querySelector('#admin-message');
 let loadedAdminTitles = [];
 let loadedAdminCosmetics = [];
+let loadedAdminSeasons = [];
 
 function showAdminMessage(message = '') {
   adminMessage.textContent = message;
@@ -27,7 +28,11 @@ function adminActionText(action) {
     admin_title_created: '칭호 생성',
     admin_title_updated: '칭호 수정',
     admin_title_disabled: '칭호 비활성화',
-    admin_title_enabled: '칭호 활성화'
+    admin_title_enabled: '칭호 활성화',
+    admin_season_created: '시즌 생성',
+    admin_season_updated: '시즌 수정',
+    admin_season_ended: '시즌 종료',
+    admin_season_hall_of_fame_generated: '명예의 전당 재생성'
   };
   return labels[action] || action;
 }
@@ -314,6 +319,89 @@ async function toggleCosmetic(id, isActive) {
   } catch (error) { showAdminMessage(error.message); }
 }
 
+async function loadAdminSeasons() {
+  try {
+    const data = await API.request('/api/admin/seasons');
+    loadedAdminSeasons = data.seasons;
+    document.querySelector('#admin-seasons').innerHTML = data.seasons.map((season) => `
+      <tr>
+        <td>${season.id}</td>
+        <td><strong>${API.escape(season.name)}</strong><br /><span class="meta">${API.escape(season.code)} · ${API.escape(season.description || '-')}</span></td>
+        <td><span class="meta">${API.escape(season.startsAt)}<br />${API.escape(season.endsAt)}</span></td>
+        <td>${season.isActive ? '<span class="status-active">active</span>' : API.escape(season.status)}</td>
+        <td>
+          <button class="button secondary small-button" onclick="editSeason(${season.id})">수정</button>
+          <button class="button secondary small-button" onclick="previewSeason(${season.id})">미리보기</button>
+          ${season.status === 'scheduled' ? `<button class="button secondary small-button" onclick="activateSeason(${season.id})">활성화</button>` : ''}
+          ${!['ended', 'archived'].includes(season.status) ? `<button class="button secondary small-button danger-button" onclick="endSeason(${season.id})">종료</button>` : ''}
+          ${['ended', 'archived'].includes(season.status) ? `<button class="button secondary small-button" onclick="regenerateHallOfFame(${season.id})">명예의 전당 재생성</button>` : ''}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5">등록된 시즌 없음</td></tr>';
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function createSeason(event) {
+  event.preventDefault();
+  try {
+    await API.request('/api/admin/seasons', { method: 'POST', body: JSON.stringify({
+      code: document.querySelector('#new-season-code').value.trim(),
+      name: document.querySelector('#new-season-name').value.trim(),
+      description: document.querySelector('#new-season-description').value.trim(),
+      startsAt: document.querySelector('#new-season-start').value,
+      endsAt: document.querySelector('#new-season-end').value
+    }) });
+    event.target.reset();
+    showAdminMessage('시즌을 생성했습니다.');
+    await loadAdminSeasons();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function editSeason(id) {
+  const season = loadedAdminSeasons.find((item) => item.id === id);
+  if (!season) return;
+  const name = prompt('시즌 이름', season.name); if (name === null) return;
+  const description = prompt('시즌 설명', season.description || ''); if (description === null) return;
+  try {
+    await API.request(`/api/admin/seasons/${id}`, { method: 'PATCH', body: JSON.stringify({ name, description }) });
+    showAdminMessage('시즌을 수정했습니다.');
+    await loadAdminSeasons();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function activateSeason(id) {
+  try {
+    await API.request(`/api/admin/seasons/${id}/activate`, { method: 'POST' });
+    showAdminMessage('시즌을 활성화했습니다.');
+    await loadAdminSeasons();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function endSeason(id) {
+  if (!confirm('시즌을 종료하고 명예의 전당을 확정할까요?')) return;
+  try {
+    await API.request(`/api/admin/seasons/${id}/end`, { method: 'POST' });
+    showAdminMessage('시즌을 종료하고 명예의 전당을 저장했습니다.');
+    await loadAdminSeasons();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function previewSeason(id) {
+  try {
+    const data = await API.request(`/api/admin/seasons/${id}/preview-rankings?limit=3`);
+    const earned = data.rankings.pointEarned || [];
+    showAdminMessage(`시즌 미리보기: 포인트 획득 TOP ${earned.length} · ${earned.map((item) => `${item.nickname} ${item.formattedScore}`).join(', ') || '기록 없음'}`);
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function regenerateHallOfFame(id) {
+  if (!confirm('저장된 명예의 전당을 현재 집계로 다시 생성할까요?')) return;
+  try {
+    const data = await API.request(`/api/admin/seasons/${id}/generate-hall-of-fame`, { method: 'POST' });
+    showAdminMessage(`명예의 전당 ${data.hallOfFameEntries}개 기록을 다시 저장했습니다.`);
+  } catch (error) { showAdminMessage(error.message); }
+}
+
 async function createTitle(event) {
   event.preventDefault();
   try {
@@ -373,7 +461,7 @@ async function toggleTitle(titleId, isActive) {
 }
 
 async function refreshAdmin() {
-  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics()]);
+  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics(), loadAdminSeasons()]);
 }
 
 refreshAdmin();

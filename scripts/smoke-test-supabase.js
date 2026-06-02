@@ -32,6 +32,7 @@ const { runCommunitySmoke } = require('./community-smoke-helper');
 const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
 const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
+const { runSeasonsSmoke } = require('./seasons-smoke-helper');
 const baseUrl = `http://127.0.0.1:${process.env.PORT}`;
 
 async function request(route, options = {}, expectedStatus = 200) {
@@ -290,10 +291,12 @@ async function main() {
     await runCosmeticsSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
     console.log('Supabase smoke stage: songs-missions');
     await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix });
+    console.log('Supabase smoke stage: seasons');
+    await runSeasonsSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
 
     console.log('Supabase smoke test passed.');
   } catch (error) {
-    if (!error.message.includes('Supabase RPC is not ready')) {
+    if (!error.message.includes('Supabase RPC is not ready') && !error.message.includes('Supabase schema is not ready')) {
       await logAdminDebug().catch((debugError) => console.error('Supabase admin debug failed:', debugError));
     }
     throw error;

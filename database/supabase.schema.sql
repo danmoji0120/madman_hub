@@ -252,6 +252,31 @@ CREATE TABLE IF NOT EXISTS game_results (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS seasons (
+  id BIGSERIAL PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'active', 'ended', 'archived')),
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS season_hall_of_fame (
+  id BIGSERIAL PRIMARY KEY,
+  season_id BIGINT NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  user_id BIGINT NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(season_id, category, rank)
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at DESC);
@@ -268,6 +293,9 @@ CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recom
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date);
 CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
+CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
+CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);
 
 -- Service Role access is server-only. RLS policies will be designed when
 -- Supabase Auth is introduced. Do not expose the Service Role key to clients.

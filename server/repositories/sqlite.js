@@ -148,6 +148,26 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date)');
   await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code)');
+  await run(
+    `CREATE TABLE IF NOT EXISTS seasons (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
+       description TEXT DEFAULT '', starts_at TEXT NOT NULL, ends_at TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'scheduled', is_active INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS season_hall_of_fame (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, season_id INTEGER NOT NULL, category TEXT NOT NULL,
+       rank INTEGER NOT NULL, user_id INTEGER NOT NULL, score INTEGER NOT NULL DEFAULT 0,
+       metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE(season_id, category, rank),
+       FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
+     )`
+  );
+  await run('CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = 1');
+  await run('CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at, ends_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank)');
 }
 
 async function initDatabase() {
