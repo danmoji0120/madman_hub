@@ -2,6 +2,25 @@ const assert = require('assert');
 const { provider, run } = require('../server/db');
 const { getSupabaseAdminClient } = require('../server/supabaseClient');
 
+const POINT_CATEGORIES = new Set(['point_earned', 'point_spent', 'net_points', 'casino_profit', 'casino_loss', 'cosmetic_spent']);
+const COUNT_CATEGORIES = new Set(['casino_plays', 'post_count', 'comment_count', 'song_count', 'daily_mission_count', 'attendance_count', 'activity_score']);
+
+function assertFormattedPointScore(value) {
+  assert.strictEqual(typeof value, 'string');
+  assert.match(value, /^-?\d{1,3}(,\d{3})* P$/);
+  assert.ok(!/\dP/.test(value));
+}
+
+function assertFormattedCountScore(value) {
+  assert.strictEqual(typeof value, 'string');
+  assert.match(value, /^-?\d{1,3}(,\d{3})*회$/);
+}
+
+function assertFormattedRankingScore(entry) {
+  if (POINT_CATEGORIES.has(entry.category)) return assertFormattedPointScore(entry.formattedScore);
+  if (COUNT_CATEGORIES.has(entry.category)) return assertFormattedCountScore(entry.formattedScore);
+}
+
 async function cleanupSeason(seasonId) {
   if (!seasonId) return;
   if (provider === 'supabase') {
@@ -38,7 +57,7 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
 
     const earned = await request('/api/seasons/current?category=point_earned&limit=50');
     assert.strictEqual(earned.category.code, 'point_earned');
-    assert.ok(earned.rankings.every((entry) => entry.formattedScore.endsWith('P')));
+    earned.rankings.forEach(assertFormattedRankingScore);
     const categoryEarned = await request('/api/seasons/current/rankings/point_earned?limit=50&offset=0');
     assert.deepStrictEqual(categoryEarned.rankings, earned.rankings);
     await request('/api/seasons/current/rankings/not_real', {}, 400);
@@ -86,6 +105,8 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     assert.strictEqual(updated.season.description, 'season smoke updated');
     const preview = await request(`/api/admin/seasons/${createdSeasonId}/preview-rankings?limit=3`, { headers: ownerAuth });
     assert.ok(Array.isArray(preview.rankings.pointEarned));
+    preview.rankings.pointEarned.forEach(assertFormattedRankingScore);
+    preview.rankings.activityScore.forEach(assertFormattedRankingScore);
 
     await request(`/api/admin/seasons/${createdSeasonId}/activate`, { method: 'POST', headers: ownerAuth }, 409);
     const ended = await request(`/api/admin/seasons/${createdSeasonId}/end`, { method: 'POST', headers: ownerAuth });
@@ -96,7 +117,7 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     assert.strictEqual(hall.season.status, 'ended');
     assert.ok(hall.entries.some((entry) => entry.userId === userId && entry.score > 0));
     assert.ok(hall.entries.every((entry) => entry.metadata.nickname));
-    assert.ok(hall.entries.every((entry) => entry.formattedScore.endsWith('P')));
+    hall.entries.forEach(assertFormattedRankingScore);
     const hallBySeason = await request(`/api/seasons/${createdSeasonId}/hall-of-fame?category=point_earned`);
     assert.deepStrictEqual(hallBySeason.entries, hall.entries);
     const hallSummary = await request('/api/seasons/hall-of-fame');

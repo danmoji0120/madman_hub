@@ -9,7 +9,7 @@ async function loadMembers() {
       <h3>${renderTitleBadge(member)}</h3>
       <p>${API.escape(member.bio || '설명 없음')}</p>
       <p class="meta">위험도: ${'★'.repeat(member.danger_level || 1)}</p>
-      <p class="point">${member.balance || 0}P</p>
+      <p class="point">${formatPoints(member.balance || 0)}</p>
     </article>
   `).join('');
 }

@@ -58,7 +58,7 @@ function renderGames(games) {
   document.querySelector('#casino-games').innerHTML = games.map((game) => {
     const rows = game.payoutTable
       ? game.payoutTable.map((item) => `<li>${casinoEscape(item.label)}${item.weight ? ` · ${casinoEscape(item.weight)}%` : ` · ${casinoEscape(item.multiplier)}x`}</li>`).join('')
-      : Object.entries(game.rewardTable || {}).map(([count, payout]) => `<li>${casinoEscape(count)}회 생존 · ${casinoEscape(payout)}P</li>`).join('');
+      : Object.entries(game.rewardTable || {}).map(([count, payout]) => `<li>${casinoEscape(count)}회 생존 · ${casinoEscape(formatPoints(payout))}</li>`).join('');
     return `<article><strong>${casinoEscape(game.name)}</strong><p class="meta">${casinoEscape(game.rules)}</p><ul>${rows}</ul></article>`;
   }).join('');
 }
@@ -66,7 +66,7 @@ function renderGames(games) {
 async function loadCasinoAccount() {
   if (!API.token) return;
   const data = await API.request('/api/casino/me/limits');
-  document.querySelector('#casino-points').textContent = `${data.account.balance}P`;
+  document.querySelector('#casino-points').textContent = formatPoints(data.account.balance);
   document.querySelector('#casino-limit-note').textContent = `오늘 ${data.totalPlayed}회 플레이 · ${formatLimit(data.totalDailyLimit, data.totalRemaining)}`;
 }
 
@@ -76,7 +76,7 @@ async function loadCasinoHistory() {
   document.querySelector('#casino-history').innerHTML = data.results.map((item) => `
     <div class="casino-history-item">
       <strong>${casinoEscape(item.gameCode)}</strong>
-      <span>${casinoEscape(item.result)} · 베팅 ${casinoEscape(item.betAmount)}P · 지급 ${casinoEscape(item.payoutAmount)}P · 순변동 ${casinoEscape(item.netAmount)}P</span>
+      <span>${casinoEscape(item.result)} · 베팅 ${casinoEscape(formatPoints(item.betAmount))} · 지급 ${casinoEscape(formatPoints(item.payoutAmount))} · 순변동 ${casinoEscape(formatPoints(item.netAmount))}</span>
     </div>
   `).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>';
 }
@@ -88,7 +88,7 @@ async function playRoulette(button) {
       body: JSON.stringify({ betAmount: inputAmount('#roulette-bet') })
     });
     document.querySelector('.roulette-wheel').textContent = data.result.label;
-    document.querySelector('#roulette-result').textContent = `${data.result.label} · 지급 ${data.result.payoutAmount}P · 순변동 ${data.result.netAmount}P`;
+    document.querySelector('#roulette-result').textContent = `${data.result.label} · 지급 ${formatPoints(data.result.payoutAmount)} · 순변동 ${formatPoints(data.result.netAmount)}`;
   });
 }
 
@@ -118,7 +118,7 @@ async function hitBlackjack(button) {
   await withButton(button, async () => {
     const data = await API.request(`/api/casino/dice-blackjack/${blackjackSessionId}/hit`, { method: 'POST' });
     renderBlackjack(data.session);
-    document.querySelector('#blackjack-result').textContent = data.result ? `${data.result.result} · 지급 ${data.result.payoutAmount}P` : '계속 진행 중';
+    document.querySelector('#blackjack-result').textContent = data.result ? `${data.result.result} · 지급 ${formatPoints(data.result.payoutAmount)}` : '계속 진행 중';
     if (data.result) {
       blackjackSessionId = null;
       syncBlackjackControls();
@@ -131,7 +131,7 @@ async function standBlackjack(button) {
   await withButton(button, async () => {
     const data = await API.request(`/api/casino/dice-blackjack/${blackjackSessionId}/stand`, { method: 'POST' });
     renderBlackjack(data.session);
-    document.querySelector('#blackjack-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+    document.querySelector('#blackjack-result').textContent = `${data.result.result} · 지급 ${formatPoints(data.result.payoutAmount)}`;
     blackjackSessionId = null;
     syncBlackjackControls();
   });
@@ -162,7 +162,7 @@ async function cashoutCrash(button) {
     crashInterval = null;
     crashSessionId = null;
     document.querySelector('#crash-value').textContent = `${data.result.cashoutMultiplier.toFixed(2)}x`;
-    document.querySelector('#crash-result').textContent = `${data.result.outcome} · 크래시 ${data.result.crashMultiplier}x · 지급 ${data.result.payoutAmount}P`;
+    document.querySelector('#crash-result').textContent = `${data.result.outcome} · 크래시 ${data.result.crashMultiplier}x · 지급 ${formatPoints(data.result.payoutAmount)}`;
   });
 }
 
@@ -171,7 +171,7 @@ function renderRussian(session) {
   document.querySelector('#russian-chambers').innerHTML = Array.from({ length: 6 }, (_, index) => (
     `<span class="chamber ${index < state.survivedCount ? 'safe' : ''}">${index + 1}</span>`
   )).join('');
-  document.querySelector('#russian-result').textContent = `${state.survivedCount}회 생존 · 지금 멈추면 ${state.cashoutReward}P`;
+  document.querySelector('#russian-result').textContent = `${state.survivedCount}회 생존 · 지금 멈추면 ${formatPoints(state.cashoutReward)}`;
 }
 
 async function startRussian(button) {
@@ -189,7 +189,7 @@ async function pullRussian(button) {
     const data = await API.request(`/api/casino/russian-roulette/${russianSessionId}/pull`, { method: 'POST' });
     renderRussian(data.session);
     if (data.result) {
-      document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+      document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${formatPoints(data.result.payoutAmount)}`;
       russianSessionId = null;
     }
     syncRussianControls(data.session);
@@ -201,7 +201,7 @@ async function cashoutRussian(button) {
   await withButton(button, async () => {
     const data = await API.request(`/api/casino/russian-roulette/${russianSessionId}/cashout`, { method: 'POST' });
     renderRussian(data.session);
-    document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${data.result.payoutAmount}P`;
+    document.querySelector('#russian-result').textContent = `${data.result.result} · 지급 ${formatPoints(data.result.payoutAmount)}`;
     russianSessionId = null;
     syncRussianControls(data.session);
   });

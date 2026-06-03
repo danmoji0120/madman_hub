@@ -68,7 +68,7 @@ function renderTitles(data) {
 function renderTransactions(transactions) {
   document.querySelector('#transactions').innerHTML = transactions.map((item) => `
     <div class="transaction-item">
-      <strong>${item.amount > 0 ? '+' : ''}${item.amount}P</strong>
+      <strong>${formatSignedPoints(item.amount)}</strong>
       <p>${API.escape(item.reason)}</p>
       <p class="meta">${API.escape(item.type)} · ${API.escape(item.created_at)}</p>
     </div>
@@ -86,7 +86,7 @@ function renderAchievements(data) {
       <span class="reward-badge">${item.unlocked ? '달성' : '미달성'}</span>
       <h3>${API.escape(item.name)}</h3>
       <p>${API.escape(item.description || '')}</p>
-      <p class="meta">보상 ${item.reward_points}P</p>
+      <p class="meta">보상 ${formatPoints(item.reward_points)}</p>
     </article>
   `).join('') || '<p class="empty-state">업적이 없습니다.</p>';
 }
@@ -106,7 +106,7 @@ async function loadProfile() {
     renderTransactions(tx.transactions);
     renderAchievements(achievementData);
     renderCosmetics(cosmeticsData);
-    document.querySelector('#points-card .point').textContent = `${data.points.balance}P`;
+    document.querySelector('#points-card .point').textContent = formatPoints(data.points.balance);
   } catch (error) {
     location.href = '/login.html';
   }

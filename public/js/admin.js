@@ -51,7 +51,7 @@ async function loadOverview() {
     const metrics = [
       ['총 유저', data.totalUsers],
       ['관리자', data.totalAdmins],
-      ['전체 포인트', `${data.totalPointBalance}P`],
+      ['전체 포인트', formatPoints(data.totalPointBalance)],
       ['포인트 거래', data.totalPointTransactions],
       ['게시글', `${data.totalQuotes} / 숨김 ${data.hiddenQuotes}`],
       ['방명록', `${data.totalGuestbookEntries} / 숨김 ${data.hiddenGuestbookEntries}`],
@@ -66,7 +66,7 @@ async function loadOverview() {
       <div><strong>${API.escape(item.display_name)}</strong> · ${API.escape(item.role)}<br /><span class="meta">${API.escape(item.email)} · ${API.escape(item.created_at)}</span></div>
     `).join('') || '<p class="empty-state">내역 없음</p>';
     document.querySelector('#recent-transactions').innerHTML = data.recentTransactions.map((item) => `
-      <div><strong>${API.escape(item.display_name)} ${item.amount > 0 ? '+' : ''}${item.amount}P</strong> · ${API.escape(item.reason)}</div>
+      <div><strong>${API.escape(item.display_name)} ${formatSignedPoints(item.amount)}</strong> · ${API.escape(item.reason)}</div>
     `).join('') || '<p class="empty-state">내역 없음</p>';
     document.querySelector('#recent-title-purchases').innerHTML = data.recentTitlePurchases.map((item) => `
       <div><strong>${API.escape(item.display_name)}</strong> · ${API.escape(item.reason)}</div>
@@ -100,7 +100,7 @@ async function loadAdminUsers() {
         <td>${user.id}</td>
         <td><strong>${API.escape(user.nickname || user.display_name)}</strong><br /><span class="meta">${API.escape(user.email)}<br />가입 ${API.escape(user.created_at)}<br />로그인 ${API.escape(user.last_login_at || '-')}</span></td>
         <td>${renderTitleBadge(user, { allowEmpty: true }) || '-'}<br /><span class="meta">보유 ${user.owned_title_count}</span></td>
-        <td>${user.balance}P<br /><span class="meta">획득 ${user.total_earned} / 사용 ${user.total_spent}</span></td>
+        <td>${formatPoints(user.balance)}<br /><span class="meta">획득 ${formatPoints(user.total_earned)} / 사용 ${formatPoints(user.total_spent)}</span></td>
         <td><span class="meta">게시글 ${user.quote_count}<br />방명록 ${user.guestbook_count}</span></td>
         <td><select class="input compact-input" id="role-${user.id}">${options(user.role)}</select><button class="button secondary small-button" onclick="updateRole(${user.id})">적용</button></td>
       </tr>
@@ -262,7 +262,7 @@ async function loadAdminTitles() {
       <tr class="${title.is_active ? '' : 'status-inactive'}">
         <td>${title.id}</td>
         <td>${renderTitleBadge(title, { showRarityLabel: true })}<br /><strong>${API.escape(title.name)}</strong><br /><span class="meta">${API.escape(title.description || '-')}</span><br /><span class="meta">${API.escape(title.category || 'shop')} · ${API.escape(title.sourceType || title.source_type || 'purchase')} · ${title.isRewardOnly ? 'reward only' : 'purchasable'}</span></td>
-        <td>${title.price}P</td>
+        <td>${formatPoints(title.price)}</td>
         <td>${title.owner_count}</td>
         <td>${title.is_active ? '<span class="status-active">활성</span>' : '비활성'}<br /><span class="meta">${API.escape(title.updated_at || '-')}</span></td>
         <td><button class="button secondary small-button" onclick="editTitle(${title.id})">수정</button>
@@ -285,7 +285,7 @@ async function loadAdminCosmetics() {
       <tr class="${item.isActive ? '' : 'status-inactive'}">
         <td>${item.id}</td><td><strong>${API.escape(item.name)}</strong><br /><span class="meta">${API.escape(item.code)} · ${API.escape(item.cssClass)}</span></td>
         <td>${API.escape(item.type)}<br /><span class="badge">${API.escape(item.rarity)}</span></td>
-        <td>${item.price}P</td><td>${item.isActive ? '활성' : '비활성'}</td>
+        <td>${formatPoints(item.price)}</td><td>${item.isActive ? '활성' : '비활성'}</td>
         <td><button class="button secondary small-button" onclick="editCosmetic(${item.id})">수정</button>
         <button class="button secondary small-button ${item.isActive ? 'danger-button' : ''}" onclick="toggleCosmetic(${item.id}, ${!item.isActive})">${item.isActive ? '비활성화' : '활성화'}</button></td>
       </tr>
@@ -394,7 +394,7 @@ async function previewSeason(id) {
   try {
     const data = await API.request(`/api/admin/seasons/${id}/preview-rankings?limit=3`);
     const earned = data.rankings.pointEarned || [];
-    showAdminMessage(`시즌 미리보기: 포인트 획득 TOP ${earned.length} · ${earned.map((item) => `${item.nickname} ${item.formattedScore}`).join(', ') || '기록 없음'}`);
+    showAdminMessage(`시즌 미리보기: 포인트 획득 TOP ${earned.length} · ${earned.map((item) => `${item.nickname} ${formatRankingScore(item.category, item.score)}`).join(', ') || '기록 없음'}`);
   } catch (error) { showAdminMessage(error.message); }
 }
 

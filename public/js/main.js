@@ -40,11 +40,11 @@ function renderMyStatus(me) {
     <a class="meta" href="/cosmetics.html">꾸미기 상점 보기</a>
     <div class="stat-row">
       <span>보유 포인트</span>
-      <strong class="point">${me.points.balance}P</strong>
+      <strong class="point">${formatPoints(me.points.balance)}</strong>
     </div>
     <p class="meta">${me.checkedInToday ? '오늘 출석 완료' : '오늘 출석 보상을 받을 수 있습니다.'}</p>
     <button class="button" onclick="checkIn()" ${me.checkedInToday ? 'disabled' : ''}>
-      ${me.checkedInToday ? '오늘 출석 완료' : '출석하고 10P 받기'}
+      ${me.checkedInToday ? '오늘 출석 완료' : `출석하고 ${formatPoints(10)} 받기`}
     </button>
   `;
 }
@@ -102,13 +102,13 @@ function renderDailyMissions(data) {
     <div class="section-heading"><h2>오늘의 관찰 과제</h2><span class="badge">${data.completedCount}/${data.totalCount}</span></div>
     <div class="mission-list">${data.missions.slice(0, 5).map((mission) => `
       <div class="mission-item">
-        <div><strong>${escapeHtml(mission.title)}</strong><br /><span class="meta">${mission.progress}/${mission.target} · ${mission.rewardPoints}P</span></div>
+        <div><strong>${escapeHtml(mission.title)}</strong><br /><span class="meta">${mission.progress}/${mission.target} · ${formatPoints(mission.rewardPoints)}</span></div>
         ${mission.completed && !mission.claimed ? `<button class="button secondary inline small-button" onclick="claimMission('${mission.code}')">보상 받기</button>` : `<span class="meta">${mission.claimed ? '수령 완료' : '진행 중'}</span>`}
       </div>
     `).join('')}</div>
     <div class="mission-list">${data.bonuses.map((bonus) => `
       <div class="mission-item">
-        <div><strong>${escapeHtml(bonus.title)}</strong><br /><span class="meta">보너스 ${bonus.rewardPoints}P</span></div>
+        <div><strong>${escapeHtml(bonus.title)}</strong><br /><span class="meta">보너스 ${formatPoints(bonus.rewardPoints)}</span></div>
         ${bonus.claimable && !bonus.claimed ? `<button class="button secondary inline small-button" onclick="claimMissionBonus('${bonus.code}')">보너스 받기</button>` : `<span class="meta">${bonus.claimed ? '수령 완료' : '조건 미달'}</span>`}
       </div>
     `).join('')}</div>
@@ -124,7 +124,7 @@ async function claimMission(code) {
   const message = document.querySelector('#dashboard-message');
   try {
     const data = await API.request(`/api/missions/daily/${code}/claim`, { method: 'POST' });
-    message.textContent = `미션 보상 ${data.rewardPoints}P를 받았습니다.`;
+    message.textContent = `미션 보상 ${formatPoints(data.rewardPoints)}를 받았습니다.`;
     await loadDashboard();
   } catch (error) {
     message.textContent = error.message;
@@ -135,7 +135,7 @@ async function claimMissionBonus(code) {
   const message = document.querySelector('#dashboard-message');
   try {
     const data = await API.request(`/api/missions/daily/bonus/${code}/claim`, { method: 'POST' });
-    message.textContent = `미션 보너스 ${data.rewardPoints}P를 받았습니다.`;
+    message.textContent = `미션 보너스 ${formatPoints(data.rewardPoints)}를 받았습니다.`;
     await loadDashboard();
   } catch (error) {
     message.textContent = error.message;
@@ -159,7 +159,7 @@ function feedText(item) {
   const metadata = item.metadata || {};
   const messages = {
     user_registered: `${name} 님이 격리소에 입장했습니다.`,
-    daily_checkin: `${name} 님이 출석하고 ${escapeHtml(metadata.rewardAmount || 10)}P를 받았습니다.`,
+    daily_checkin: `${name} 님이 출석하고 ${escapeHtml(formatPoints(metadata.rewardAmount || 10))}를 받았습니다.`,
     guestbook_posted: `${name} 님이 방명록을 남겼습니다.`,
     post_created: `${name} 님이 게시글을 작성했습니다.`,
     comment_created: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 게시글에 댓글을 남겼습니다.`,
@@ -171,9 +171,9 @@ function feedText(item) {
     song_recommended: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 노래를 추천했습니다.`,
     daily_missions_completed_all: `${name} 님이 오늘의 관찰 과제를 모두 완료했습니다.`
     ,
-    game_big_win: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 ${escapeHtml(metadata.payoutAmount || 0)}P를 획득했습니다.`,
-    game_jackpot: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 잭팟 ${escapeHtml(metadata.payoutAmount || 0)}P를 터뜨렸습니다.`,
-    game_big_loss: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 ${escapeHtml(metadata.betAmount || 0)}P를 잃었습니다.`,
+    game_big_win: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 ${escapeHtml(formatPoints(metadata.payoutAmount || 0))}를 획득했습니다.`,
+    game_jackpot: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 잭팟 ${escapeHtml(formatPoints(metadata.payoutAmount || 0))}를 터뜨렸습니다.`,
+    game_big_loss: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 ${escapeHtml(formatPoints(metadata.betAmount || 0))}를 잃었습니다.`,
     game_cashout: `${name} 님이 크래시 ${escapeHtml(metadata.multiplier || 0)}x에서 탈출했습니다.`,
     game_bust: `${name} 님이 ${escapeHtml(metadata.gameName || '카지노')}에서 터졌습니다.`
   };
@@ -200,7 +200,7 @@ function renderCasinoResults(items) {
   document.querySelector('#recent-casino-list').innerHTML = items.map((item) => `
     <div class="casino-history-item">
       <strong>${escapeHtml(item.nickname || item.display_name || '익명 거주민')} · ${escapeHtml(item.gameCode)}</strong>
-      <span>${escapeHtml(item.result)} · ${escapeHtml(item.netAmount)}P</span>
+      <span>${escapeHtml(item.result)} · ${escapeHtml(formatPoints(item.netAmount))}</span>
     </div>
   `).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>';
 }
@@ -211,7 +211,7 @@ function renderLeaderboard(leaderboard) {
   root.innerHTML = leaderboard.map((member, index) => `
     <div class="rank-item">
       <strong class="${escapeHtml(member.cosmetics?.nicknameColorClass || '')}">${index + 1}. ${escapeHtml(member.nickname || member.display_name)}</strong>
-      <span>${member.balance}P</span>
+      <span>${formatPoints(member.balance)}</span>
     </div>
   `).join('') || '<p class="empty-state">아직 랭킹이 비어 있습니다.</p>';
 }
@@ -228,8 +228,8 @@ function renderSeasonSummary(summary) {
     <div class="section-heading"><h2>${escapeHtml(summary.season.name)}</h2><a class="meta" href="/seasons.html">전체 랭킹 보기</a></div>
     <p class="meta">${escapeHtml(summary.season.startsAt)} ~ ${escapeHtml(summary.season.endsAt)}</p>
     <div class="season-dashboard-grid">
-      <div><strong>포인트 획득 TOP 3</strong>${earned.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
-      <div><strong>활동 종합 TOP 3</strong>${activity.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+      <div><strong>포인트 획득 TOP 3</strong>${earned.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(formatRankingScore(item.category, item.score))}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+      <div><strong>활동 종합 TOP 3</strong>${activity.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(formatRankingScore(item.category, item.score))}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
     </div>
   `;
 }
@@ -262,7 +262,7 @@ async function checkIn() {
 
   try {
     const data = await API.request('/api/checkin', { method: 'POST' });
-    message.textContent = data.alreadyCheckedIn ? data.message : `출석 완료! ${data.rewardAmount}P를 받았습니다.`;
+    message.textContent = data.alreadyCheckedIn ? data.message : `출석 완료! ${formatPoints(data.rewardAmount)}를 받았습니다.`;
     await loadDashboard();
   } catch (error) {
     console.error('출석 처리 실패', error);

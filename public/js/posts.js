@@ -72,7 +72,7 @@ async function loadPosts() {
 async function loadCommunityConfig() {
   const data = await API.request('/api/posts/config');
   document.querySelector('#anonymous-post-cost').textContent = data.config.anonymousPostCost
-    ? `비용 ${data.config.anonymousPostCost}P`
+    ? `비용 ${formatPoints(data.config.anonymousPostCost)}`
     : '무료';
 }
 

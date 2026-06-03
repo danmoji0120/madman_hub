@@ -3,8 +3,7 @@ const { getSupabaseAdminClient } = require('../supabaseClient');
 const { decoratePublicUsers } = require('./cosmetics.repo');
 const { getTitleBadgesByNames, attachTitleBadge } = require('./titles.repo');
 const { SEASON_RANKING_CATEGORIES, getSeasonRankingCategory } = require('../config/seasons.config');
-
-const POINT_CATEGORIES = new Set(['point_earned', 'point_spent', 'net_points', 'casino_profit', 'casino_loss', 'cosmetic_spent']);
+const { formatRankingScore } = require('../utils/formatNumbers');
 
 function assertResult(result) {
   if (result.error) throw result.error;
@@ -62,7 +61,7 @@ async function decorateHallEntries(entries) {
 }
 
 function formatScore(category, score) {
-  return POINT_CATEGORIES.has(category) ? `${Number(score || 0)}P` : `${Number(score || 0)}회`;
+  return formatRankingScore(category, score);
 }
 
 async function listSeasons(status = '') {

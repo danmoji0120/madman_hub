@@ -47,7 +47,7 @@ async function loadCommunityConfig() {
   const data = await API.request('/api/posts/config');
   const root = document.querySelector('#anonymous-comment-cost');
   if (!root) return;
-  root.textContent = data.config.anonymousCommentCost ? `비용 ${data.config.anonymousCommentCost}P` : '무료';
+  root.textContent = data.config.anonymousCommentCost ? `비용 ${formatPoints(data.config.anonymousCommentCost)}` : '무료';
 }
 
 async function loadComments() {
@@ -68,7 +68,7 @@ async function submitComment(event) {
       })
     });
     event.target.reset();
-    postMessage.textContent = data.rewardAmount ? `댓글을 남겼습니다. ${data.rewardAmount}P를 받았습니다.` : '댓글을 남겼습니다.';
+    postMessage.textContent = data.rewardAmount ? `댓글을 남겼습니다. ${formatPoints(data.rewardAmount)}를 받았습니다.` : '댓글을 남겼습니다.';
     await loadComments();
   } catch (error) {
     postMessage.textContent = error.message;

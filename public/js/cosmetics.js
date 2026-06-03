@@ -20,7 +20,7 @@ function renderCosmetics(items) {
       <div class="cosmetic-preview ${API.escape(item.cssClass)}">${API.escape(item.previewText || item.name)}</div>
       <h2>${API.escape(item.name)}</h2>
       <p>${API.escape(item.description || '')}</p>
-      <p class="point">${item.price}P</p>
+      <p class="point">${formatPoints(item.price)}</p>
       ${renderActions(item)}
     </article>
   `).join('') || '<p class="empty-state">조건에 맞는 꾸미기 아이템이 없습니다.</p>';
@@ -38,7 +38,7 @@ async function loadCosmetics() {
   renderCosmetics(data.items);
   if (API.token) {
     const points = await API.request('/api/points/me');
-    document.querySelector('#cosmetics-points').textContent = `${points.account.balance}P`;
+    document.querySelector('#cosmetics-points').textContent = formatPoints(points.account.balance);
   }
 }
 

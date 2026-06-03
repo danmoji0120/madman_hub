@@ -23,7 +23,7 @@ function renderShop(titles) {
       ? '보유 중'
       : title.isRewardOnly || !title.isPurchasable
         ? '보상 전용'
-        : `${title.price}P로 구매`;
+        : `${formatPoints(title.price)}로 구매`;
     return `
       <article class="title-card rarity-${API.escape(title.rarity)}">
         <div class="stat-row">
@@ -39,7 +39,7 @@ function renderShop(titles) {
           ${title.isRewardOnly ? '<span class="badge">reward only</span>' : ''}
         </div>
         ${title.unlockHint ? `<p class="meta">${API.escape(title.unlockHint)}</p>` : ''}
-        <p class="point">${title.price}P</p>
+        <p class="point">${formatPoints(title.price)}</p>
         <button class="button secondary" onclick="buyTitle(${title.id})" ${disabled ? 'disabled' : ''}>${label}</button>
       </article>
     `;
@@ -55,7 +55,7 @@ async function loadShop() {
 
     if (API.token) {
       const points = await API.request('/api/points/me');
-      document.querySelector('#shop-points').textContent = `${points.account.balance}P`;
+      document.querySelector('#shop-points').textContent = formatPoints(points.account.balance);
       document.querySelector('#shop-account-hint').textContent = '구매한 칭호는 프로필에서 장착할 수 있습니다.';
     }
   } catch (error) {

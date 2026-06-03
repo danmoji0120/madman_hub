@@ -4,6 +4,10 @@ const message = document.querySelector('#season-message');
 let seasons = [];
 let categories = [];
 
+function rankingScoreText(item) {
+  return formatRankingScore(item.category, item.score);
+}
+
 function renderSeasonSummary(season) {
   document.querySelector('#season-summary').innerHTML = `
     <span class="badge">${API.escape(season.status)}</span>
@@ -22,7 +26,7 @@ function renderRankings(items) {
         ${renderTitleBadge(item, { compact: true })}
         <p class="meta">${API.escape(item.displayName || '')}</p>
       </div>
-      <strong class="season-rank-score">${API.escape(item.formattedScore || item.score)}</strong>
+      <strong class="season-rank-score">${API.escape(rankingScoreText(item))}</strong>
     </article>
   `).join('') || '<p class="empty-state">아직 집계된 기록이 없습니다.</p>';
 }
@@ -55,7 +59,7 @@ function renderRankingSummary(data) {
     return `
       <article class="hall-of-fame-card">
         <strong>${API.escape(category?.label || key)}</strong>
-        ${items.slice(0, 3).map((item) => `<p class="meta">#${item.rank} ${API.escape(item.nickname)} · ${API.escape(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}
+        ${items.slice(0, 3).map((item) => `<p class="meta">#${item.rank} ${API.escape(item.nickname)} · ${API.escape(rankingScoreText(item))}</p>`).join('') || '<p class="meta">기록 없음</p>'}
       </article>
     `;
   }).join('');

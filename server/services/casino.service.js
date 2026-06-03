@@ -26,6 +26,7 @@ const {
   getPublicGames
 } = require('./casino.config');
 const { incrementMission } = require('./dailyMissions.service');
+const { formatPoints } = require('../utils/formatNumbers');
 
 function casinoError(message, statusCode = 400) {
   const error = new Error(message);
@@ -80,10 +81,10 @@ async function validateBet({ userId, gameCode, betAmount, fixedBet = null }) {
   const expectedFixedBet = fixedBet ?? game.fixedBet;
   const maxBet = maxBetFor(account, game);
   if (expectedFixedBet && betAmount !== expectedFixedBet) {
-    throw casinoError(`${game.name} 참가비는 ${expectedFixedBet}P 고정입니다.`);
+    throw casinoError(`${game.name} 참가비는 ${formatPoints(expectedFixedBet)} 고정입니다.`);
   }
-  if (betAmount < game.minBet) throw casinoError(`최소 베팅은 ${game.minBet}P입니다.`);
-  if (betAmount > maxBet) throw casinoError(`현재 최대 베팅은 ${maxBet}P입니다.`);
+  if (betAmount < game.minBet) throw casinoError(`최소 베팅은 ${formatPoints(game.minBet)}입니다.`);
+  if (betAmount > maxBet) throw casinoError(`현재 최대 베팅은 ${formatPoints(maxBet)}입니다.`);
   if (betAmount > account.balance) throw casinoError('포인트가 부족합니다.');
 
   const [allPlayed, gamePlayed] = await Promise.all([

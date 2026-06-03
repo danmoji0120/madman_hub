@@ -5,6 +5,8 @@ function nonNegativeNumber(name, fallback) {
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
 
+const { formatPoints } = require('../utils/formatNumbers');
+
 function nonNegativeInteger(name, fallback) {
   return Math.floor(nonNegativeNumber(name, fallback));
 }
@@ -68,7 +70,7 @@ const games = {
     minBet: 30,
     fixedBet: 30,
     dailyLimit: nonNegativeInteger('CASINO_RUSSIAN_DAILY_LIMIT', 10),
-    rules: '고정 참가비 30P. 방아쇠를 당긴 뒤 생존 보상을 받고 멈추거나 계속 도전하세요.',
+    rules: '고정 참가비 30 P. 방아쇠를 당긴 뒤 생존 보상을 받고 멈추거나 계속 도전하세요.',
     rewardTable: { 1: 40, 2: 65, 3: 110, 4: 190, 5: 350 }
   }
 };
@@ -78,9 +80,9 @@ function getGame(gameCode) {
 }
 
 function maxBetRule(game) {
-  if (game.fixedBet) return `${game.fixedBet}P fixed`;
+  if (game.fixedBet) return `${formatPoints(game.fixedBet)} fixed`;
   const rules = [];
-  if (MAX_BET > 0) rules.push(`${MAX_BET}P`);
+  if (MAX_BET > 0) rules.push(formatPoints(MAX_BET));
   if (MAX_BET_BALANCE_RATIO > 0) rules.push(`balance * ${MAX_BET_BALANCE_RATIO}`);
   return rules.length ? `min(${rules.join(', ')})` : 'balance only';
 }

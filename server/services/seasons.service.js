@@ -23,7 +23,7 @@ const SEASON_REWARD_TITLES = {
   point_earned: '시즌 포인트 베개',
   point_spent: '시즌 파산왕',
   casino_loss: '시즌 대참사',
-  casino_profit: '30000P의 꿈',
+  casino_profit: '30,000 P의 꿈',
   comment_count: '시즌 댓글왕',
   song_count: '시즌 플레이리스트 DJ',
   cosmetic_spent: '시즌 꾸미기 중독자',

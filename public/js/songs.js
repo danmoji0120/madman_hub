@@ -30,15 +30,15 @@ async function loadTodaySong() {
 
 async function loadSongConfig() {
   const data = await API.request('/api/songs/config');
-  document.querySelector('#anonymous-song-cost').textContent = data.config.anonymousSongCost ? `비용 ${data.config.anonymousSongCost}P` : '무료';
-  document.querySelector('#song-reward-policy').textContent = `작성 보상 ${data.config.songRewardPoints}P · 일일 ${data.config.songRewardDailyLimit || '무제한'}회`;
+  document.querySelector('#anonymous-song-cost').textContent = data.config.anonymousSongCost ? `비용 ${formatPoints(data.config.anonymousSongCost)}` : '무료';
+  document.querySelector('#song-reward-policy').textContent = `작성 보상 ${formatPoints(data.config.songRewardPoints)} · 일일 ${data.config.songRewardDailyLimit || '무제한'}회`;
 }
 
 async function loadRandomSong(button) {
   button.disabled = true;
   try {
     const data = await API.request('/api/songs/random');
-    document.querySelector('#random-song').innerHTML = `${songCard(data.song)}${data.rewarded ? `<p class="reward-badge">+${data.rewardPoints}P 지급</p>` : ''}`;
+    document.querySelector('#random-song').innerHTML = `${songCard(data.song)}${data.rewarded ? `<p class="reward-badge">${formatSignedPoints(data.rewardPoints)} 지급</p>` : ''}`;
   } catch (error) {
     document.querySelector('#random-song').textContent = error.message;
   } finally {
@@ -66,7 +66,7 @@ async function recommendSong(event) {
       })
     });
     event.target.reset();
-    message.textContent = `추천을 등록했습니다. +${data.rewardPoints}P`;
+    message.textContent = `추천을 등록했습니다. ${formatSignedPoints(data.rewardPoints)}`;
     await Promise.all([loadSongs(), loadTodaySong()]);
   } catch (error) {
     message.textContent = error.message;
