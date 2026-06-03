@@ -234,6 +234,18 @@ async function runMigrations() {
        is_public INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
      )`
   );
+  await run(
+    `CREATE TABLE IF NOT EXISTS notifications (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, recipient_user_id INTEGER NOT NULL, actor_user_id INTEGER,
+       type TEXT NOT NULL, importance TEXT NOT NULL DEFAULT 'normal', title TEXT NOT NULL,
+       message TEXT NOT NULL, target_type TEXT, target_id TEXT, target_url TEXT,
+       metadata_json TEXT NOT NULL DEFAULT '{}', is_read INTEGER NOT NULL DEFAULT 0,
+       read_at TEXT, is_deleted INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+       FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
+     )`
+  );
   await run('CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = 1');
   await run('CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at, ends_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank)');
@@ -242,6 +254,12 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_casino_events_season_type_created ON casino_events(season_id, event_type, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_casino_events_user_created ON casino_events(user_id, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread_created ON notifications(recipient_user_id, is_read, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_recipient_deleted_created ON notifications(recipient_user_id, is_deleted, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_type_created ON notifications(type, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_target ON notifications(target_type, target_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_actor ON notifications(actor_user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at)');
 }
 
 async function initDatabase() {

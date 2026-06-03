@@ -589,6 +589,8 @@ async function cleanupSmokeUsers(prefix) {
   const userIds = users.map((user) => user.id);
   if (!userIds.length) return;
 
+  await deleteRows('notifications', (query) => query.in('recipient_user_id', userIds));
+  await deleteRows('notifications', (query) => query.in('actor_user_id', userIds));
   await deleteRows('user_achievements', (query) => query.in('user_id', userIds));
   await deleteRows('season_hall_of_fame', (query) => query.in('user_id', userIds));
   await deleteRows('casino_events', (query) => query.in('user_id', userIds));
@@ -615,7 +617,7 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, casinoStats, pointPeaks, casinoEvents] = await Promise.all([
+  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, casinoStats, pointPeaks, casinoEvents, notifications] = await Promise.all([
     client().from('titles').select('id,category,source_type,is_purchasable,is_reward_only,css_class', { count: 'exact', head: true }),
     client().from('title_grants').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
@@ -632,9 +634,10 @@ async function initDatabase() {
     client().from('season_hall_of_fame').select('id').limit(1),
     client().from('casino_user_stats').select('id').limit(1),
     client().from('season_user_point_peaks').select('id').limit(1),
-    client().from('casino_events').select('id').limit(1)
+    client().from('casino_events').select('id').limit(1),
+    client().from('notifications').select('id').limit(1)
   ]);
-  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || casinoStats.error || pointPeaks.error || casinoEvents.error;
+  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || casinoStats.error || pointPeaks.error || casinoEvents.error || notifications.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }

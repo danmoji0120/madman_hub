@@ -467,3 +467,54 @@ V1.7.1은 V1.7 통계에서 확인된 과도한 유저 우세를 낮추되, 최�
 관리자 카지노 통계의 Net은 유저 기준과 카지노 기준을 함께 표시합니다. 환급률 상태는 `유저 유리 / 즉시 조정 필요`, `유저 약우세 / 관측 필요`, `정상`, `카지노 강세 / 너무 짤 수 있음`, `과도한 너프 위험`으로 구분합니다.
 
 운영 후 최소 50~100회 이상 데이터가 쌓이면 관리자 통계에서 환급률을 재확인하세요. 러시안 룰렛이 100% 이상이면 1~2발 보상 추가 조정, 블랙잭이 100% 이상이면 일반 승리 배율을 `1.85x` 아래로 낮추는 후속 검토가 필요합니다. 전체 환급률이 85% 아래로 떨어지면 너무 짠 상태일 수 있습니다.
+
+## V1.8 알림 센터
+
+V1.8은 브라우저 푸시나 Socket.IO 없이 사이트 내부에서 확인하는 인앱 알림 센터입니다. `/notifications.html`에서 댓글, 멘션, 칭호, 시즌, 카지노 사건, 관리자 공지를 확인하고 읽음/전체 읽음/삭제 처리를 할 수 있습니다.
+
+새 테이블:
+
+- `notifications`: 수신자, 발생자, 타입, 중요도, 제목, 메시지, 이동 대상, metadata, 읽음/삭제 상태를 저장합니다.
+
+알림 타입:
+
+- `post_new`, `post_comment`, `comment_reply`, `mention`
+- `title_granted`, `title_revoked`
+- `season_rank`, `season_hall_of_fame`
+- `casino_jackpot`, `casino_disaster`, `casino_drawdown`
+- `admin_notice`, `system_notice`, `event_notice`
+
+중요도:
+
+- `low`, `normal`, `high`, `critical`
+
+생성 조건:
+
+- notice 카테고리 또는 관리자/owner 작성 공지글은 전체 유저에게 새 글 알림을 보냅니다.
+- 내 게시글에 다른 사람이 댓글을 달면 `post_comment` 알림을 보냅니다.
+- 게시글/댓글 본문에서 `@닉네임`을 감지하면 대상 유저에게 `mention` 알림을 보냅니다.
+- 칭호 구매, 관리자 지급, 시즌 보상 지급, 칭호 회수는 칭호 알림을 보냅니다.
+- 시즌 종료 또는 명예의 전당 재생성 시 TOP 3 대상자에게 시즌/명예의 전당 알림을 보냅니다.
+- V1.7 카지노 이벤트 중 jackpot, disaster, drawdown은 당사자에게 개인 알림을 보냅니다.
+- 관리자 패널의 알림 발송 섹션에서 특정 유저 또는 전체 유저에게 공지를 보낼 수 있습니다.
+
+익명 처리:
+
+- 익명 게시글/댓글의 멘션과 댓글 알림은 메시지와 actor 응답에서 `익명`으로 표시합니다.
+- 알림 공개 응답에는 익명 작성자의 실제 닉네임, 칭호, 아바타를 내려주지 않습니다.
+
+지원하지 않는 것:
+
+- 브라우저 푸시 알림
+- Service Worker / Web Push subscription
+- Socket.IO 실시간 알림
+- 이메일 알림
+- DM/쪽지 시스템
+
+Supabase 운영 DB 적용 순서:
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
+적용 후 `npm.cmd run test:smoke:supabase`로 provider-safe 동작과 cleanup을 확인하세요.

@@ -9,6 +9,7 @@ const { mapPublicActivity } = require('../services/activity.service');
 const { decoratePublicUsers, decorateAuthorRows, getEquippedCosmetics } = require('../repositories/cosmetics.repo');
 const { getPublicRankingSummary } = require('../services/seasons.service');
 const { listCasinoEvents } = require('../repositories/casinoStats.repo');
+const { listNotifications } = require('../services/notifications.service');
 
 const router = express.Router();
 
@@ -123,6 +124,10 @@ router.get('/', optionalAuth, async (req, res) => {
       }
     }
 
+    const notificationSummary = req.user
+      ? await listNotifications(req.user.id, { limit: 5 })
+      : { items: [], unreadCount: 0, hasMore: false };
+
     const decoratedRandomPost = randomQuote ? (await decorateAuthorRows([randomQuote]))[0] : null;
     const normalizedRandomPost = decoratedRandomPost ? mapPost(decoratedRandomPost) : null;
     const normalizedRecentPosts = (await decorateAuthorRows(recentQuotes)).map(mapPost);
@@ -145,6 +150,8 @@ router.get('/', optionalAuth, async (req, res) => {
       })),
       recentCasinoResults,
       recentCasinoEvents: recentCasinoEvents.events || [],
+      recentNotifications: notificationSummary.items,
+      notificationUnreadCount: notificationSummary.unreadCount,
       leaderboard: decoratedLeaderboard,
       seasonSummary
     });

@@ -358,6 +358,25 @@ CREATE TABLE IF NOT EXISTS casino_events (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id BIGSERIAL PRIMARY KEY,
+  recipient_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  type TEXT NOT NULL,
+  importance TEXT NOT NULL DEFAULT 'normal' CHECK (importance IN ('low', 'normal', 'high', 'critical')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  target_url TEXT,
+  metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at TIMESTAMPTZ,
+  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at DESC);
@@ -383,6 +402,12 @@ CREATE INDEX IF NOT EXISTS idx_casino_user_stats_season_game ON casino_user_stat
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id);
 CREATE INDEX IF NOT EXISTS idx_casino_events_season_type_created ON casino_events(season_id, event_type, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_casino_events_user_created ON casino_events(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread_created ON notifications(recipient_user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_deleted_created ON notifications(recipient_user_id, is_deleted, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_type_created ON notifications(type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_target ON notifications(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_actor ON notifications(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 
 -- Service Role access is server-only. RLS policies will be designed when
 -- Supabase Auth is introduced. Do not expose the Service Role key to clients.

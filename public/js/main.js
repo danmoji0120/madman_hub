@@ -242,6 +242,43 @@ function renderSeasonSummary(summary) {
   `;
 }
 
+function notificationLabel(type) {
+  const labels = {
+    post_comment: '댓글',
+    mention: '멘션',
+    title_granted: '칭호',
+    title_revoked: '칭호 회수',
+    season_rank: '시즌',
+    season_hall_of_fame: '명예의 전당',
+    casino_jackpot: '카지노 대박',
+    casino_disaster: '카지노 대참사',
+    casino_drawdown: '추락',
+    admin_notice: '공지',
+    system_notice: '시스템',
+    event_notice: '이벤트'
+  };
+  return labels[type] || type;
+}
+
+function renderRecentNotifications(items = [], unreadCount = 0) {
+  const card = document.querySelector('#recent-notifications-card');
+  if (!API.token) {
+    card.innerHTML = '<h2>최근 알림</h2><p class="meta">로그인하면 댓글, 멘션, 칭호, 카지노 사건 알림을 볼 수 있습니다.</p>';
+    return;
+  }
+  card.innerHTML = `
+    <div class="section-heading"><h2>최근 알림</h2><a class="meta" href="/notifications.html">전체 보기</a></div>
+    <p class="meta">안읽음 ${escapeHtml(unreadCount)}개</p>
+    <div class="notification-list">${items.slice(0, 5).map((item) => `
+      <a class="notification-card ${item.isRead ? '' : 'unread'}" href="${escapeHtml(item.targetUrl || '/notifications.html')}">
+        <span class="badge">${escapeHtml(notificationLabel(item.type))}</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <p class="meta">${escapeHtml(item.message)}</p>
+      </a>
+    `).join('') || '<p class="empty-state">아직 알림이 없습니다.</p>'}</div>
+  `;
+}
+
 async function loadDashboard() {
   const message = document.querySelector('#dashboard-message');
 
@@ -259,6 +296,7 @@ async function loadDashboard() {
     renderCasinoResults(data.recentCasinoResults || []);
     renderCasinoEvents(data.recentCasinoEvents || []);
     renderSeasonSummary(data.seasonSummary);
+    renderRecentNotifications(data.recentNotifications || [], data.notificationUnreadCount || 0);
     await loadDailyMissions();
   } catch (error) {
     console.error('대시보드 로딩 실패', error);

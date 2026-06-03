@@ -4,6 +4,7 @@ const { decoratePublicUsers } = require('./cosmetics.repo');
 const { getActiveSeason, getSeasonById } = require('./seasons.repo');
 const { formatPoints, formatRankingScore } = require('../utils/formatNumbers');
 const { targetForGame, balanceStatus } = require('../config/casinoBalance.config');
+const { notifyCasinoEvent } = require('../services/notifications.service');
 
 const PUBLIC_EVENT_TYPES = new Set(['jackpot', 'disaster', 'biggest_win', 'biggest_loss', 'peak_balance', 'drawdown', 'comeback', 'suspicious_loop', 'high_turnover']);
 const POINT_LEADERBOARD_CATEGORIES = new Set(['balance_peak', 'drawdown', 'casino_net_profit', 'casino_net_loss', 'biggest_casino_win', 'biggest_casino_loss', 'blackjack_profit']);
@@ -350,7 +351,9 @@ async function recordCasinoResultStats(gameResult, account = null) {
       if (twoStepCount >= 3) events.push(await createCasinoEvent({ seasonId: season.id, userId: gameResult.userId, eventType: 'suspicious_loop', gameKey: gameResult.gameCode, amount: twoStepCount, balanceAfter, metadata: { ...metadata, twoStepCashoutCount: twoStepCount }, dedupeMinutes: 60 }));
     }
     events.push(await maybeCreateTurnoverEvent({ season, userId: gameResult.userId, balanceAfter }));
-    return { season, events: events.filter(Boolean), peak };
+    const createdEvents = events.filter(Boolean);
+    await Promise.all(createdEvents.map((event) => notifyCasinoEvent(event))).catch((error) => console.error('Notification creation failed:', error));
+    return { season, events: createdEvents, peak };
   } catch (error) {
     console.error('Casino V1.7 stats recording failed:', error);
     return null;

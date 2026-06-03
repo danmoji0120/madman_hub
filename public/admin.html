@@ -311,9 +311,39 @@
       <h3>의심 루프 후보</h3>
       <div id="admin-casino-loops" class="preview-list"></div>
     </section>
+
+    <section class="admin-section" id="notifications-admin">
+      <div class="section-heading">
+        <h2>알림 발송</h2>
+        <button class="button secondary inline small-button" onclick="loadAdminNotifications()">최근 알림 새로고침</button>
+      </div>
+      <form class="card" onsubmit="sendAdminNotification(event)">
+        <div class="form-grid">
+          <input class="input" id="admin-notification-recipient" placeholder="유저 ID (전체 발송이면 비움)" />
+          <select class="input" id="admin-notification-type">
+            <option value="admin_notice">admin_notice</option>
+            <option value="system_notice">system_notice</option>
+            <option value="event_notice">event_notice</option>
+          </select>
+          <select class="input" id="admin-notification-importance">
+            <option value="normal">normal</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+            <option value="low">low</option>
+          </select>
+          <label class="checkbox-label"><input type="checkbox" id="admin-notification-broadcast" /> 전체 발송</label>
+        </div>
+        <input class="input" id="admin-notification-title" placeholder="제목" required />
+        <input class="input" id="admin-notification-message" placeholder="메시지" required />
+        <input class="input" id="admin-notification-target" placeholder="targetUrl 예: /seasons.html" />
+        <button class="button inline" type="submit">알림 발송</button>
+      </form>
+      <div class="preview-list" id="admin-notifications"></div>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/notificationBadge.js"></script>
   <script src="/js/formatters.js"></script>
   <script src="/js/titleBadge.js"></script>
   <script src="/js/admin.js"></script>

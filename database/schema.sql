@@ -377,6 +377,27 @@ CREATE TABLE IF NOT EXISTS casino_events (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  recipient_user_id INTEGER NOT NULL,
+  actor_user_id INTEGER,
+  type TEXT NOT NULL,
+  importance TEXT NOT NULL DEFAULT 'normal',
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  target_type TEXT,
+  target_id TEXT,
+  target_url TEXT,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  is_read INTEGER NOT NULL DEFAULT 0,
+  read_at TEXT,
+  is_deleted INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (recipient_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at);
@@ -402,3 +423,9 @@ CREATE INDEX IF NOT EXISTS idx_casino_user_stats_season_game ON casino_user_stat
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id);
 CREATE INDEX IF NOT EXISTS idx_casino_events_season_type_created ON casino_events(season_id, event_type, created_at);
 CREATE INDEX IF NOT EXISTS idx_casino_events_user_created ON casino_events(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread_created ON notifications(recipient_user_id, is_read, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_deleted_created ON notifications(recipient_user_id, is_deleted, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_type_created ON notifications(type, created_at);
+CREATE INDEX IF NOT EXISTS idx_notifications_target ON notifications(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_actor ON notifications(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);

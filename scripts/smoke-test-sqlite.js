@@ -36,6 +36,7 @@ const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 const { runSeasonsSmoke } = require('./seasons-smoke-helper');
 const { runTitlesSmoke } = require('./titles-smoke-helper');
+const { runNotificationsSmoke } = require('./notifications-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -84,6 +85,7 @@ async function main() {
     const adminHtml = await requestText('/admin.html');
     const casinoHtml = await requestText('/casino.html');
     const seasonsHtml = await requestText('/seasons.html');
+    const notificationsHtml = await requestText('/notifications.html');
     const css = await requestText('/css/app.css');
     const apiJs = await requestText('/js/api.js');
     const mainJs = await requestText('/js/main.js');
@@ -94,6 +96,8 @@ async function main() {
     const adminJs = await requestText('/js/admin.js');
     const casinoJs = await requestText('/js/casino.js');
     const seasonsJs = await requestText('/js/seasons.js');
+    const notificationBadgeJs = await requestText('/js/notificationBadge.js');
+    const notificationsJs = await requestText('/js/notifications.js');
     assert.ok(home.includes('<title>MADMEN HUB</title>'));
     assert.ok(profileHtml.includes('프로필 수정'));
     assert.ok(postsHtml.includes('<title>게시판 | MADMEN HUB</title>'));
@@ -102,6 +106,7 @@ async function main() {
     assert.ok(adminHtml.includes('<title>관리자 | MADMEN HUB</title>'));
     assert.ok(casinoHtml.includes('<title>포인트 카지노 | MADMEN HUB</title>'));
     assert.ok(seasonsHtml.includes('<title>시즌 랭킹 | MADMEN HUB</title>'));
+    assert.ok(notificationsHtml.includes('<title>알림 센터 | MADMEN HUB</title>'));
     assert.ok(css.includes('.dashboard-grid'));
     assert.ok(css.includes('.shop-grid'));
     assert.ok(apiJs.includes('escape(value)'));
@@ -113,6 +118,8 @@ async function main() {
     assert.ok(adminJs.includes("API.request('/api/admin/overview'"));
     assert.ok(casinoJs.includes("API.request('/api/casino/games'"));
     assert.ok(seasonsJs.includes("API.request('/api/seasons'"));
+    assert.ok(notificationBadgeJs.includes('/api/notifications/unread-count'));
+    assert.ok(notificationsJs.includes('/api/notifications'));
 
     const publicDashboard = await request('/api/dashboard');
     assert.strictEqual(publicDashboard.me, null);
@@ -573,6 +580,10 @@ async function main() {
     await runTitlesSmoke({
       request, auth, ownerAuth, userId: registered.user.id,
       runPrefix: `sqlite-titles-${Date.now()}-`
+    });
+    await runNotificationsSmoke({
+      request, auth, ownerAuth, userId: registered.user.id,
+      runPrefix: `sqlite-notifications-${Date.now()}-`
     });
 
     await runCasinoSmoke({

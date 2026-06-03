@@ -1,6 +1,7 @@
 const { logActivity } = require('./activity.service');
 const { get } = require('../db');
 const { adminGrantTitle } = require('../repositories/admin.repo');
+const { notifySeasonHallOfFame } = require('./notifications.service');
 const {
   SEASON_STATUSES,
   SEASON_RANKING_CATEGORIES,
@@ -250,6 +251,7 @@ async function endAdminSeason(actorUser, seasonId) {
   })));
   const ended = await finalizeSeason(season, entries);
   const rewardTitles = await grantSeasonRewardTitles(actorUser, ended, entries);
+  await notifySeasonHallOfFame({ season: ended, entries }).catch((error) => console.error('Notification creation failed:', error));
   await logActivity({ userId: actorUser.id, action: 'admin_season_ended', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
   return { season: ended, hallOfFameEntries: entries.length, rewardTitles };
 }
@@ -280,6 +282,7 @@ async function generateAdminHallOfFame(actorUser, seasonId) {
   })));
   const hallOfFame = await replaceHallOfFame(season, entries);
   const rewardTitles = await grantSeasonRewardTitles(actorUser, season, entries);
+  await notifySeasonHallOfFame({ season, entries }).catch((error) => console.error('Notification creation failed:', error));
   await logActivity({ userId: actorUser.id, action: 'admin_season_hall_of_fame_generated', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
   return { season, hallOfFameEntries: entries.length, hallOfFame, rewardTitles };
 }

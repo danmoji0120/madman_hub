@@ -8,6 +8,7 @@ const { logActivity } = require('../services/activity.service');
 const { checkAndUnlockAchievements } = require('../services/achievement.service');
 const { buyTitleTransaction } = require('../repositories/rpc.repo');
 const { normalizeTitle, validateTitleTaxonomy } = require('../utils/titles');
+const { notifyTitleGranted } = require('../services/notifications.service');
 
 const router = express.Router();
 
@@ -137,6 +138,8 @@ router.post('/titles/:id/buy', authRequired, async (req, res) => {
         },
         isPublic: true
       });
+      await notifyTitleGranted({ userId: req.user.id, title, actorUserId: req.user.id, sourceType: 'purchase' })
+        .catch((error) => console.error('Notification creation failed:', error));
       const unlockedAchievements = await checkAndUnlockAchievements(req.user.id);
       const account = await ensurePointAccount(req.user.id);
       return res.json({ success: true, ...result, title, account, unlockedAchievements });
@@ -204,6 +207,8 @@ router.post('/titles/:id/buy', authRequired, async (req, res) => {
       },
       isPublic: true
     });
+    await notifyTitleGranted({ userId: req.user.id, title, actorUserId: req.user.id, sourceType: 'purchase' })
+      .catch((error) => console.error('Notification creation failed:', error));
     const unlockedAchievements = await checkAndUnlockAchievements(req.user.id);
     const account = await ensurePointAccount(req.user.id);
     return res.json({ success: true, purchased: true, title, account, unlockedAchievements });

@@ -385,6 +385,43 @@ async function loadAdminCasinoStats() {
   } catch (error) { showAdminMessage(error.message); }
 }
 
+async function loadAdminNotifications() {
+  try {
+    const data = await API.request('/api/admin/notifications?limit=10');
+    document.querySelector('#admin-notifications').innerHTML = (data.notifications || []).map((item) => `
+      <div class="notification-card ${item.isRead ? '' : 'unread'}">
+        <span class="badge">${API.escape(item.type)}</span>
+        <span class="badge">${API.escape(item.importance)}</span>
+        <strong>${API.escape(item.title)}</strong>
+        <p class="meta">${API.escape(item.message)} · 받는 유저 ID ${API.escape(item.recipientUserId)}</p>
+      </div>
+    `).join('') || '<p class="empty-state">최근 알림 없음</p>';
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function sendAdminNotification(event) {
+  event.preventDefault();
+  try {
+    const recipientRaw = document.querySelector('#admin-notification-recipient').value.trim();
+    const broadcast = document.querySelector('#admin-notification-broadcast').checked || !recipientRaw;
+    await API.request('/api/admin/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        recipientUserId: recipientRaw ? Number(recipientRaw) : undefined,
+        broadcast,
+        type: document.querySelector('#admin-notification-type').value,
+        importance: document.querySelector('#admin-notification-importance').value,
+        title: document.querySelector('#admin-notification-title').value,
+        message: document.querySelector('#admin-notification-message').value,
+        targetUrl: document.querySelector('#admin-notification-target').value
+      })
+    });
+    event.target.reset();
+    showAdminMessage('알림을 발송했습니다.');
+    await loadAdminNotifications();
+  } catch (error) { showAdminMessage(error.message); }
+}
+
 async function createSeason(event) {
   event.preventDefault();
   try {
@@ -558,7 +595,7 @@ async function revokeTitle(titleId) {
 }
 
 async function refreshAdmin() {
-  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics(), loadAdminSeasons(), loadAdminCasinoStats()]);
+  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics(), loadAdminSeasons(), loadAdminCasinoStats(), loadAdminNotifications()]);
 }
 
 refreshAdmin();

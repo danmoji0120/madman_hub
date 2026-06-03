@@ -43,6 +43,10 @@ const {
   rebuildCasinoStats
 } = require('../repositories/casinoStats.repo');
 const {
+  sendAdminNotice,
+  listAdminNotifications
+} = require('../services/notifications.service');
+const {
   TITLE_RARITIES,
   TITLE_CATEGORIES,
   TITLE_SOURCE_TYPES,
@@ -399,6 +403,34 @@ safe('post', '/casino/rebuild-stats', async (req, res) => {
     ...(await rebuildCasinoStats({
       seasonId: req.body.seasonId ? parseId(req.body.seasonId, 'season id') : null,
       dryRun: req.body.dryRun !== false
+    }))
+  });
+});
+
+safe('get', '/notifications', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await listAdminNotifications({
+      type: typeof req.query.type === 'string' ? req.query.type.trim() : '',
+      limit: parseLimit(req.query.limit),
+      offset: parseOffset(req.query.offset)
+    }))
+  });
+});
+
+safe('post', ['/notifications', '/notifications/broadcast'], async (req, res) => {
+  const broadcast = req.path.endsWith('/broadcast') ? true : Boolean(req.body.broadcast);
+  return res.status(201).json({
+    success: true,
+    ...(await sendAdminNotice({
+      actorUser: req.user,
+      recipientUserId: req.body.recipientUserId,
+      broadcast,
+      type: cleanText(req.body.type, 'type', 40) || 'admin_notice',
+      importance: cleanText(req.body.importance, 'importance', 20) || 'normal',
+      title: cleanText(req.body.title, 'title', 120, true),
+      message: cleanText(req.body.message, 'message', 500, true),
+      targetUrl: cleanText(req.body.targetUrl, 'targetUrl', 300) || ''
     }))
   });
 });

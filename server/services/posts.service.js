@@ -4,6 +4,7 @@ const { checkAndUnlockAchievements } = require('./achievement.service');
 const { findAccountStatus } = require('../repositories/comments.repo');
 const communityConfig = require('../config/community.config');
 const { incrementMission } = require('./dailyMissions.service');
+const { notifyMentions, notifyPostCreated } = require('./notifications.service');
 const { POST_CATEGORIES, getPostCategory } = require('../config/postCategories.config');
 const {
   parseTags,
@@ -150,9 +151,20 @@ async function createPost({ userId, userRole = 'member', title, body, targetName
     metadata: { postId: created.id, title: input.title, category: input.category, isAnonymous }, isPublic: true
   });
   await incrementMission(userId, 'create_post');
+  const visiblePost = await getPublicPost(created.id, mapPost);
+  await Promise.all([
+    notifyMentions({
+      sourceType: 'post',
+      postId: created.id,
+      content: input.body,
+      actorUserId: userId,
+      isAnonymous
+    }),
+    notifyPostCreated({ post: visiblePost, actorUserId: userId, userRole })
+  ]).catch((error) => console.error('Notification creation failed:', error));
   const unlockedAchievements = await checkAndUnlockAchievements(userId);
   return {
-    post: await getPublicPost(created.id, mapPost),
+    post: visiblePost,
     account: await ensurePointAccount(userId),
     unlockedAchievements
   };

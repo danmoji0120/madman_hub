@@ -11,6 +11,7 @@ const { addPointTransaction, ensurePointAccount } = require('./points.service');
 const { logActivity } = require('./activity.service');
 const { checkAndUnlockAchievements } = require('./achievement.service');
 const { incrementMission } = require('./dailyMissions.service');
+const { notifyPostComment, notifyMentions } = require('./notifications.service');
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -101,6 +102,17 @@ async function createComment({ postId, userId, body, isAnonymous = false }) {
   });
   await incrementMission(userId, 'create_comment');
   const visibleComment = (await listPublicComments(postId)).find((item) => item.id === comment.id);
+  await Promise.all([
+    notifyPostComment({ postId, comment, actorUserId: userId, isAnonymous }),
+    notifyMentions({
+      sourceType: 'comment',
+      postId,
+      commentId: comment.id,
+      content: cleanedBody,
+      actorUserId: userId,
+      isAnonymous
+    })
+  ]).catch((error) => console.error('Notification creation failed:', error));
 
   return {
     comment: visibleComment || publicComment(comment),

@@ -11,6 +11,7 @@ const {
 const { getPostCategory } = require('../config/postCategories.config');
 const { normalizeTitle, sanitizeCssClass } = require('../utils/titles');
 const { getTitleBadgesByNames, attachTitleBadge } = require('./titles.repo');
+const { notifyTitleGranted, notifyTitleRevoked } = require('../services/notifications.service');
 
 function assertResult(result) {
   if (result.error) {
@@ -997,6 +998,8 @@ async function adminGrantTitle({ actorUser, userId, titleId, reason = '', source
       isPublic: true
     });
   }
+  await notifyTitleGranted({ userId, title, actorUserId: actorUser.id, sourceType, alreadyOwned })
+    .catch((error) => console.error('Notification creation failed:', error));
   return { title, alreadyOwned };
 }
 
@@ -1051,6 +1054,10 @@ async function adminRevokeTitle({ actorUser, userId, titleId, reason = '' }) {
     action: 'admin_title_revoked',
     metadata: { targetUserId: userId, titleId, titleName: title.name, reason, removed, wasEquipped }
   });
+  if (removed) {
+    await notifyTitleRevoked({ userId, title, actorUserId: actorUser.id })
+      .catch((error) => console.error('Notification creation failed:', error));
+  }
   return { title, removed, wasEquipped };
 }
 
