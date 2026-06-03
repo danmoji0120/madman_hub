@@ -22,14 +22,17 @@ function parseJson(value, fallback = {}) {
 function normalizeMapping(row, title = null) {
   if (!row) return null;
   const category = getSeasonRankingCategory(row.category);
+  const rawTitleId = row.title_id ?? row.titleId ?? null;
   return {
     ...row,
     rankMin: Number(row.rank_min ?? row.rankMin ?? 1),
     rankMax: Number(row.rank_max ?? row.rankMax ?? 1),
-    titleId: Number(row.title_id ?? row.titleId),
+    titleId: rawTitleId === null || rawTitleId === undefined ? null : Number(rawTitleId),
     rewardType: row.reward_type ?? row.rewardType ?? 'title',
     isActive: toBoolean(row.is_active ?? row.isActive ?? 1),
     categoryLabel: category?.label || row.category,
+    trophyLabel: row.trophy_label ?? row.trophyLabel ?? '',
+    trophyDescription: row.trophy_description ?? row.trophyDescription ?? '',
     titleData: title ? normalizeTitle(title) : null,
     title_data: title ? normalizeTitle(title) : null,
     createdAt: row.created_at,
@@ -156,7 +159,16 @@ async function listRewardMappings({ includeInactive = false } = {}) {
 async function ensureRewardMappings(specs) {
   const titleMap = await getTitlesByNames(specs.map((spec) => spec.titleName));
   const ensured = [];
-  for (const spec of specs) {
+  const activeTitleSpecs = specs.filter((spec) => spec.rewardType !== 'trophy' && spec.titleName);
+  if (provider === 'supabase') {
+    assertResult(await getSupabaseAdminClient().from('season_reward_mappings').update({
+      is_active: false,
+      updated_at: new Date().toISOString()
+    }).eq('is_active', true).select());
+  } else {
+    await run('UPDATE season_reward_mappings SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE is_active = 1');
+  }
+  for (const spec of activeTitleSpecs) {
     const title = titleMap.get(spec.titleName);
     if (!title?.id) continue;
     if (provider === 'supabase') {
@@ -165,17 +177,33 @@ async function ensureRewardMappings(specs) {
         rank_min: spec.rankMin || 1,
         rank_max: spec.rankMax || 1,
         title_id: title.id,
-        reward_type: 'title',
+        reward_type: spec.rewardType || 'title',
         is_active: true,
         description: spec.description || '',
         updated_at: new Date().toISOString()
-      }, { onConflict: 'category,rank_min,rank_max,title_id', ignoreDuplicates: true }).select());
+      }, { onConflict: 'category,rank_min,rank_max,title_id' }).select());
     } else {
       await run(
-        `INSERT OR IGNORE INTO season_reward_mappings
-         (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-         VALUES (?, ?, ?, ?, 'title', 1, ?)`,
-        [spec.category, spec.rankMin || 1, spec.rankMax || 1, title.id, spec.description || '']
+        `INSERT INTO season_reward_mappings
+         (category, rank_min, rank_max, title_id, reward_type, is_active, description, trophy_label, trophy_description)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)
+         ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET
+           reward_type = excluded.reward_type,
+           is_active = 1,
+           description = excluded.description,
+           trophy_label = excluded.trophy_label,
+           trophy_description = excluded.trophy_description,
+           updated_at = CURRENT_TIMESTAMP`,
+        [
+          spec.category,
+          spec.rankMin || 1,
+          spec.rankMax || 1,
+          title.id,
+          spec.rewardType || 'title',
+          spec.description || '',
+          spec.trophyLabel || '',
+          spec.trophyDescription || ''
+        ]
       );
     }
     ensured.push({ ...spec, titleId: title.id });

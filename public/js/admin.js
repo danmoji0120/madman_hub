@@ -353,14 +353,24 @@ function renderSeasonRewardPreview(data) {
   const grantMap = new Map((data.grants || []).map((grant) => [`${grant.userId}:${grant.titleId}:${grant.category}`, grant]));
   const rows = (data.items || []).map((item) => {
     const grant = grantMap.get(`${item.userId}:${item.titleId}:${item.category}`);
-    const status = grant?.status || (item.alreadyGranted ? 'granted' : item.alreadyOwned ? 'already owned' : 'ready');
+    const status = item.statusLabel || grant?.status || (item.alreadyGranted ? '이미 지급 완료' : item.willGrantTitle ? '칭호 지급 예정' : '프로필 기록만');
+    const rewardClass = item.status === 'readyTitleGrant' || item.status === 'alreadyOwned'
+      ? 'reward-preview-title-grant'
+      : item.status === 'skippedUserLimit'
+        ? 'reward-preview-limit-skipped'
+        : item.status === 'alreadyGranted'
+          ? 'reward-preview-skipped'
+          : 'reward-preview-trophy-only';
+    const rewardCell = item.willGrantTitle || item.alreadyGranted
+      ? (item.titleData ? renderTitleBadge(item.titleData, { showRarityLabel: true }) : API.escape(item.titleId || '-'))
+      : '<span class="badge season-trophy-only">트로피 기록만</span>';
     return `
-      <tr>
+      <tr class="${rewardClass}">
         <td>${API.escape(item.categoryLabel || item.category)}<br /><span class="meta">#${API.escape(item.rank)}</span></td>
         <td><strong>${API.escape(item.nickname || item.displayName || `ID ${item.userId}`)}</strong><br /><span class="meta">ID ${API.escape(item.userId)}</span></td>
         <td>${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</td>
-        <td>${item.titleData ? renderTitleBadge(item.titleData, { showRarityLabel: true }) : API.escape(item.titleId)}</td>
-        <td><span class="reward-status-badge">${API.escape(status)}</span><br /><span class="meta">${item.alreadyOwned ? 'alreadyOwned' : 'notOwned'} · ${item.alreadyGranted ? 'alreadyGranted' : 'notGranted'}</span></td>
+        <td>${rewardCell}</td>
+        <td><span class="reward-status-badge">${API.escape(status)}</span><br /><span class="meta">${API.escape(item.rewardType)} · ${API.escape(item.skipReason || 'ok')}</span></td>
         <td>${grant ? `<button class="button secondary small-button danger-button" onclick="revokeSeasonReward(${item.seasonId}, ${grant.id})">기록 회수</button>` : '-'}</td>
       </tr>
     `;

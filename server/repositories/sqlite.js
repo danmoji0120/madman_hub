@@ -65,6 +65,8 @@ async function runPreSchemaMigrations() {
   await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('titles', 'starts_at', 'TEXT');
   await ensureColumn('titles', 'ends_at', 'TEXT');
+  await ensureColumn('season_reward_mappings', 'trophy_label', "TEXT DEFAULT ''");
+  await ensureColumn('season_reward_mappings', 'trophy_description', "TEXT DEFAULT ''");
 }
 
 async function runMigrations() {
@@ -94,6 +96,8 @@ async function runMigrations() {
   await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('titles', 'starts_at', 'TEXT');
   await ensureColumn('titles', 'ends_at', 'TEXT');
+  await ensureColumn('season_reward_mappings', 'trophy_label', "TEXT DEFAULT ''");
+  await ensureColumn('season_reward_mappings', 'trophy_description', "TEXT DEFAULT ''");
   await ensureColumn('activity_logs', 'is_public', 'INTEGER NOT NULL DEFAULT 0');
   await run(
     `CREATE TABLE IF NOT EXISTS title_grants (
@@ -211,8 +215,9 @@ async function runMigrations() {
     `CREATE TABLE IF NOT EXISTS season_reward_mappings (
        id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT NOT NULL,
        rank_min INTEGER NOT NULL DEFAULT 1, rank_max INTEGER NOT NULL DEFAULT 1,
-       title_id INTEGER NOT NULL, reward_type TEXT NOT NULL DEFAULT 'title',
+       title_id INTEGER, reward_type TEXT NOT NULL DEFAULT 'title',
        is_active INTEGER NOT NULL DEFAULT 1, description TEXT DEFAULT '',
+       trophy_label TEXT DEFAULT '', trophy_description TEXT DEFAULT '',
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        UNIQUE(category, rank_min, rank_max, title_id),
        FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE

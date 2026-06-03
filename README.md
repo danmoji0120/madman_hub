@@ -161,13 +161,32 @@ COMMENT_REWARD_DAILY_LIMIT=5
 
 시즌 종료 결과를 칭호, 알림, 프로필 기록으로 연결합니다. 시즌 랭킹은 실시간 기록이고, 명예의 전당은 종료 시점의 고정 기록이며, 시즌 보상 칭호와 트로피는 유저 프로필에 남는 대표 기록입니다.
 
+V1.8.5.1부터 시즌 결과는 “칭호”와 “트로피 기록”으로 분리됩니다. 대부분의 category는 `user_season_trophies`에만 남고, `user_titles`에 들어가는 시즌 보상 칭호는 대표 category로 제한됩니다.
+
 새 테이블:
 
 - `season_reward_mappings`: 랭킹 category/rank 범위와 보상 칭호 `title_id` 매핑
 - `season_reward_grants`: 시즌/유저/칭호/category별 지급 로그와 중복 지급 방지 상태
 - `user_season_trophies`: 프로필에 표시할 시즌 대표 기록, 점수, 보상 칭호, 설명
 
-기본 reward mapping은 seed와 서비스 보정 로직에 모두 들어 있습니다. 주요 1위 category는 `시즌 포인트 베개`, `시즌 파산왕`, `시즌 대참사`, `시즌의 지배자`, `카지노 생존자`, `내리막의 품격` 같은 기존 보상 칭호에 연결됩니다. title id는 환경마다 다를 수 있으므로 seed는 칭호 이름 기준으로 매핑을 생성합니다.
+기본 reward mapping은 seed와 서비스 보정 로직에 모두 들어 있습니다. active title mapping은 `activity_score`, `casino_loss`, `drawdown`, `point_spent`, `comment_count` 1위만 사용합니다. 나머지 주요 category는 trophy-only 기록으로 프로필에 남습니다. title id는 환경마다 다를 수 있으므로 seed는 칭호 이름 기준으로 매핑을 생성합니다.
+
+대표 시즌 칭호:
+
+- `activity_score`: 시즌의 지배자
+- `casino_loss`: 시즌 대참사
+- `drawdown`: 돈은 머무르지 않았다
+- `point_spent`: 시즌 소각왕
+- `comment_count`: 격리소 서기관
+
+trophy-only 기본 category:
+
+- `point_earned`, `net_points`, `casino_profit`, `casino_net_profit`, `casino_net_loss`
+- `casino_plays`, `post_count`, `song_count`, `daily_mission_count`, `cosmetic_spent`, `attendance_count`
+- `balance_peak`, `drawdown_rate`, `biggest_casino_win`, `biggest_casino_loss`, `point_turnover`
+- `russian_cashout_count`, `blackjack_profit`
+
+같은 season에서 같은 user가 자동으로 받는 시즌 보상 칭호는 최대 2개입니다. 제한 초과 항목은 `skippedUserLimit`으로 표시되며, 칭호 대신 트로피 기록만 생성됩니다.
 
 추가 API:
 
@@ -182,13 +201,16 @@ COMMENT_REWARD_DAILY_LIMIT=5
 
 1. 시즌 종료 또는 명예의 전당 재생성으로 `season_hall_of_fame`을 확정합니다.
 2. 관리자 화면에서 보상 미리보기를 확인합니다.
-3. `grant-rewards`로 확정 지급합니다. 이미 지급된 보상은 건너뛰며 `user_titles` 중복 row를 만들지 않습니다.
-4. 지급 결과는 `season_reward_grants`에 남고, 프로필 표시용 기록은 `user_season_trophies`에 저장됩니다.
-5. 보상 지급 시 `title_granted` 및 시즌 보상 알림이 생성됩니다.
+3. `grant-rewards`로 확정 지급합니다. `willGrantTitle=true`인 항목만 `user_titles`에 들어갑니다.
+4. trophy-only 및 제한 초과 항목은 `user_season_trophies`에만 저장됩니다.
+5. title grant 결과는 `season_reward_grants`에 남고, 프로필 표시용 기록은 `user_season_trophies`에 저장됩니다.
+6. 보상 알림은 title grant 중심으로 생성됩니다.
 
 회수는 관리자 API에서 `revokeTitle=false`면 지급 로그만 `revoked`로 바꾸고, `revokeTitle=true`면 실제 `user_titles` 회수도 시도합니다. 같은 칭호를 다른 경로로 보유해야 하는 운영 상황에서는 `revokeTitle=false`를 우선 권장합니다.
 
 프로필의 “시즌 박제 기록” 섹션은 최근 시즌 트로피를 표시합니다. 익명 글/댓글 작성 정보와 연결하지 않고, 공개 가능한 시즌 랭킹/명예의 전당 기반 기록만 노출합니다.
+
+시즌 보상 칭호는 일반 칭호와 구분되는 `title-season-reward` 배지 스타일을 사용합니다. 정책 변경 전 이미 지급된 시즌 보상 칭호는 자동 삭제/회수하지 않습니다. 필요하면 관리자 회수 도구로 수동 처리하세요.
 
 운영 Supabase에 V1.8.5를 반영할 때도 SQL Editor에서 다음 순서로 다시 실행하세요.
 
@@ -221,7 +243,7 @@ COMMENT_REWARD_DAILY_LIMIT=5
 
 보상 전용 칭호는 `is_purchasable=false` 또는 `is_reward_only=true`로 관리하며 상점 구매가 차단됩니다. 관리자 지급은 포인트를 차감하지 않습니다. 회수한 칭호가 장착 중이면 남아 있는 첫 칭호 또는 기본 칭호 문자열로 자동 교체됩니다.
 
-시즌 명예의 전당 생성/재생성 시 일부 1위 기록에는 `season_reward` sourceType으로 seed 보상 칭호를 지급합니다. 중복 지급은 성공 응답과 함께 `alreadyOwned=true`로 처리됩니다.
+시즌 명예의 전당 생성/재생성 결과는 보상 preview의 기준이 됩니다. V1.8.5.1부터 `season_reward` 칭호 지급은 대표 category로 제한되고, 나머지 1위 기록은 프로필 트로피로만 남습니다. 중복 지급은 성공 응답과 함께 `alreadyOwned=true`로 처리됩니다.
 
 공통 프런트 렌더러는 `public/js/titleBadge.js`의 `renderTitleBadge(title, options)`입니다. `css_class`는 서버와 클라이언트에서 안전한 class 문자만 통과시킵니다. 익명 게시글/댓글은 실제 작성자의 칭호를 노출하지 않습니다.
 

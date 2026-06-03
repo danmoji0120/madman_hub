@@ -110,8 +110,21 @@ function renderCasinoSummary(data) {
 
 function renderSeasonTrophies(data) {
   const root = document.querySelector('#season-trophies');
+  const titleRoot = document.querySelector('#season-reward-titles');
   if (!root) return;
   const items = data.items || [];
+  const rewardTitles = items.filter((item) => item.titleData);
+  if (titleRoot) {
+    titleRoot.innerHTML = rewardTitles.slice(0, 5).map((item) => `
+      <article class="season-trophy-card featured">
+        <div class="season-trophy-title">
+          ${renderTitleBadge(item.titleData, { showRarityLabel: true })}
+          <strong>${API.escape(item.trophyLabel || item.categoryLabel || '시즌 보상')}</strong>
+        </div>
+        <p class="meta">${API.escape(item.seasonName || '')} · ${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</p>
+      </article>
+    `).join('') || '<p class="empty-state">아직 시즌 보상 칭호가 없습니다. 기록표는 기회를 기다리는 중입니다.</p>';
+  }
   root.innerHTML = items.map((item) => {
     const score = item.formattedScore || formatRankingScore(item.category, item.score || 0);
     return `

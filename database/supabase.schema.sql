@@ -318,14 +318,20 @@ CREATE TABLE IF NOT EXISTS season_reward_mappings (
   category TEXT NOT NULL,
   rank_min INTEGER NOT NULL DEFAULT 1,
   rank_max INTEGER NOT NULL DEFAULT 1,
-  title_id BIGINT NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+  title_id BIGINT REFERENCES titles(id) ON DELETE CASCADE,
   reward_type TEXT NOT NULL DEFAULT 'title',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   description TEXT DEFAULT '',
+  trophy_label TEXT DEFAULT '',
+  trophy_description TEXT DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(category, rank_min, rank_max, title_id)
 );
+
+ALTER TABLE season_reward_mappings ALTER COLUMN title_id DROP NOT NULL;
+ALTER TABLE season_reward_mappings ADD COLUMN IF NOT EXISTS trophy_label TEXT DEFAULT '';
+ALTER TABLE season_reward_mappings ADD COLUMN IF NOT EXISTS trophy_description TEXT DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS season_reward_grants (
   id BIGSERIAL PRIMARY KEY,

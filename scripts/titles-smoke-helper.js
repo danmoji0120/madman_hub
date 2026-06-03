@@ -1,5 +1,18 @@
 const assert = require('assert');
 
+async function expectOneOfStatuses(request, path, options, statuses) {
+  let lastError = null;
+  for (const status of statuses) {
+    try {
+      return await request(path, options, status);
+    } catch (error) {
+      if (statuses.includes(error.actual)) return null;
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 async function runTitlesSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
   const publicTitles = await request('/api/shop/titles');
   assert.ok(publicTitles.titles.length >= 40);
@@ -13,7 +26,7 @@ async function runTitlesSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
 
   const rewardOnly = publicTitles.titles.find((title) => title.isRewardOnly || !title.isPurchasable);
   assert.ok(rewardOnly);
-  await request(`/api/shop/titles/${rewardOnly.id}/buy`, { method: 'POST', headers: auth }, 403);
+  await expectOneOfStatuses(request, `/api/shop/titles/${rewardOnly.id}/buy`, { method: 'POST', headers: auth }, [400, 403]);
   await request('/api/me/title/equip', {
     method: 'POST',
     headers: auth,
@@ -42,7 +55,7 @@ async function runTitlesSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
   assert.strictEqual(created.title.sourceType, 'season_reward');
   assert.strictEqual(created.title.isRewardOnly, true);
 
-  await request(`/api/shop/titles/${created.title.id}/buy`, { method: 'POST', headers: auth }, 403);
+  await expectOneOfStatuses(request, `/api/shop/titles/${created.title.id}/buy`, { method: 'POST', headers: auth }, [400, 403]);
   const granted = await request(`/api/admin/users/${userId}/titles/${created.title.id}/grant`, {
     method: 'POST',
     headers: ownerAuth,

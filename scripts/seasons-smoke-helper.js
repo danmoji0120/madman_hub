@@ -155,38 +155,57 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: auth }, 403);
     const rewardPreview = await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: ownerAuth });
     assert.ok(rewardPreview.items.length > 0);
-    assert.ok(rewardPreview.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.titleData));
+    assert.ok(rewardPreview.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.rewardType === 'trophy' && item.willGrantTitle === false));
+    assert.ok(rewardPreview.items.some((item) => item.category === 'activity_score' && item.rewardType === 'title' && item.titleData));
+    assert.ok(rewardPreview.items.some((item) => item.status === 'trophyOnly'));
+    const previewTitleCounts = rewardPreview.items.reduce((counts, item) => {
+      if (item.willGrantTitle) counts[item.userId] = (counts[item.userId] || 0) + 1;
+      return counts;
+    }, {});
+    assert.ok(Object.values(previewTitleCounts).every((count) => count <= 2));
     rewardPreview.items.forEach((item) => {
       if (item.formattedScore) assertFormattedRankingScore(item);
     });
+    const activeTitleMappings = rewardPreview.mappings.filter((item) => item.rewardType === 'title');
+    assert.ok(activeTitleMappings.length >= 4 && activeTitleMappings.length <= 6);
+    assert.strictEqual(new Set(activeTitleMappings.map((item) => item.titleId).filter(Boolean)).size, activeTitleMappings.filter((item) => item.titleId).length);
     const rewardDryRun = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
       method: 'POST',
       headers: ownerAuth,
       body: JSON.stringify({ dryRun: true, categories: ['point_earned'] })
     });
     assert.strictEqual(rewardDryRun.dryRun, true);
-    assert.ok(rewardDryRun.items.some((item) => item.category === 'point_earned' && item.userId === userId));
+    assert.ok(rewardDryRun.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.rewardType === 'trophy'));
     const grantedRewards = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
       method: 'POST',
       headers: ownerAuth,
-      body: JSON.stringify({ categories: ['point_earned'] })
+      body: JSON.stringify({})
     });
-    assert.ok(grantedRewards.grants.some((grant) => grant.userId === userId && grant.category === 'point_earned' && grant.status === 'granted'));
+    assert.ok(grantedRewards.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.trophyOnly));
+    assert.ok(grantedRewards.grants.every((grant) => grant.category !== 'point_earned'));
+    const grantCounts = grantedRewards.grants.filter((grant) => grant.status === 'granted').reduce((counts, grant) => {
+      counts[grant.userId] = (counts[grant.userId] || 0) + 1;
+      return counts;
+    }, {});
+    assert.ok(Object.values(grantCounts).every((count) => count <= 2));
     const grantedAgain = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
       method: 'POST',
       headers: ownerAuth,
-      body: JSON.stringify({ categories: ['point_earned'] })
+      body: JSON.stringify({})
     });
-    assert.ok(grantedAgain.items.some((item) => item.userId === userId && item.category === 'point_earned' && item.skipped));
-    const myTrophies = await request('/api/me/season-trophies?limit=10', { headers: auth });
-    assert.ok(myTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned' && item.titleData));
-    const publicTrophies = await request(`/api/users/${userId}/season-trophies?limit=10`);
+    assert.ok(grantedAgain.items.some((item) => item.userId === userId && item.alreadyGranted));
+    const myTrophies = await request('/api/me/season-trophies?limit=50', { headers: auth });
+    assert.ok(myTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned' && !item.titleData));
+    assert.ok(grantedRewards.grants.some((grant) => grant.status === 'granted'));
+    const publicTrophies = await request(`/api/users/${userId}/season-trophies?limit=50`);
     assert.ok(publicTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned'));
     const notifications = await request('/api/notifications?type=season_hall_of_fame&limit=20', { headers: auth });
     assert.ok(notifications.items.some((item) => item.metadata?.seasonId === createdSeasonId));
     const mappings = await request('/api/admin/season-reward-mappings', { headers: ownerAuth });
-    assert.ok(mappings.mappings.some((item) => item.category === 'point_earned' && item.titleData));
-    const grantToRevoke = grantedRewards.grants.find((grant) => grant.userId === userId && grant.category === 'point_earned');
+    assert.ok(mappings.mappings.some((item) => item.category === 'point_earned' && item.rewardType === 'trophy' && !item.titleData));
+    assert.ok(mappings.mappings.some((item) => item.category === 'activity_score' && item.rewardType === 'title' && item.titleData));
+    const grantToRevoke = grantedRewards.grants.find((grant) => grant.userId === userId) || grantedRewards.grants[0];
+    assert.ok(grantToRevoke);
     const revoked = await request(`/api/admin/seasons/${createdSeasonId}/revoke-reward`, {
       method: 'POST',
       headers: ownerAuth,

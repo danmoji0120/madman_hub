@@ -5,6 +5,7 @@ const { createNotification } = require('./notifications.service');
 const { getSeasonRankingCategory, SEASON_RANKING_CATEGORIES } = require('../config/seasons.config');
 const { formatRankingScore } = require('../utils/formatNumbers');
 const {
+  getTitlesByNames,
   listRewardMappings,
   ensureRewardMappings,
   listHallOfFameRows,
@@ -17,23 +18,40 @@ const {
   listUserSeasonTrophies
 } = require('../repositories/seasonRewards.repo');
 
+const USER_SEASON_TITLE_LIMIT = 2;
+const TITLE_REWARD_PRIORITY = new Map([
+  ['activity_score', 1],
+  ['casino_loss', 2],
+  ['drawdown', 3],
+  ['point_spent', 4],
+  ['comment_count', 5],
+  ['song_count', 6]
+]);
+
 const DEFAULT_REWARD_MAPPINGS = [
-  { category: 'activity_score', titleName: '시즌의 지배자', description: '이번 시즌 전체 활동 종합 1위' },
-  { category: 'point_earned', titleName: '시즌 포인트 베개', description: '이번 시즌 가장 많이 포인트를 벌어들인 유저' },
-  { category: 'point_spent', titleName: '시즌 파산왕', description: '이번 시즌 가장 많이 포인트를 태운 유저' },
-  { category: 'casino_loss', titleName: '시즌 대참사', description: '이번 시즌 카지노에 가장 많이 바친 유저' },
-  { category: 'casino_profit', titleName: '30000P의 꿈', description: '이번 시즌 카지노 수익 1위' },
-  { category: 'casino_net_profit', titleName: '카지노 생존자', description: '이번 시즌 카지노 순수익 1위' },
-  { category: 'casino_net_loss', titleName: '시즌 대참사', description: '이번 시즌 카지노 순손실 1위' },
-  { category: 'comment_count', titleName: '시즌 댓글왕', description: '이번 시즌 댓글 활동 1위' },
-  { category: 'song_count', titleName: '시즌 플레이리스트 DJ', description: '이번 시즌 노래 추천 1위' },
-  { category: 'cosmetic_spent', titleName: '시즌 꾸미기 중독자', description: '이번 시즌 꾸미기 소비 1위' },
-  { category: 'balance_peak', titleName: '시즌 포인트 베개', description: '이번 시즌 최고 보유 포인트 1위' },
-  { category: 'drawdown', titleName: '내리막의 품격', description: '이번 시즌 최고점 대비 추락폭 1위' },
-  { category: 'drawdown_rate', titleName: '내리막의 품격', description: '이번 시즌 최고점 대비 추락률 1위' },
-  { category: 'biggest_casino_win', titleName: '30000P의 꿈', description: '이번 시즌 단일 카지노 최대 수익' },
-  { category: 'biggest_casino_loss', titleName: '시즌 대참사', description: '이번 시즌 단일 카지노 최대 손실' },
-  { category: 'point_turnover', titleName: '시즌 파산왕', description: '이번 시즌 포인트 회전율 1위' }
+  { category: 'activity_score', rewardType: 'title', titleName: '시즌의 지배자', trophyLabel: '활동 종합 1위', description: '대표 시즌 칭호: 활동 종합 1위' },
+  { category: 'casino_loss', rewardType: 'title', titleName: '시즌 대참사', trophyLabel: '카지노 대참사 1위', description: '대표 시즌 칭호: 카지노 대참사 1위' },
+  { category: 'drawdown', rewardType: 'title', titleName: '돈은 머무르지 않았다', trophyLabel: '최고점 추락 1위', description: '대표 시즌 칭호: 최고점 추락 1위' },
+  { category: 'point_spent', rewardType: 'title', titleName: '시즌 소각왕', trophyLabel: '포인트 소비 1위', description: '대표 시즌 칭호: 포인트 소비 1위' },
+  { category: 'comment_count', rewardType: 'title', titleName: '격리소 서기관', trophyLabel: '댓글 활동 1위', description: '대표 시즌 칭호: 댓글 활동 1위' },
+  { category: 'point_earned', rewardType: 'trophy', trophyLabel: '포인트 획득 1위' },
+  { category: 'net_points', rewardType: 'trophy', trophyLabel: '포인트 순증감 1위' },
+  { category: 'casino_profit', rewardType: 'trophy', trophyLabel: '카지노 수익 1위' },
+  { category: 'casino_net_profit', rewardType: 'trophy', trophyLabel: '카지노 순수익 1위' },
+  { category: 'casino_net_loss', rewardType: 'trophy', trophyLabel: '카지노 순손실 1위' },
+  { category: 'casino_plays', rewardType: 'trophy', trophyLabel: '카지노 플레이 1위' },
+  { category: 'post_count', rewardType: 'trophy', trophyLabel: '게시글 작성 1위' },
+  { category: 'song_count', rewardType: 'trophy', trophyLabel: '노래추천 1위' },
+  { category: 'daily_mission_count', rewardType: 'trophy', trophyLabel: '일일 미션 1위' },
+  { category: 'cosmetic_spent', rewardType: 'trophy', trophyLabel: '꾸미기 소비 1위' },
+  { category: 'attendance_count', rewardType: 'trophy', trophyLabel: '출석 1위' },
+  { category: 'balance_peak', rewardType: 'trophy', trophyLabel: '최고 보유 포인트 1위' },
+  { category: 'drawdown_rate', rewardType: 'trophy', trophyLabel: '최고점 추락률 1위' },
+  { category: 'biggest_casino_win', rewardType: 'trophy', trophyLabel: '단일 최대 승리 1위' },
+  { category: 'biggest_casino_loss', rewardType: 'trophy', trophyLabel: '단일 최대 손실 1위' },
+  { category: 'point_turnover', rewardType: 'trophy', trophyLabel: '포인트 회전율 1위' },
+  { category: 'russian_cashout_count', rewardType: 'trophy', trophyLabel: '러시안 룰렛 2발 캐시아웃 1위' },
+  { category: 'blackjack_profit', rewardType: 'trophy', trophyLabel: '블랙잭 수익 1위' }
 ];
 
 function httpError(status, message) {
@@ -56,6 +74,30 @@ function normalizeCategories(categories = []) {
 async function ensureDefaultRewardMappings() {
   await ensureRewardMappings(DEFAULT_REWARD_MAPPINGS);
   return listRewardMappings();
+}
+
+async function getDefaultRewardMappings() {
+  await ensureRewardMappings(DEFAULT_REWARD_MAPPINGS);
+  const titleMap = await getTitlesByNames(DEFAULT_REWARD_MAPPINGS.map((mapping) => mapping.titleName).filter(Boolean));
+  return DEFAULT_REWARD_MAPPINGS.map((mapping, index) => {
+    const title = mapping.titleName ? titleMap.get(mapping.titleName) : null;
+    return {
+      id: mapping.rewardType === 'title' ? `default-title-${mapping.category}` : `default-trophy-${mapping.category}`,
+      category: mapping.category,
+      categoryLabel: getSeasonRankingCategory(mapping.category)?.label || mapping.category,
+      rankMin: mapping.rankMin || 1,
+      rankMax: mapping.rankMax || 1,
+      titleId: title?.id || null,
+      titleData: title || null,
+      title_data: title || null,
+      rewardType: mapping.rewardType || 'trophy',
+      isActive: true,
+      description: mapping.description || '',
+      trophyLabel: mapping.trophyLabel || `${getSeasonRankingCategory(mapping.category)?.label || mapping.category} 1위`,
+      trophyDescription: mapping.trophyDescription || '',
+      priority: TITLE_REWARD_PRIORITY.get(mapping.category) || 100 + index
+    };
+  });
 }
 
 function normalizeEntryFromHall(row, season) {
@@ -120,29 +162,42 @@ function buildTrophyDescription(entry) {
 async function buildRewardPreview({ season, categories = [] }) {
   const selectedCategories = normalizeCategories(categories);
   const [mappings, entries, existingGrants] = await Promise.all([
-    ensureDefaultRewardMappings(),
+    getDefaultRewardMappings(),
     getEntriesForSeason(season, selectedCategories),
     listRewardGrants(season.id)
   ]);
   const grantedKeys = new Set(existingGrants.filter((grant) => grant.status === 'granted')
     .map((grant) => `${grant.userId}:${grant.titleId}:${grant.category}`));
+  const grantedTitleCounts = existingGrants.filter((grant) => grant.status === 'granted')
+    .reduce((counts, grant) => counts.set(grant.userId, Number(counts.get(grant.userId) || 0) + 1), new Map());
   const mappingRows = mappings.filter((mapping) => (
-    mapping.isActive &&
-    (!selectedCategories.length || selectedCategories.includes(mapping.category)) &&
-    mapping.rewardType === 'title' &&
-    mapping.titleId
+    mapping.isActive && (!selectedCategories.length || selectedCategories.includes(mapping.category))
   ));
 
-  const preview = [];
-  for (const entry of entries) {
+  const rawPreview = [];
+  for (const entry of entries.filter((item) => item.rank === 1)) {
     const matching = mappingRows.filter((mapping) => (
       mapping.category === entry.category &&
       entry.rank >= mapping.rankMin &&
       entry.rank <= mapping.rankMax
     ));
-    for (const mapping of matching) {
-      const alreadyOwned = await getOwnedTitle(entry.userId, mapping.titleId);
-      preview.push({
+    const effectiveMappings = matching.length ? matching : [{
+      category: entry.category,
+      categoryLabel: getSeasonRankingCategory(entry.category)?.label || entry.category,
+      rankMin: 1,
+      rankMax: 1,
+      titleId: null,
+      titleData: null,
+      rewardType: 'trophy',
+      trophyLabel: `${getSeasonRankingCategory(entry.category)?.label || entry.category} 1위`,
+      priority: 999
+    }];
+    for (const mapping of effectiveMappings) {
+      const isTitleMapping = mapping.rewardType === 'title';
+      const missingTitle = isTitleMapping && !mapping.titleId;
+      const alreadyOwned = mapping.titleId ? await getOwnedTitle(entry.userId, mapping.titleId) : false;
+      const alreadyGranted = mapping.titleId ? grantedKeys.has(`${entry.userId}:${mapping.titleId}:${entry.category}`) : false;
+      rawPreview.push({
         seasonId: season.id,
         seasonName: season.name,
         sourceHallOfFameId: entry.id || null,
@@ -157,17 +212,60 @@ async function buildRewardPreview({ season, categories = [] }) {
         titleId: mapping.titleId,
         titleData: mapping.titleData,
         title_data: mapping.titleData,
-        rewardType: mapping.rewardType,
+        rewardType: missingTitle ? 'trophy' : mapping.rewardType,
         mappingId: mapping.id,
         alreadyOwned,
-        alreadyGranted: grantedKeys.has(`${entry.userId}:${mapping.titleId}:${entry.category}`),
-        trophyLabel: buildTrophyLabel(season, entry),
-        trophyDescription: buildTrophyDescription(entry),
-        metadata: entry.metadata || {}
+        alreadyGranted,
+        trophyLabel: mapping.trophyLabel ? `${season.name} ${mapping.trophyLabel}` : buildTrophyLabel(season, entry),
+        trophyDescription: mapping.trophyDescription || buildTrophyDescription(entry),
+        metadata: entry.metadata || {},
+        priority: mapping.priority || TITLE_REWARD_PRIORITY.get(entry.category) || 999,
+        skipReason: missingTitle ? 'missingTitle' : null
       });
     }
   }
-  return preview;
+
+  rawPreview.sort((a, b) => a.priority - b.priority || a.category.localeCompare(b.category));
+  const plannedTitleCounts = new Map(grantedTitleCounts);
+  return rawPreview.map((item) => {
+    const isTitleCandidate = item.rewardType === 'title' && item.titleId;
+    let skipReason = item.skipReason;
+    let willGrantTitle = false;
+    if (item.alreadyGranted) {
+      skipReason = 'alreadyGranted';
+    } else if (isTitleCandidate) {
+      const currentCount = Number(plannedTitleCounts.get(item.userId) || 0);
+      if (currentCount >= USER_SEASON_TITLE_LIMIT) {
+        skipReason = 'userSeasonRewardLimit';
+      } else {
+        willGrantTitle = true;
+        plannedTitleCounts.set(item.userId, currentCount + 1);
+      }
+    }
+    const rewardType = willGrantTitle || item.alreadyGranted ? 'title' : 'trophy';
+    const statusLabel = item.alreadyGranted
+      ? '이미 지급 완료'
+      : skipReason === 'userSeasonRewardLimit'
+        ? '칭호 제한 초과'
+        : willGrantTitle
+          ? item.alreadyOwned ? '이미 보유 · 지급 기록 예정' : '칭호 지급 예정'
+          : '프로필 기록만';
+    return {
+      ...item,
+      rewardType,
+      willGrantTitle,
+      willCreateTrophy: true,
+      skipReason,
+      statusLabel,
+      status: item.alreadyGranted
+        ? 'alreadyGranted'
+        : skipReason === 'userSeasonRewardLimit'
+          ? 'skippedUserLimit'
+          : willGrantTitle
+            ? item.alreadyOwned ? 'alreadyOwned' : 'readyTitleGrant'
+            : 'trophyOnly'
+    };
+  }).sort((a, b) => a.category.localeCompare(b.category));
 }
 
 async function getSeasonRewardPreview(seasonId, options = {}) {
@@ -178,26 +276,29 @@ async function getSeasonRewardPreview(seasonId, options = {}) {
     season,
     items: preview,
     grants: await listRewardGrants(season.id),
-    mappings: await listRewardMappings()
+    mappings: await getDefaultRewardMappings()
   };
 }
 
 async function grantPreviewItem(actorUser, season, item, { reissue = false } = {}) {
-  if (item.alreadyGranted && !reissue) {
-    await upsertSeasonTrophy({
+  const trophy = await upsertSeasonTrophy({
       seasonId: season.id,
       userId: item.userId,
       category: item.category,
       rank: item.rank,
       score: item.score,
       formattedScore: item.formattedScore,
-      titleId: item.titleId,
+      titleId: item.willGrantTitle || item.alreadyGranted ? item.titleId : null,
       trophyLabel: item.trophyLabel,
       trophyDescription: item.trophyDescription,
-      metadata: item.metadata,
+      metadata: { ...item.metadata, rewardStatus: item.status, skipReason: item.skipReason || null },
       isFeatured: item.rank === 1
     });
-    return { ...item, skipped: true, reason: 'alreadyGranted' };
+  if (item.alreadyGranted && !reissue) {
+    return { ...item, trophy, skipped: true, reason: 'alreadyGranted' };
+  }
+  if (!item.willGrantTitle) {
+    return { ...item, trophy, trophyOnly: true, skipped: Boolean(item.skipReason), reason: item.skipReason || 'trophyOnly' };
   }
 
   const grantResult = await adminGrantTitle({
@@ -220,7 +321,7 @@ async function grantPreviewItem(actorUser, season, item, { reissue = false } = {
     reason: `${season.name} ${item.categoryLabel} ${item.rank}위 시즌 보상`,
     metadata: { ...item.metadata, alreadyOwned: grantResult.alreadyOwned, titleName: item.titleData?.name }
   });
-  const trophy = await upsertSeasonTrophy({
+  const titleTrophy = await upsertSeasonTrophy({
     seasonId: season.id,
     userId: item.userId,
     category: item.category,
@@ -254,7 +355,7 @@ async function grantPreviewItem(actorUser, season, item, { reissue = false } = {
       titleName: item.titleData?.name
     }
   }).catch((error) => console.error('Season reward notification failed:', error));
-  return { ...item, granted: true, grant, trophy, alreadyOwned: grantResult.alreadyOwned };
+  return { ...item, granted: true, grant, trophy: titleTrophy, alreadyOwned: grantResult.alreadyOwned };
 }
 
 async function grantSeasonRewards(actorUser, seasonId, options = {}) {
@@ -273,7 +374,13 @@ async function grantSeasonRewards(actorUser, seasonId, options = {}) {
   await logActivity({
     userId: actorUser.id,
     action: 'admin_season_rewards_granted',
-    metadata: { seasonId: season.id, code: season.code, granted: results.filter((item) => item.granted).length, skipped: results.filter((item) => item.skipped).length }
+    metadata: {
+      seasonId: season.id,
+      code: season.code,
+      granted: results.filter((item) => item.granted).length,
+      trophies: results.filter((item) => item.trophyOnly).length,
+      skipped: results.filter((item) => item.skipped).length
+    }
   });
   return { season, items: results, grants: await listRewardGrants(season.id) };
 }
@@ -313,8 +420,7 @@ async function revokeSeasonReward(actorUser, seasonId, { grantId, revokeTitle = 
 }
 
 async function listSeasonRewardMappings() {
-  await ensureDefaultRewardMappings();
-  return { mappings: await listRewardMappings({ includeInactive: true }) };
+  return { mappings: await getDefaultRewardMappings(), storedMappings: await listRewardMappings({ includeInactive: true }) };
 }
 
 async function listSeasonTrophiesForUser(userId, filters = {}) {

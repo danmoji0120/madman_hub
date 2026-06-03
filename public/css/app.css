@@ -874,6 +874,56 @@ button {
   font-size: 0.82rem;
 }
 
+.title-season-reward {
+  border-style: double;
+  border-width: 3px;
+  background: linear-gradient(135deg, rgba(20, 28, 74, 0.95), rgba(80, 43, 120, 0.82));
+  box-shadow: 0 0 18px rgba(72, 218, 255, 0.18), inset 0 0 18px rgba(255, 215, 128, 0.08);
+}
+
+.title-season-reward.title-rarity-legendary {
+  border-color: rgba(255, 215, 128, 0.86);
+  color: #ffe8a8;
+}
+
+.title-season-reward.title-rarity-epic {
+  border-color: rgba(202, 158, 255, 0.82);
+  color: #ead7ff;
+}
+
+.title-season-reward.title-rarity-rare {
+  border-color: rgba(128, 232, 255, 0.82);
+  color: #d5f7ff;
+}
+
+.season-reward-label {
+  background: rgba(255, 215, 128, 0.18);
+  color: #ffe6a0;
+}
+
+.season-trophy-only {
+  border-color: rgba(128, 232, 255, 0.36);
+  color: #c7f4ff;
+}
+
+.reward-preview-title-grant {
+  background: rgba(255, 215, 128, 0.035);
+}
+
+.reward-preview-trophy-only {
+  background: rgba(128, 232, 255, 0.025);
+}
+
+.reward-preview-skipped,
+.reward-preview-limit-skipped {
+  opacity: 0.84;
+}
+
+.reward-preview-limit-skipped .reward-status-badge {
+  background: rgba(255, 137, 96, 0.14);
+  color: #ffd4c4;
+}
+
 @media (max-width: 720px) {
   .nav {
     align-items: flex-start;

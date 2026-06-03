@@ -57,6 +57,9 @@ WITH title_seed(
     ('시즌 포인트 베개', '포인트 획득 기록 위에 편히 누운 시즌 우승자.', 0, 'epic', 'season', 'season_reward', 0, 1, 501, '이번 시즌만큼은 숫자가 푹신했다.', '시즌 point_earned 1위 보상', 'title-concept-epic', '*', 0),
     ('시즌 파산왕', '가장 화려하게 쓴 사람에게 남는 이상한 영광.', 0, 'epic', 'season', 'season_reward', 0, 1, 502, '잔고는 가벼워졌고 이름은 무거워졌다.', '시즌 point_spent 1위 보상', 'title-concept-epic', '*', 0),
     ('시즌 대참사', '손실도 기록이 되면 전설처럼 보인다.', 0, 'legendary', 'season', 'season_reward', 0, 1, 503, '이건 실패가 아니라 박제된 낙하산이다.', '시즌 casino_loss 1위 보상', 'title-concept-legendary', '*', 0),
+    ('돈은 머무르지 않았다', '최고점은 있었고 지금은 전시만 남았다.', 0, 'epic', 'season', 'season_reward', 0, 1, 509, '최고점은 있었고, 지금은 없습니다.', '시즌 최고점 추락 1위 보상', 'title-concept-epic', '!', 0),
+    ('시즌 소각왕', '포인트를 가장 뜨겁게 태운 시즌 기록자.', 0, 'epic', 'season', 'season_reward', 0, 1, 510, '번 돈보다 태운 돈이 더 아름다웠습니다.', '시즌 포인트 소비 1위 보상', 'title-concept-epic', '*', 0),
+    ('격리소 서기관', '격리소의 광기를 가장 성실하게 기록한 사람.', 0, 'rare', 'season', 'season_reward', 0, 1, 511, '격리소의 광기는 기록으로 완성됩니다.', '시즌 댓글 활동 1위 보상', 'title-concept-rare', '*', 0),
     ('시즌 댓글왕', '한 시즌의 빈칸을 말풍선으로 채운 사람.', 0, 'rare', 'season', 'season_reward', 0, 1, 504, '조용한 글도 이 사람을 만나면 대화가 된다.', '시즌 comment_count 1위 보상', 'title-concept-rare', '*', 0),
     ('시즌 플레이리스트 DJ', '격리소의 배경음악을 책임진 시즌 추천왕.', 0, 'rare', 'season', 'season_reward', 0, 1, 505, '모두가 듣지는 않았지만 모두가 봤다.', '시즌 song_count 1위 보상', 'title-concept-rare', '*', 0),
     ('시즌 꾸미기 중독자', '프로필보다 결제 내역이 더 반짝인 시즌 소비자.', 0, 'epic', 'season', 'season_reward', 0, 1, 506, '취향은 숫자로도 증명된다.', '시즌 cosmetic_spent 1위 보상', 'title-concept-epic', '*', 0),
@@ -109,38 +112,23 @@ UPDATE titles
 SET category = 'admin', source_type = 'admin_grant', is_purchasable = 0, is_reward_only = 1
 WHERE rarity = 'admin';
 
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'activity_score', 1, 1, id, 'title', 1, '이번 시즌 전체 활동 종합 1위' FROM titles WHERE name = '시즌의 지배자';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'point_earned', 1, 1, id, 'title', 1, '이번 시즌 가장 많이 포인트를 벌어들인 유저' FROM titles WHERE name = '시즌 포인트 베개';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'point_spent', 1, 1, id, 'title', 1, '이번 시즌 가장 많이 포인트를 태운 유저' FROM titles WHERE name = '시즌 파산왕';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'casino_loss', 1, 1, id, 'title', 1, '이번 시즌 카지노에 가장 많이 바친 유저' FROM titles WHERE name = '시즌 대참사';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'casino_profit', 1, 1, id, 'title', 1, '이번 시즌 카지노 수익 1위' FROM titles WHERE name = '30000P의 꿈';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'casino_net_profit', 1, 1, id, 'title', 1, '이번 시즌 카지노 순수익 1위' FROM titles WHERE name = '카지노 생존자';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'casino_net_loss', 1, 1, id, 'title', 1, '이번 시즌 카지노 순손실 1위' FROM titles WHERE name = '시즌 대참사';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'comment_count', 1, 1, id, 'title', 1, '이번 시즌 댓글 활동 1위' FROM titles WHERE name = '시즌 댓글왕';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'song_count', 1, 1, id, 'title', 1, '이번 시즌 노래 추천 1위' FROM titles WHERE name = '시즌 플레이리스트 DJ';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'cosmetic_spent', 1, 1, id, 'title', 1, '이번 시즌 꾸미기 소비 1위' FROM titles WHERE name = '시즌 꾸미기 중독자';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'balance_peak', 1, 1, id, 'title', 1, '이번 시즌 최고 보유 포인트 1위' FROM titles WHERE name = '시즌 포인트 베개';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'drawdown', 1, 1, id, 'title', 1, '이번 시즌 최고점 대비 추락폭 1위' FROM titles WHERE name = '내리막의 품격';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'drawdown_rate', 1, 1, id, 'title', 1, '이번 시즌 최고점 대비 추락률 1위' FROM titles WHERE name = '내리막의 품격';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'biggest_casino_win', 1, 1, id, 'title', 1, '이번 시즌 단일 카지노 최대 수익' FROM titles WHERE name = '30000P의 꿈';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'biggest_casino_loss', 1, 1, id, 'title', 1, '이번 시즌 단일 카지노 최대 손실' FROM titles WHERE name = '시즌 대참사';
-INSERT OR IGNORE INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
-SELECT 'point_turnover', 1, 1, id, 'title', 1, '이번 시즌 포인트 회전율 1위' FROM titles WHERE name = '시즌 파산왕';
+UPDATE season_reward_mappings SET is_active = 0;
+
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'activity_score', 1, 1, id, 'title', 1, '대표 시즌 칭호: 활동 종합 1위' FROM titles WHERE name = '시즌의 지배자'
+ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = 1, description = excluded.description, updated_at = CURRENT_TIMESTAMP;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_loss', 1, 1, id, 'title', 1, '대표 시즌 칭호: 카지노 대참사 1위' FROM titles WHERE name = '시즌 대참사'
+ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = 1, description = excluded.description, updated_at = CURRENT_TIMESTAMP;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'drawdown', 1, 1, id, 'title', 1, '대표 시즌 칭호: 최고점 추락 1위' FROM titles WHERE name = '돈은 머무르지 않았다'
+ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = 1, description = excluded.description, updated_at = CURRENT_TIMESTAMP;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'point_spent', 1, 1, id, 'title', 1, '대표 시즌 칭호: 포인트 소비 1위' FROM titles WHERE name = '시즌 소각왕'
+ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = 1, description = excluded.description, updated_at = CURRENT_TIMESTAMP;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'comment_count', 1, 1, id, 'title', 1, '대표 시즌 칭호: 댓글 활동 1위' FROM titles WHERE name = '격리소 서기관'
+ON CONFLICT(category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = 1, description = excluded.description, updated_at = CURRENT_TIMESTAMP;
 
 INSERT OR IGNORE INTO cosmetic_items (code, name, description, type, rarity, price, css_class, preview_text) VALUES
   ('default_frame', '기본 테두리', '차분한 기본 프로필 테두리', 'profile_frame', 'common', 0, 'cosmetic-frame-default', '기본'),
