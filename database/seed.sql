@@ -29,68 +29,57 @@ SELECT u.id, t.id, 'default'
 FROM users u
 JOIN titles t ON t.name = '신규 격리 대상';
 
-WITH RECURSIVE seq(n) AS (
-  SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 100
-),
-title_seed AS (
-  SELECT
-    CASE
-      WHEN n <= 30 THEN 'MVP16 Common ' || printf('%02d', n)
-      WHEN n <= 55 THEN 'MVP16 Uncommon ' || printf('%02d', n - 30)
-      WHEN n <= 73 THEN 'MVP16 Rare ' || printf('%02d', n - 55)
-      WHEN n <= 87 THEN 'MVP16 Epic ' || printf('%02d', n - 73)
-      WHEN n <= 94 THEN 'MVP16 Legendary ' || printf('%02d', n - 87)
-      WHEN n <= 97 THEN 'MVP16 Event ' || printf('%02d', n - 94)
-      WHEN n <= 99 THEN 'MVP16 Admin ' || printf('%02d', n - 97)
-      ELSE 'MVP16 Punishment 01'
-    END AS name,
-    'MVP 1.6 title seed' AS description,
-    CASE WHEN n <= 73 THEN n * 10 ELSE 0 END AS price,
-    CASE
-      WHEN n <= 30 THEN 'common'
-      WHEN n <= 55 THEN 'uncommon'
-      WHEN n <= 73 THEN 'rare'
-      WHEN n <= 87 THEN 'epic'
-      WHEN n <= 94 THEN 'legendary'
-      WHEN n <= 97 THEN 'event'
-      WHEN n <= 99 THEN 'admin'
-      ELSE 'punishment'
-    END AS rarity,
-    CASE
-      WHEN n <= 55 THEN 'shop'
-      WHEN n <= 73 THEN 'casino'
-      WHEN n <= 87 THEN 'achievement'
-      WHEN n <= 94 THEN 'season'
-      WHEN n <= 97 THEN 'event'
-      WHEN n <= 99 THEN 'admin'
-      ELSE 'punishment'
-    END AS category,
-    CASE
-      WHEN n <= 73 THEN 'purchase'
-      WHEN n <= 87 THEN 'achievement'
-      WHEN n <= 94 THEN 'season_reward'
-      WHEN n <= 97 THEN 'event_reward'
-      WHEN n <= 99 THEN 'admin_grant'
-      ELSE 'system_grant'
-    END AS source_type,
-    CASE WHEN n <= 73 THEN 1 ELSE 0 END AS is_purchasable,
-    CASE WHEN n <= 73 THEN 0 ELSE 1 END AS is_reward_only,
-    n AS display_order,
-    'Seeded badge flavor for MVP 1.6' AS flavor_text,
-    CASE WHEN n <= 73 THEN 'Purchase in the title shop.' ELSE 'Granted as an activity, season, event, or admin reward.' END AS unlock_hint,
-    CASE
-      WHEN n <= 30 THEN 'title-seed-common'
-      WHEN n <= 55 THEN 'title-seed-uncommon'
-      WHEN n <= 73 THEN 'title-seed-rare'
-      WHEN n <= 87 THEN 'title-seed-epic'
-      WHEN n <= 94 THEN 'title-seed-legendary'
-      WHEN n <= 97 THEN 'title-seed-event'
-      WHEN n <= 99 THEN 'title-seed-admin'
-      ELSE 'title-seed-punishment'
-    END AS css_class,
-    CASE WHEN n > 94 THEN '!' ELSE '' END AS icon,
-    CASE WHEN n BETWEEN 95 AND 97 THEN 1 ELSE 0 END AS is_limited
-  FROM seq
+DELETE FROM titles
+WHERE name LIKE 'MVP16 %'
+  AND id NOT IN (SELECT title_id FROM user_titles);
+
+WITH title_seed(
+  name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,
+  display_order, flavor_text, unlock_hint, css_class, icon, is_limited
+) AS (
+  VALUES
+    ('초보 실험체', '격리소 첫 출입자를 위한 기본형 상점 칭호', 100, 'common', 'shop', 'purchase', 1, 0, 101, '이름표는 새것이지만 이미 살짝 흔들리고 있다.', '칭호 상점에서 구매', 'title-concept-common', '', 0),
+    ('관찰 대상', '아직은 평범하지만 기록은 이미 시작됐다.', 150, 'common', 'shop', 'purchase', 1, 0, 102, '누군가의 체크리스트 맨 위에 올라간 기분.', '칭호 상점에서 구매', 'title-concept-common', '', 0),
+    ('경고 보호막', '경고문을 갑옷처럼 두른 조심성 많은 이용자.', 200, 'common', 'shop', 'purchase', 1, 0, 103, '위험하지 않다. 아마도.', '칭호 상점에서 구매', 'title-concept-common', '', 0),
+    ('오늘의 생존자', '하루를 무사히 넘긴 사람에게 어울리는 작은 표식.', 250, 'common', 'activity', 'purchase', 1, 0, 104, '대단한 승리는 아니어도 기록할 만한 생존이다.', '칭호 상점에서 구매', 'title-concept-common', '', 0),
+    ('댓글 점화자', '조용한 글에도 불씨 하나를 던지는 사람.', 500, 'uncommon', 'activity', 'purchase', 1, 0, 201, '한 줄이면 충분하다. 분위기가 달라진다.', '댓글 활동 또는 칭호 상점', 'title-concept-uncommon', '', 0),
+    ('소음 큐레이터', '묻지도 않았는데 좋은 노래를 들고 오는 사람.', 600, 'uncommon', 'activity', 'purchase', 1, 0, 202, '플레이리스트가 길수록 변명도 길어진다.', '노래 추천 활동 또는 칭호 상점', 'title-concept-uncommon', '', 0),
+    ('칩 한 줌의 용기', '작게 걸고 크게 떨리는 카지노 입문자.', 700, 'uncommon', 'casino', 'purchase', 1, 0, 203, '손에 쥔 칩보다 표정이 더 비싸다.', '카지노 활동 또는 칭호 상점', 'title-concept-uncommon', '', 0),
+    ('격리실 산책자', '방문 기록이 산책 코스처럼 자연스러운 사람.', 800, 'uncommon', 'activity', 'purchase', 1, 0, 204, '나갈 길은 몰라도 돌아오는 길은 안다.', '출석 또는 활동 보상', 'title-concept-uncommon', '', 0),
+    ('네온 잔상', '빠르게 지나가도 화면에 색이 남는 칭호.', 1500, 'rare', 'shop', 'purchase', 1, 0, 301, '빛난다기보다 오래 어른거린다.', '칭호 상점에서 구매', 'title-concept-rare', '', 0),
+    ('카지노 생존자', '잃었지만 살아남았고, 살아남았으니 또 들어간다.', 1800, 'rare', 'casino', 'purchase', 1, 0, 302, '승리는 아니지만 퇴장은 아니다.', '카지노 활동 또는 칭호 상점', 'title-concept-rare', '', 0),
+    ('포인트 수집광', '보이는 보상은 일단 주워 담는 사람.', 2000, 'rare', 'shop', 'purchase', 1, 0, 303, '통장이 아니라 점수판을 믿는다.', '칭호 상점에서 구매', 'title-concept-rare', '', 0),
+    ('기록 보관관', '모든 소란을 기록으로 남기는 격리소의 서기.', 2200, 'rare', 'activity', 'purchase', 1, 0, 304, '기억은 흐려져도 로그는 남는다.', '게시글/댓글 활동 또는 칭호 상점', 'title-concept-rare', '', 0),
+    ('가성비 파산왕', '싸게 잃는 법을 누구보다 성실히 연구했다.', 4000, 'epic', 'casino', 'purchase', 1, 0, 401, '손실도 전략처럼 말하면 조금 덜 아프다.', '카지노 활동 또는 칭호 상점', 'title-concept-epic', '', 0),
+    ('카지노 망령', '나갔다고 생각했지만 버튼 앞에 다시 서 있다.', 4500, 'epic', 'casino', 'purchase', 1, 0, 402, '테이블 위에 미련이 떠다닌다.', '카지노 활동 또는 칭호 상점', 'title-concept-epic', '', 0),
+    ('댓글 빌런', '대화의 흐름을 기묘하게 풍성하게 만드는 사람.', 3500, 'epic', 'activity', 'purchase', 1, 0, 403, '문제는 없지만 모두가 한 번 더 읽는다.', '댓글 활동 또는 칭호 상점', 'title-concept-epic', '', 0),
+    ('상점의 후원자', '필요해서 산 것이 아니라 보여주기 위해 샀다.', 5000, 'epic', 'shop', 'purchase', 1, 0, 404, '소비는 취향의 가장 시끄러운 증거다.', '칭호 상점에서 구매', 'title-concept-epic', '', 0),
+    ('시즌 포인트 베개', '포인트 획득 기록 위에 편히 누운 시즌 우승자.', 0, 'epic', 'season', 'season_reward', 0, 1, 501, '이번 시즌만큼은 숫자가 푹신했다.', '시즌 point_earned 1위 보상', 'title-concept-epic', '*', 0),
+    ('시즌 파산왕', '가장 화려하게 쓴 사람에게 남는 이상한 영광.', 0, 'epic', 'season', 'season_reward', 0, 1, 502, '잔고는 가벼워졌고 이름은 무거워졌다.', '시즌 point_spent 1위 보상', 'title-concept-epic', '*', 0),
+    ('시즌 대참사', '손실도 기록이 되면 전설처럼 보인다.', 0, 'legendary', 'season', 'season_reward', 0, 1, 503, '이건 실패가 아니라 박제된 낙하산이다.', '시즌 casino_loss 1위 보상', 'title-concept-legendary', '*', 0),
+    ('시즌 댓글왕', '한 시즌의 빈칸을 말풍선으로 채운 사람.', 0, 'rare', 'season', 'season_reward', 0, 1, 504, '조용한 글도 이 사람을 만나면 대화가 된다.', '시즌 comment_count 1위 보상', 'title-concept-rare', '*', 0),
+    ('시즌 플레이리스트 DJ', '격리소의 배경음악을 책임진 시즌 추천왕.', 0, 'rare', 'season', 'season_reward', 0, 1, 505, '모두가 듣지는 않았지만 모두가 봤다.', '시즌 song_count 1위 보상', 'title-concept-rare', '*', 0),
+    ('시즌 꾸미기 중독자', '프로필보다 결제 내역이 더 반짝인 시즌 소비자.', 0, 'epic', 'season', 'season_reward', 0, 1, 506, '취향은 숫자로도 증명된다.', '시즌 cosmetic_spent 1위 보상', 'title-concept-epic', '*', 0),
+    ('시즌의 지배자', '한 시즌 동안 격리소의 시선을 붙잡은 사람.', 0, 'legendary', 'season', 'season_reward', 0, 1, 507, '기록표가 잠깐 왕좌처럼 보였다.', '시즌 activity_score 1위 보상', 'title-concept-legendary', '*', 0),
+    ('30000P의 꿈', '천국을 보고 지옥에 주차한 카지노 기록.', 0, 'legendary', 'casino', 'season_reward', 0, 1, 508, '꿈은 컸고 그래프는 더 크게 흔들렸다.', '시즌 casino_profit 1위 또는 특수 카지노 보상', 'title-concept-legendary', '*', 0),
+    ('한탕의 부스러기', '분명 뭔가 많았는데 지금은 흔적만 남았다.', 0, 'epic', 'casino', 'system_grant', 0, 1, 601, '이득의 냄새는 오래가고 포인트는 빨리 간다.', '특수 카지노 기록 보상', 'title-concept-epic', '!', 0),
+    ('럭키한 불운아', '운이 좋았는지 나빴는지 아직도 결론이 없다.', 0, 'rare', 'casino', 'achievement', 0, 1, 602, '웃으면서 잃으면 그건 재능일까.', '카지노 업적 보상', 'title-concept-rare', '!', 0),
+    ('내리막의 품격', '떨어지는 중에도 자세만큼은 흔들리지 않았다.', 0, 'epic', 'casino', 'season_reward', 0, 1, 603, '낙하는 빠르고 변명은 길다.', '시즌 카지노 손실 기록 보상', 'title-concept-epic', '!', 0),
+    ('로그가 울고 있다', '시스템도 한 번쯤은 말리고 싶었던 기록.', 0, 'uncommon', 'casino', 'achievement', 0, 1, 604, '기록은 정직했고 결과는 잔인했다.', '카지노 업적 보상', 'title-concept-uncommon', '!', 0),
+    ('주사위 피해자', '주사위는 굴렀고 책임은 유저에게 남았다.', 0, 'rare', 'casino', 'achievement', 0, 1, 605, '확률은 중립이고 체감은 배신자다.', '카지노 업적 보상', 'title-concept-rare', '!', 0),
+    ('관리자 장난감', '운영자의 마우스 끝에서 굴러가는 칭호.', 0, 'admin', 'admin', 'admin_grant', 0, 1, 701, '권한은 무겁고 장난은 가볍다.', '관리자 수동 지급', 'title-concept-admin', '!', 0),
+    ('격리 실패 개체', '격리 절차가 실패했음을 알리는 노란 경고판.', 0, 'punishment', 'punishment', 'admin_grant', 0, 1, 702, '주의: 본인이 원인일 가능성이 높다.', '관리자 수동 지급', 'title-concept-punishment', '!', 0),
+    ('반성문 제출자', '기록은 길었고 사과문은 더 길었다.', 0, 'punishment', 'punishment', 'admin_grant', 0, 1, 703, '반성은 했지만 로그는 남았다.', '관리자 수동 지급', 'title-concept-punishment', '!', 0),
+    ('감시실의 단골', '관리자 화면에서 자주 마주치는 익숙한 이름.', 0, 'admin', 'admin', 'admin_grant', 0, 1, 704, '관심은 사랑이 아니지만 기록은 확실하다.', '관리자 수동 지급', 'title-concept-admin', '!', 0),
+    ('영구 박제 후보', '아직 박제는 아니지만 액자는 준비됐다.', 0, 'punishment', 'punishment', 'admin_grant', 0, 1, 705, '조금만 더 하면 전설이 아니라 경고문이 된다.', '관리자 수동 지급', 'title-concept-punishment', '!', 0),
+    ('댓글로 불타는 자', '댓글 하나로 방의 온도를 올리는 활동가.', 0, 'rare', 'activity', 'achievement', 0, 1, 801, '불씨는 작아도 알림은 길다.', '댓글 업적 보상', 'title-concept-rare', '', 0),
+    ('게시판 정리병', '혼돈의 게시판에도 자기만의 분류표가 있다.', 0, 'rare', 'activity', 'achievement', 0, 1, 802, '정리는 습관이고 글은 증거다.', '게시글 업적 보상', 'title-concept-rare', '', 0),
+    ('플레이리스트 망령', '추천은 끝났지만 노래는 계속 남아 있다.', 0, 'uncommon', 'activity', 'achievement', 0, 1, 803, '재생목록 어딘가에서 아직도 떠돈다.', '노래 추천 업적 보상', 'title-concept-uncommon', '', 0),
+    ('새벽 감성러', '새벽에만 납득되는 문장과 노래를 남긴 사람.', 0, 'rare', 'activity', 'achievement', 0, 1, 804, '아침에 보면 조금 민망한 것이 진짜 감성이다.', '야간 활동 또는 노래 추천 업적 보상', 'title-concept-rare', '', 0),
+    ('출석을 잊지 않는 자', '출석 버튼과 은근히 깊은 신뢰를 쌓았다.', 0, 'uncommon', 'activity', 'achievement', 0, 1, 805, '꾸준함은 가장 조용한 광기다.', '연속 출석 업적 보상', 'title-concept-uncommon', '', 0),
+    ('일일미션 착각왕', '오늘 할 일을 다 했다고 믿고 싶은 사람.', 0, 'epic', 'activity', 'achievement', 0, 1, 806, '완료 체크는 마음속에서 먼저 일어난다.', '일일 미션 업적 보상', 'title-concept-epic', '', 0),
+    ('이벤트 생존 증거', '이벤트가 지나간 뒤에도 남은 작은 네온 표식.', 0, 'event', 'event', 'event_reward', 0, 1, 901, '그때 있었다는 사실만으로도 충분하다.', '이벤트 보상', 'title-concept-event', '!', 1),
+    ('한정판 소문꾼', '이벤트보다 이벤트 이야기를 더 오래 남긴 사람.', 0, 'event', 'event', 'event_reward', 0, 1, 902, '기간은 짧았고 소문은 길었다.', '이벤트 보상', 'title-concept-event', '!', 1)
 )
 INSERT INTO titles (
   name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,

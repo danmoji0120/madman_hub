@@ -129,7 +129,7 @@ Supabase 테스트는 `smoke_` 접두사의 임시 사용자를 만들고 FK 순
 
 `GET /api/posts/random`은 숨김 처리되지 않고 제목과 본문이 비어 있지 않은 게시글 하나를 반환합니다. 기존 quotes 호환 API와 대시보드의 `randomQuote` / `randomPost` alias는 유지합니다.
 
-칭호 seed는 기본, 장난, 활동, 야간, 배포 테마를 포함한 24개 항목으로 확장되었습니다. 기존 DB에도 신규 칭호를 반영하려면 SQLite는 `npm.cmd run db:init:sqlite`, Supabase는 SQL Editor에서 `database/supabase.seed.sql`을 다시 실행하세요. 관리자 전용 칭호는 상점에서 구매할 수 없습니다.
+칭호 seed는 상점, 카지노, 활동, 시즌 보상, 이벤트, 관리자, 처벌 콘셉트를 포함한 42개 고유 항목으로 확장되었습니다. 기존 DB에도 신규 칭호를 반영하려면 SQLite는 `npm.cmd run db:init:sqlite`, Supabase는 SQL Editor에서 `database/supabase.seed.sql`을 다시 실행하세요. 보상/관리자/처벌 전용 칭호는 상점에서 구매할 수 없습니다.
 
 ## 게시글 상세와 댓글
 

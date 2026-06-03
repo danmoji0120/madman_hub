@@ -2,11 +2,11 @@ const assert = require('assert');
 
 async function runTitlesSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
   const publicTitles = await request('/api/shop/titles');
-  assert.ok(publicTitles.titles.length >= 100);
+  assert.ok(publicTitles.titles.length >= 40);
   for (const field of ['category', 'sourceType', 'source_type', 'isPurchasable', 'is_purchasable', 'isRewardOnly', 'is_reward_only', 'cssClass', 'css_class', 'flavorText', 'flavor_text', 'unlockHint', 'unlock_hint']) {
     assert.ok(Object.hasOwn(publicTitles.titles[0], field), field);
   }
-  for (const rarity of ['common', 'uncommon', 'rare', 'epic', 'legendary']) {
+  for (const rarity of ['common', 'uncommon', 'rare', 'epic', 'legendary', 'event', 'admin', 'punishment']) {
     const filtered = await request(`/api/shop/titles?rarity=${rarity}`);
     assert.ok(filtered.titles.some((title) => title.rarity === rarity), rarity);
   }

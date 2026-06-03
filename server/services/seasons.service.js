@@ -20,14 +20,14 @@ const {
 
 const HALL_OF_FAME_LIMIT = 3;
 const SEASON_REWARD_TITLES = {
-  point_earned: 'MVP16 Legendary 01',
-  point_spent: 'MVP16 Legendary 02',
-  casino_loss: 'MVP16 Legendary 03',
-  casino_profit: 'MVP16 Legendary 04',
-  comment_count: 'MVP16 Epic 01',
-  song_count: 'MVP16 Epic 02',
-  cosmetic_spent: 'MVP16 Epic 03',
-  activity_score: 'MVP16 Legendary 05'
+  point_earned: '시즌 포인트 베개',
+  point_spent: '시즌 파산왕',
+  casino_loss: '시즌 대참사',
+  casino_profit: '30000P의 꿈',
+  comment_count: '시즌 댓글왕',
+  song_count: '시즌 플레이리스트 DJ',
+  cosmetic_spent: '시즌 꾸미기 중독자',
+  activity_score: '시즌의 지배자'
 };
 
 function httpError(status, message) {

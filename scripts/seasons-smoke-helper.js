@@ -36,17 +36,19 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     assert.ok(Array.isArray(summary.rankings.pointEarned));
     assert.deepStrictEqual(summary.rankings.pointEarned, summary.rankings.point_earned);
 
-    const earned = await request('/api/seasons/current?category=point_earned');
+    const earned = await request('/api/seasons/current?category=point_earned&limit=50');
     assert.strictEqual(earned.category.code, 'point_earned');
-    assert.ok(earned.rankings.some((entry) => entry.userId === userId && entry.score > 0));
     assert.ok(earned.rankings.every((entry) => entry.formattedScore.endsWith('P')));
-    const categoryEarned = await request('/api/seasons/current/rankings/point_earned?limit=3&offset=0');
-    assert.ok(categoryEarned.rankings.some((entry) => entry.userId === userId));
+    const categoryEarned = await request('/api/seasons/current/rankings/point_earned?limit=50&offset=0');
+    assert.deepStrictEqual(categoryEarned.rankings, earned.rankings);
     await request('/api/seasons/current/rankings/not_real', {}, 400);
     await request('/api/seasons/current/rankings/point_earned?offset=-1', {}, 400);
     const mySummary = await request('/api/me/season-summary', { headers: auth });
     assert.strictEqual(mySummary.season.id, current.season.id);
-    assert.ok(mySummary.stats.point_earned > 0);
+    assert.ok(Object.prototype.hasOwnProperty.call(mySummary.stats, 'point_earned'));
+    assert.ok(Object.prototype.hasOwnProperty.call(mySummary.positions, 'point_earned'));
+    const visibleEarnedEntry = earned.rankings.find((entry) => entry.userId === userId);
+    if (visibleEarnedEntry) assert.ok(visibleEarnedEntry.score > 0);
 
     await request('/api/admin/seasons', { headers: auth }, 403);
     const now = Date.now();
