@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { addPointTransaction } = require('../server/services/points.service');
+const { getSupabaseAdminClient } = require('../server/supabaseClient');
 
 async function safeDebugRequest(request, route, options = {}) {
   try {
@@ -167,11 +168,32 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     }
     await request(`/api/casino/russian-roulette/${russian.session.id}/pull`, { method: 'POST', headers: auth }, 409);
 
-    const [history, limits, transactions, achievements] = await Promise.all([
+    await addPointTransaction({
+      userId,
+      amount: 50000,
+      type: 'smoke_peak_funding',
+      reason: 'casino smoke peak funding',
+      sourcePlatform: 'smoke-test',
+      createdBy: userId
+    });
+    await addPointTransaction({
+      userId,
+      amount: -20000,
+      type: 'smoke_drawdown_spend',
+      reason: 'casino smoke drawdown spend',
+      sourcePlatform: 'smoke-test',
+      createdBy: userId
+    });
+
+    const [history, limits, transactions, achievements, stats, leaderboard, seasonDrawdown, mySeasonSummary] = await Promise.all([
       request('/api/casino/history?limit=50', { headers: auth }),
       request('/api/casino/me/limits', { headers: auth }),
       request('/api/me/transactions', { headers: auth }),
-      request('/api/me/achievements', { headers: auth })
+      request('/api/me/achievements', { headers: auth }),
+      request('/api/casino/stats/me', { headers: auth }),
+      request('/api/casino/stats/leaderboard?category=drawdown&limit=20'),
+      request('/api/seasons/current/rankings/drawdown?limit=20'),
+      request('/api/me/season-summary', { headers: auth })
     ]);
     assert.ok(history.results.length >= 35);
     assert.ok(limits.totalPlayed >= 35);
@@ -180,6 +202,27 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     assert.strictEqual(limits.activeSessions.length, 0);
     assert.ok(transactions.transactions.some((item) => item.type === 'game_bet'));
     assert.ok(achievements.unlocked.some((item) => item.code === 'CASINO_FIRST_BET'));
+    assert.ok(stats.games.length > 0);
+    assert.ok(stats.peakBalance >= 50000);
+    assert.ok(stats.drawdown >= 20000);
+    assert.ok(stats.biggestWin >= 0);
+    assert.ok(stats.biggestLoss >= 0);
+    assert.ok(leaderboard.rows.some((item) => item.userId === userId && item.formattedScore.includes(' P')));
+    assert.ok(seasonDrawdown.rankings.some((item) => item.userId === userId && item.formattedScore.includes(' P')));
+    assert.ok(mySeasonSummary.stats.balance_peak >= 50000);
+    assert.ok(mySeasonSummary.drawdown >= 20000);
+    assert.ok(!/\dP/.test(leaderboard.rows.map((item) => item.formattedScore).join(' ')));
+
+    await request('/api/admin/casino/stats', { headers: auth }, 403);
+    if (process.env.DB_PROVIDER === 'supabase') {
+      const client = getSupabaseAdminClient();
+      const { count: statCount, error: statError } = await client.from('casino_user_stats').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+      if (statError) throw statError;
+      assert.ok(statCount > 0);
+      const { count: peakCount, error: peakError } = await client.from('season_user_point_peaks').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+      if (peakError) throw peakError;
+      assert.ok(peakCount > 0);
+    }
   } catch (error) {
     await debugCasinoState('runCasinoSmoke', request, auth);
     throw error;

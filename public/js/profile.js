@@ -91,14 +91,32 @@ function renderAchievements(data) {
   `).join('') || '<p class="empty-state">업적이 없습니다.</p>';
 }
 
+function renderCasinoSummary(data) {
+  const root = document.querySelector('#casino-summary-card');
+  if (!root) return;
+  root.innerHTML = `
+    <h2>카지노/포인트 기록</h2>
+    <div class="metric-grid">
+      <article class="metric-card"><span class="meta">시즌 최고점</span><strong>${formatPoints(data.peakBalance)}</strong></article>
+      <article class="metric-card"><span class="meta">현재 포인트</span><strong>${formatPoints(data.currentBalance)}</strong></article>
+      <article class="metric-card"><span class="meta">최고점 대비 추락</span><strong>${formatPoints(data.drawdown)}</strong></article>
+      <article class="metric-card"><span class="meta">카지노 순손익</span><strong>${formatSignedPoints(data.casinoNet)}</strong></article>
+      <article class="metric-card"><span class="meta">단일 최대 승리</span><strong>${formatPoints(data.biggestWin)}</strong></article>
+      <article class="metric-card"><span class="meta">단일 최대 손실</span><strong>${formatPoints(data.biggestLoss)}</strong></article>
+      <article class="metric-card"><span class="meta">포인트 회전율</span><strong>${formatPercent(data.pointTurnover)}</strong></article>
+    </div>
+  `;
+}
+
 async function loadProfile() {
   try {
-    const [data, tx, titleData, achievementData, cosmeticsData] = await Promise.all([
+    const [data, tx, titleData, achievementData, cosmeticsData, casinoSummary] = await Promise.all([
       API.request('/api/me'),
       API.request('/api/me/transactions'),
       API.request('/api/me/titles'),
       API.request('/api/me/achievements'),
-      API.request('/api/me/cosmetics')
+      API.request('/api/me/cosmetics'),
+      API.request('/api/me/casino-summary')
     ]);
 
     renderProfile(data.user);
@@ -106,6 +124,7 @@ async function loadProfile() {
     renderTransactions(tx.transactions);
     renderAchievements(achievementData);
     renderCosmetics(cosmeticsData);
+    renderCasinoSummary(casinoSummary);
     document.querySelector('#points-card .point').textContent = formatPoints(data.points.balance);
   } catch (error) {
     location.href = '/login.html';

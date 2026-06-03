@@ -401,3 +401,43 @@ dashboard의 `오늘의 관찰 과제` 카드에서 KST 기준 일일 미션 진
 1. `database/supabase.schema.sql`
 2. `database/supabase.seed.sql`
 3. `database/supabase.rpc.sql`
+## V1.7 카지노 기록 / 대참사 박제 시스템
+
+카지노 결과를 시즌 기록으로 남기기 위해 다음 테이블을 추가했습니다.
+
+- `season_user_point_peaks`: 시즌별 유저 최고 보유 포인트, 현재 잔고 스냅샷, 추락폭, 추락률
+- `casino_user_stats`: 시즌/유저/게임별 플레이 수, 총 베팅, 총 지급, 순손익, 단일 최대 승리/손실
+- `casino_events`: jackpot, disaster, peak_balance, drawdown, suspicious_loop 같은 공개/관리자 사건 기록
+
+핵심 지표:
+
+- `balance_peak`: 시즌 중 최고 보유 포인트
+- `drawdown`: 최고점 대비 현재 잔고 하락폭
+- `drawdown_rate`: 최고점 대비 하락률
+- `casino_net_profit`, `casino_net_loss`: 카지노 전체 순손익 기준 랭킹
+- `biggest_casino_win`, `biggest_casino_loss`: 단일 카지노 결과 최대 승리/손실
+- `point_turnover`: 시즌 소비 포인트 / 시즌 획득 포인트
+- `russian_cashout_count`: 러시안 룰렛 2발 캐시아웃 반복 관측
+- `blackjack_profit`: 주사위 블랙잭 순수익
+
+추가 API:
+
+- `GET /api/casino/stats/me`
+- `GET /api/casino/stats/leaderboard?category=drawdown`
+- `GET /api/casino/events`
+- `GET /api/me/casino-summary`
+- `GET /api/admin/casino/stats`
+- `GET /api/admin/casino/game-stats`
+- `GET /api/admin/casino/user-stats/:userId`
+- `GET /api/admin/casino/suspicious-loops`
+- `POST /api/admin/casino/rebuild-stats`
+
+관리자 통계에서는 게임별 총 베팅/지급/net, 환급률, 유저별 순손익, 단일 최대 승리/손실, 러시안 룰렛 2발 캐시아웃 후보를 볼 수 있습니다. `rebuild-stats`는 운영 DB에서 무거울 수 있으므로 기본적으로 `dryRun: true`로 먼저 실행하세요.
+
+Supabase 운영 DB 적용 순서:
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
+V1.7은 먼저 관측/기록/박제를 구축하는 단계입니다. 러시안 룰렛이나 주사위 블랙잭 밸런스 조정은 별도 V1.7.1에서 통계 확인 후 진행하는 것을 권장합니다.

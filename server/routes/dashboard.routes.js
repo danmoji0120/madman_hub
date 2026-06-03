@@ -8,6 +8,7 @@ const { mapPost } = require('../services/posts.service');
 const { mapPublicActivity } = require('../services/activity.service');
 const { decoratePublicUsers, decorateAuthorRows, getEquippedCosmetics } = require('../repositories/cosmetics.repo');
 const { getPublicRankingSummary } = require('../services/seasons.service');
+const { listCasinoEvents } = require('../repositories/casinoStats.repo');
 
 const router = express.Router();
 
@@ -23,6 +24,7 @@ router.get('/', optionalAuth, async (req, res) => {
       recentFeed,
       recentAchievements,
       recentCasinoResults,
+      recentCasinoEvents,
       seasonSummary
     ] = await Promise.all([
       get(
@@ -87,6 +89,7 @@ router.get('/', optionalAuth, async (req, res) => {
          LIMIT 5`
       ),
       listPublicRecentGameResults(8),
+      listCasinoEvents({ limit: 5 }),
       getPublicRankingSummary({ limit: 3 })
     ]);
 
@@ -141,6 +144,7 @@ router.get('/', optionalAuth, async (req, res) => {
         unlockedAt: item.unlocked_at
       })),
       recentCasinoResults,
+      recentCasinoEvents: recentCasinoEvents.events || [],
       leaderboard: decoratedLeaderboard,
       seasonSummary
     });

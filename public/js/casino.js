@@ -81,6 +81,28 @@ async function loadCasinoHistory() {
   `).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>';
 }
 
+async function loadCasinoSummary() {
+  const root = document.querySelector('#casino-summary-card');
+  if (!root || !API.token) return;
+  const data = await API.request('/api/casino/stats/me');
+  const games = data.games || [];
+  root.innerHTML = `
+    <div class="section-heading"><h2>내 카지노 기록</h2><span class="badge">${data.season ? API.escape(data.season.name) : 'no season'}</span></div>
+    <div class="metric-grid">
+      <article class="metric-card"><span class="meta">최고점</span><strong>${formatPoints(data.peakBalance)}</strong></article>
+      <article class="metric-card"><span class="meta">현재 잔고</span><strong>${formatPoints(data.currentBalance)}</strong></article>
+      <article class="metric-card"><span class="meta">추락폭</span><strong>${formatPoints(data.drawdown)}</strong></article>
+      <article class="metric-card"><span class="meta">카지노 Net</span><strong>${formatSignedPoints(data.casinoNet)}</strong></article>
+      <article class="metric-card"><span class="meta">단일 최대 승리</span><strong>${formatPoints(data.biggestWin)}</strong></article>
+      <article class="metric-card"><span class="meta">단일 최대 손실</span><strong>${formatPoints(data.biggestLoss)}</strong></article>
+      <article class="metric-card"><span class="meta">회전율</span><strong>${formatPercent(data.pointTurnover)}</strong></article>
+    </div>
+    <div class="casino-history">
+      ${games.map((item) => `<div class="casino-history-item"><strong>${API.escape(item.gameKey)}</strong><span>${formatCount(item.plays)} · bet ${formatPoints(item.totalBet)} · payout ${formatPoints(item.totalPayout)} · net ${formatSignedPoints(item.netProfit)}</span></div>`).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>'}
+    </div>
+  `;
+}
+
 async function playRoulette(button) {
   await withButton(button, async () => {
     const data = await API.request('/api/casino/roulette/play', {
@@ -214,6 +236,7 @@ async function initCasino() {
     renderGames((await API.request('/api/casino/games')).games);
     await loadCasinoAccount();
     await loadCasinoHistory();
+    await loadCasinoSummary();
   } catch (error) {
     casinoMessage(error.message);
   }

@@ -38,6 +38,11 @@ const {
   generateAdminHallOfFame
 } = require('../services/seasons.service');
 const {
+  getAdminCasinoStats,
+  getSuspiciousLoops,
+  rebuildCasinoStats
+} = require('../repositories/casinoStats.repo');
+const {
   TITLE_RARITIES,
   TITLE_CATEGORIES,
   TITLE_SOURCE_TYPES,
@@ -343,6 +348,58 @@ safe('post', '/seasons/:id/generate-hall-of-fame', async (req, res) => {
   return res.json({
     success: true,
     ...(await generateAdminHallOfFame(req.user, parseId(req.params.id, 'season id')))
+  });
+});
+
+safe('get', '/casino/stats', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await getAdminCasinoStats({
+      seasonId: req.query.seasonId ? parseId(req.query.seasonId, 'season id') : null,
+      gameKey: typeof req.query.gameKey === 'string' ? req.query.gameKey.trim() : '',
+      userId: req.query.userId ? parseId(req.query.userId, 'user id') : null,
+      limit: parseLimit(req.query.limit, 10),
+      offset: parseOffset(req.query.offset)
+    }))
+  });
+});
+
+safe('get', '/casino/game-stats', async (req, res) => {
+  const data = await getAdminCasinoStats({
+    seasonId: req.query.seasonId ? parseId(req.query.seasonId, 'season id') : null,
+    limit: parseLimit(req.query.limit, 20)
+  });
+  return res.json({ success: true, season: data.season, gameStats: data.gameStats, totals: data.totals });
+});
+
+safe('get', '/casino/user-stats/:userId', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await getAdminCasinoStats({
+      seasonId: req.query.seasonId ? parseId(req.query.seasonId, 'season id') : null,
+      userId: parseId(req.params.userId, 'user id'),
+      limit: parseLimit(req.query.limit, 20)
+    }))
+  });
+});
+
+safe('get', '/casino/suspicious-loops', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await getSuspiciousLoops({
+      seasonId: req.query.seasonId ? parseId(req.query.seasonId, 'season id') : null,
+      limit: parseLimit(req.query.limit, 20)
+    }))
+  });
+});
+
+safe('post', '/casino/rebuild-stats', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await rebuildCasinoStats({
+      seasonId: req.body.seasonId ? parseId(req.body.seasonId, 'season id') : null,
+      dryRun: req.body.dryRun !== false
+    }))
   });
 });
 

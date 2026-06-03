@@ -52,7 +52,7 @@ async function loadRanking() {
 }
 
 function renderRankingSummary(data) {
-  const featured = ['pointEarned', 'pointSpent', 'casinoLoss', 'postCount', 'cosmeticSpent', 'attendanceCount'];
+  const featured = ['pointEarned', 'pointSpent', 'casinoLoss', 'balancePeak', 'drawdown', 'casinoNetLoss', 'biggestCasinoLoss', 'pointTurnover', 'postCount', 'cosmeticSpent', 'attendanceCount'];
   document.querySelector('#season-ranking-summary').innerHTML = featured.map((key) => {
     const items = data.rankings[key] || [];
     const category = categories.find((item) => key === item.code.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase()));

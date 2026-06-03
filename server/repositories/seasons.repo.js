@@ -152,37 +152,50 @@ async function readRankingSources(season) {
   if (provider === 'supabase') {
     return Promise.all([
       readSupabaseRows('point_transactions', 'user_id,amount,type', 'created_at', season),
-      readSupabaseRows('game_results', 'user_id,net_amount', 'created_at', season),
+      readSupabaseRows('game_results', 'user_id,game_code,net_amount,state,result', 'created_at', season),
       readSupabaseRows('quotes', 'user_id', 'created_at', season, (query) => query.eq('is_hidden', false)),
       readSupabaseRows('post_comments', 'user_id', 'created_at', season, (query) => query.eq('is_hidden', false)),
       readSupabaseRows('song_recommendations', 'user_id', 'created_at', season, (query) => query.eq('is_hidden', false)),
       readSupabaseRows('daily_mission_progress', 'user_id', 'completed_at', season, (query) => query.eq('completed', true)),
       readSupabaseRows('daily_checkins', 'user_id', 'created_at', season),
       assertResult(await getSupabaseAdminClient().from('users').select('id,display_name')) || [],
-      assertResult(await getSupabaseAdminClient().from('user_profiles').select('user_id,nickname,title,avatar_url')) || []
+      assertResult(await getSupabaseAdminClient().from('user_profiles').select('user_id,nickname,title,avatar_url')) || [],
+      assertResult(await getSupabaseAdminClient().from('season_user_point_peaks').select('*').eq('season_id', season.id)) || []
     ]);
   }
   return Promise.all([
     readSqliteRows('point_transactions', 'user_id, amount, type', 'created_at', season),
-    readSqliteRows('game_results', 'user_id, net_amount', 'created_at', season),
+    readSqliteRows('game_results', 'user_id, game_code, net_amount, state, result', 'created_at', season),
     readSqliteRows('quotes', 'user_id', 'created_at', season, 'AND is_hidden = 0'),
     readSqliteRows('post_comments', 'user_id', 'created_at', season, 'AND is_hidden = 0'),
     readSqliteRows('song_recommendations', 'user_id', 'created_at', season, 'AND is_hidden = 0'),
     readSqliteRows('daily_mission_progress', 'user_id', 'completed_at', season, 'AND completed = 1'),
     readSqliteRows('daily_checkins', 'user_id', 'created_at', season),
     all('SELECT id, display_name FROM users'),
-    all('SELECT user_id, nickname, title, avatar_url FROM user_profiles')
+    all('SELECT user_id, nickname, title, avatar_url FROM user_profiles'),
+    all('SELECT * FROM season_user_point_peaks WHERE season_id = ?', [season.id])
   ]);
 }
 
 async function buildSeasonRankings(season, limit = 10, offset = 0) {
-  const [transactions, gameResults, posts, comments, songs, missions, checkins, users, profiles] = await readRankingSources(season);
+  const [transactions, gameResults, posts, comments, songs, missions, checkins, users, profiles, pointPeaks] = await readRankingSources(season);
   const stats = new Map();
   const add = (userId, key, amount = 1) => {
     if (!userId) return;
     if (!stats.has(userId)) stats.set(userId, {});
     const current = stats.get(userId);
     current[key] = Number(current[key] || 0) + Number(amount || 0);
+  };
+  const setMax = (userId, key, amount = 0) => {
+    if (!userId) return;
+    if (!stats.has(userId)) stats.set(userId, {});
+    const current = stats.get(userId);
+    current[key] = Math.max(Number(current[key] || 0), Number(amount || 0));
+  };
+  const setValue = (userId, key, amount = 0) => {
+    if (!userId) return;
+    if (!stats.has(userId)) stats.set(userId, {});
+    stats.get(userId)[key] = Number(amount || 0);
   };
 
   transactions.forEach((row) => {
@@ -197,12 +210,33 @@ async function buildSeasonRankings(season, limit = 10, offset = 0) {
     add(row.user_id, 'casino_plays');
     if (net > 0) add(row.user_id, 'casino_profit', net);
     if (net < 0) add(row.user_id, 'casino_loss', Math.abs(net));
+    add(row.user_id, 'casino_net_total', net);
+    if (net > 0) setMax(row.user_id, 'biggest_casino_win', net);
+    if (net < 0) setMax(row.user_id, 'biggest_casino_loss', Math.abs(net));
+    if (row.game_code === 'dice_blackjack' && net > 0) add(row.user_id, 'blackjack_profit', net);
+    const state = parseMetadata(row.state);
+    if (row.game_code === 'russian_roulette' && row.result === 'survived' && Number(state.survivedCount || 0) === 2) {
+      add(row.user_id, 'russian_cashout_count');
+    }
   });
   posts.forEach((row) => add(row.user_id, 'post_count'));
   comments.forEach((row) => add(row.user_id, 'comment_count'));
   songs.forEach((row) => add(row.user_id, 'song_count'));
   missions.forEach((row) => add(row.user_id, 'daily_mission_count'));
   checkins.forEach((row) => add(row.user_id, 'attendance_count'));
+  pointPeaks.forEach((row) => {
+    setValue(row.user_id, 'balance_peak', Number(row.peak_balance || 0));
+    setValue(row.user_id, 'drawdown', Number(row.drawdown || 0));
+    setValue(row.user_id, 'drawdown_rate', Math.round(Number(row.drawdown_rate || 0) * 1000));
+  });
+  [...stats.entries()].forEach(([userId, values]) => {
+    const earned = Number(values.point_earned || 0);
+    const spent = Number(values.point_spent || 0);
+    if (earned > 0) values.point_turnover = Math.round((spent / earned) * 1000);
+    const casinoNet = Number(values.casino_net_total || 0);
+    values.casino_net_profit = casinoNet > 0 ? casinoNet : 0;
+    values.casino_net_loss = casinoNet < 0 ? Math.abs(casinoNet) : 0;
+  });
 
   const userMap = new Map(users.map((user) => [user.id, user]));
   const profileMap = new Map(profiles.map((profile) => [profile.user_id, profile]));

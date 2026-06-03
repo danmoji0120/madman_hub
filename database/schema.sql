@@ -326,6 +326,57 @@ CREATE TABLE IF NOT EXISTS season_hall_of_fame (
   FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS season_user_point_peaks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  peak_balance INTEGER NOT NULL DEFAULT 0,
+  peak_recorded_at TEXT,
+  current_balance_snapshot INTEGER NOT NULL DEFAULT 0,
+  drawdown INTEGER NOT NULL DEFAULT 0,
+  drawdown_rate REAL NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(season_id, user_id),
+  FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS casino_user_stats (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  game_key TEXT NOT NULL,
+  plays INTEGER NOT NULL DEFAULT 0,
+  total_bet INTEGER NOT NULL DEFAULT 0,
+  total_payout INTEGER NOT NULL DEFAULT 0,
+  net_profit INTEGER NOT NULL DEFAULT 0,
+  biggest_win INTEGER NOT NULL DEFAULT 0,
+  biggest_loss INTEGER NOT NULL DEFAULT 0,
+  last_played_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(season_id, user_id, game_key),
+  FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS casino_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  event_type TEXT NOT NULL,
+  game_key TEXT,
+  amount INTEGER NOT NULL DEFAULT 0,
+  balance_before INTEGER,
+  balance_after INTEGER,
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  is_public INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_game_sessions_user_status ON game_sessions(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_game_sessions_game_code ON game_sessions(game_code);
 CREATE INDEX IF NOT EXISTS idx_game_results_user_created ON game_results(user_id, created_at);
@@ -346,3 +397,8 @@ CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = 1;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);
+CREATE INDEX IF NOT EXISTS idx_season_point_peaks_season_drawdown ON season_user_point_peaks(season_id, drawdown);
+CREATE INDEX IF NOT EXISTS idx_casino_user_stats_season_game ON casino_user_stats(season_id, game_key);
+CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id);
+CREATE INDEX IF NOT EXISTS idx_casino_events_season_type_created ON casino_events(season_id, event_type, created_at);
+CREATE INDEX IF NOT EXISTS idx_casino_events_user_created ON casino_events(user_id, created_at);

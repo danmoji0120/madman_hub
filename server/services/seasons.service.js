@@ -157,7 +157,18 @@ async function getMySeasonSummary(userId) {
     stats[category.code] = entry?.score || 0;
     positions[category.code] = entry?.rank || null;
   });
-  return { season, stats, positions };
+  return {
+    season,
+    stats,
+    positions,
+    peakBalance: stats.balance_peak || 0,
+    drawdown: stats.drawdown || 0,
+    drawdownRate: stats.drawdown_rate || 0,
+    casinoNet: (stats.casino_net_profit || 0) - (stats.casino_net_loss || 0),
+    biggestCasinoWin: stats.biggest_casino_win || 0,
+    biggestCasinoLoss: stats.biggest_casino_loss || 0,
+    pointTurnover: stats.point_turnover || 0
+  };
 }
 
 async function createAdminSeason(actorUser, body) {

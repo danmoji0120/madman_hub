@@ -345,6 +345,32 @@ async function loadAdminSeasons() {
   } catch (error) { showAdminMessage(error.message); }
 }
 
+async function loadAdminCasinoStats() {
+  try {
+    const data = await API.request('/api/admin/casino/stats?limit=10');
+    const totals = data.totals || {};
+    document.querySelector('#admin-casino-metrics').innerHTML = [
+      ['총 플레이', formatCount(totals.plays || 0)],
+      ['총 베팅', formatPoints(totals.totalBet || 0)],
+      ['총 지급', formatPoints(totals.totalPayout || 0)],
+      ['전체 Net', formatSignedPoints(totals.netProfit || 0)]
+    ].map(([label, value]) => `<article class="metric-card"><span class="meta">${API.escape(label)}</span><strong>${API.escape(value)}</strong></article>`).join('');
+    document.querySelector('#admin-casino-games').innerHTML = (data.gameStats || []).map((item) => `
+      <tr>
+        <td>${API.escape(item.gameKey)}</td>
+        <td>${formatCount(item.plays || 0)}</td>
+        <td>${formatPoints(item.totalBet || 0)}</td>
+        <td>${formatPoints(item.totalPayout || 0)}</td>
+        <td>${formatSignedPoints(item.netProfit || 0)}</td>
+        <td>${formatPercent(Math.round(Number(item.returnRate || 0) * 1000))}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6">기록 없음</td></tr>';
+    document.querySelector('#admin-casino-loops').innerHTML = (data.suspiciousLoops || []).map((item) => `
+      <div><strong>${API.escape(item.nickname || item.display_name || `ID ${item.userId}`)}</strong> · ${API.escape(item.formattedScore)} · <span class="meta">${API.escape(item.extraLabel || '')}</span></div>
+    `).join('') || '<p class="meta">의심 루프 후보 없음</p>';
+  } catch (error) { showAdminMessage(error.message); }
+}
+
 async function createSeason(event) {
   event.preventDefault();
   try {
@@ -518,7 +544,7 @@ async function revokeTitle(titleId) {
 }
 
 async function refreshAdmin() {
-  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics(), loadAdminSeasons()]);
+  await Promise.all([loadOverview(), loadAdminUsers(), loadAdminQuotes(), loadAdminGuestbook(), loadAdminComments(), loadAdminSongs(), loadAdminTitles(), loadAdminCosmetics(), loadAdminSeasons(), loadAdminCasinoStats()]);
 }
 
 refreshAdmin();

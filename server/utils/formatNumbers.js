@@ -5,6 +5,13 @@ const POINT_CATEGORIES = new Set([
   'casino_profit',
   'casino_loss',
   'cosmetic_spent',
+  'balance_peak',
+  'drawdown',
+  'casino_net_profit',
+  'casino_net_loss',
+  'biggest_casino_win',
+  'biggest_casino_loss',
+  'blackjack_profit',
   'balance',
   'amount',
   'points',
@@ -19,6 +26,11 @@ const COUNT_CATEGORIES = new Set([
   'daily_mission_count',
   'attendance_count',
   'activity_score'
+]);
+
+const PERCENT_CATEGORIES = new Set([
+  'drawdown_rate',
+  'point_turnover'
 ]);
 
 const numberFormatter = new Intl.NumberFormat('ko-KR');
@@ -43,9 +55,15 @@ function formatCount(value, unit = '회') {
   return `${formatNumber(toFiniteNumber(value))}${unit}`;
 }
 
+function formatPercent(value) {
+  const percent = toFiniteNumber(value) / 10;
+  return `${numberFormatter.format(Number(percent.toFixed(1)))}%`;
+}
+
 function formatRankingScore(category, score, options = {}) {
   const normalizedCategory = String(category || '').trim();
   if (POINT_CATEGORIES.has(normalizedCategory)) return formatPoints(score, options);
+  if (PERCENT_CATEGORIES.has(normalizedCategory)) return formatPercent(score);
   if (COUNT_CATEGORIES.has(normalizedCategory)) return formatCount(score, options.unit || '회');
   return formatCount(score, options.unit || '회');
 }
@@ -53,8 +71,10 @@ function formatRankingScore(category, score, options = {}) {
 module.exports = {
   POINT_CATEGORIES,
   COUNT_CATEGORIES,
+  PERCENT_CATEGORIES,
   formatNumber,
   formatPoints,
   formatCount,
+  formatPercent,
   formatRankingScore
 };

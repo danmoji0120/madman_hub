@@ -170,6 +170,18 @@ async function runSupabaseAdminSmoke({ request, ownerAuth, ownerUserId, runPrefi
     const overview = await request('/api/admin/overview', { headers: ownerAuth });
     assert.ok(overview.recentAdminLogs.length > 0);
     assert.ok(overview.recentAdminLogs.every((log) => typeof log.metadata === 'string'));
+    const casinoStats = await request('/api/admin/casino/stats', { headers: ownerAuth });
+    assert.ok(casinoStats.totals);
+    const casinoGameStats = await request('/api/admin/casino/game-stats', { headers: ownerAuth });
+    assert.ok(Array.isArray(casinoGameStats.gameStats));
+    const suspiciousLoops = await request('/api/admin/casino/suspicious-loops', { headers: ownerAuth });
+    assert.ok(Array.isArray(suspiciousLoops.rows));
+    const rebuildDryRun = await request('/api/admin/casino/rebuild-stats', {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ dryRun: true })
+    });
+    assert.strictEqual(rebuildDryRun.dryRun, true);
     const adminLogs = await assertNoSupabaseError(await client
       .from('activity_logs')
       .select('action')

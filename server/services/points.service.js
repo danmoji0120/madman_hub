@@ -1,5 +1,6 @@
 const { provider, run, get, all } = require('../db');
 const { applyPointTransaction } = require('../repositories/rpc.repo');
+const { updateSeasonPointPeak } = require('../repositories/casinoStats.repo');
 
 async function ensurePointAccount(userId) {
   const account = await get('SELECT * FROM point_accounts WHERE user_id = ?', [userId]);
@@ -11,7 +12,11 @@ async function ensurePointAccount(userId) {
 
 async function addPointTransaction({ userId, amount, type, reason, sourcePlatform = 'hub', sourceId = null, createdBy = null }) {
   if (provider === 'supabase') {
-    return applyPointTransaction({ userId, amount, type, reason, sourcePlatform, sourceId, createdBy });
+    const account = await applyPointTransaction({ userId, amount, type, reason, sourcePlatform, sourceId, createdBy });
+    await updateSeasonPointPeak(userId, account).catch((error) => {
+      console.error('Season point peak update failed:', error);
+    });
+    return account;
   }
 
   await ensurePointAccount(userId);
@@ -45,7 +50,11 @@ async function addPointTransaction({ userId, amount, type, reason, sourcePlatfor
     ]
   );
 
-  return get('SELECT * FROM point_accounts WHERE user_id = ?', [userId]);
+  const updated = await get('SELECT * FROM point_accounts WHERE user_id = ?', [userId]);
+  await updateSeasonPointPeak(userId, updated).catch((error) => {
+    console.error('Season point peak update failed:', error);
+  });
+  return updated;
 }
 
 async function getTransactions(userId, limit = 30) {

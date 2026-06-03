@@ -27,6 +27,7 @@ const {
 } = require('./casino.config');
 const { incrementMission } = require('./dailyMissions.service');
 const { formatPoints } = require('../utils/formatNumbers');
+const { recordCasinoResultStats } = require('../repositories/casinoStats.repo');
 
 function casinoError(message, statusCode = 400) {
   const error = new Error(message);
@@ -210,6 +211,7 @@ async function recordGameResult(input) {
     ...input,
     netAmount: input.payoutAmount - input.betAmount
   });
+  await recordCasinoResultStats(saved).catch((error) => console.error('Casino V1.7 record failed:', error));
   await logCasinoFeedIfNeeded(saved);
   await incrementMission(saved.userId, 'play_casino');
   const [casinoAchievements, coreAchievements] = await Promise.all([
@@ -303,6 +305,7 @@ async function finalizeSession({ session, status, result, payoutAmount, state, p
       payoutAmount,
       payoutType
     });
+    await recordCasinoResultStats(completed.result, completed.account).catch((error) => console.error('Casino V1.7 record failed:', error));
     await logCasinoFeedIfNeeded(completed.result);
     await incrementMission(session.userId, 'play_casino');
     const [casinoAchievements, coreAchievements] = await Promise.all([
@@ -359,6 +362,7 @@ async function playRoulette(userId, betAmount) {
       result,
       state
     });
+    await recordCasinoResultStats(saved.result, saved.account).catch((error) => console.error('Casino V1.7 record failed:', error));
     await logCasinoFeedIfNeeded(saved.result);
     await incrementMission(userId, 'play_casino');
     const [casinoAchievements, coreAchievements] = await Promise.all([

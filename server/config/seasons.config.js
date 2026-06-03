@@ -13,7 +13,17 @@ const SEASON_RANKING_CATEGORIES = [
   { code: 'song_count', label: '노래추천', description: '공개 노래추천 수' },
   { code: 'daily_mission_count', label: '일일 미션', description: '완료한 일일 미션 수' },
   { code: 'cosmetic_spent', label: '꾸미기 소비', description: '꾸미기 아이템 구매에 사용한 포인트' },
-  { code: 'attendance_count', label: '출석', description: '시즌 중 출석 수' }
+  { code: 'attendance_count', label: '출석', description: '시즌 중 출석 수' },
+  { code: 'balance_peak', label: '최고 보유 포인트', description: '시즌 중 기록한 최고 잔고' },
+  { code: 'drawdown', label: '최고점 추락', description: '최고 잔고 대비 현재 잔고 하락폭' },
+  { code: 'drawdown_rate', label: '추락률', description: '최고점 대비 하락률' },
+  { code: 'casino_net_profit', label: '카지노 순수익', description: '카지노 전체 순이익' },
+  { code: 'casino_net_loss', label: '카지노 순손실', description: '카지노 전체 순손실 절댓값' },
+  { code: 'biggest_casino_win', label: '단일 최대 승리', description: '카지노 단일 결과 최대 순이익' },
+  { code: 'biggest_casino_loss', label: '단일 최대 손실', description: '카지노 단일 결과 최대 순손실' },
+  { code: 'point_turnover', label: '포인트 회전율', description: '시즌 소비 포인트 / 획득 포인트' },
+  { code: 'russian_cashout_count', label: '러시안 2발 캐시아웃', description: '러시안 룰렛 2발 캐시아웃 반복 횟수' },
+  { code: 'blackjack_profit', label: '블랙잭 순수익', description: '주사위 블랙잭 순이익' }
 ];
 
 function getSeasonRankingCategory(code) {

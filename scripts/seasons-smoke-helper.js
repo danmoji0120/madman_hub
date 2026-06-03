@@ -2,8 +2,9 @@ const assert = require('assert');
 const { provider, run } = require('../server/db');
 const { getSupabaseAdminClient } = require('../server/supabaseClient');
 
-const POINT_CATEGORIES = new Set(['point_earned', 'point_spent', 'net_points', 'casino_profit', 'casino_loss', 'cosmetic_spent']);
-const COUNT_CATEGORIES = new Set(['casino_plays', 'post_count', 'comment_count', 'song_count', 'daily_mission_count', 'attendance_count', 'activity_score']);
+const POINT_CATEGORIES = new Set(['point_earned', 'point_spent', 'net_points', 'casino_profit', 'casino_loss', 'cosmetic_spent', 'balance_peak', 'drawdown', 'casino_net_profit', 'casino_net_loss', 'biggest_casino_win', 'biggest_casino_loss', 'blackjack_profit']);
+const COUNT_CATEGORIES = new Set(['casino_plays', 'post_count', 'comment_count', 'song_count', 'daily_mission_count', 'attendance_count', 'activity_score', 'russian_cashout_count']);
+const PERCENT_CATEGORIES = new Set(['drawdown_rate', 'point_turnover']);
 
 function assertFormattedPointScore(value) {
   assert.strictEqual(typeof value, 'string');
@@ -16,9 +17,15 @@ function assertFormattedCountScore(value) {
   assert.match(value, /^-?\d{1,3}(,\d{3})*회$/);
 }
 
+function assertFormattedPercentScore(value) {
+  assert.strictEqual(typeof value, 'string');
+  assert.match(value, /^-?\d{1,3}(,\d{3})*(\.\d)?%$/);
+}
+
 function assertFormattedRankingScore(entry) {
   if (POINT_CATEGORIES.has(entry.category)) return assertFormattedPointScore(entry.formattedScore);
   if (COUNT_CATEGORIES.has(entry.category)) return assertFormattedCountScore(entry.formattedScore);
+  if (PERCENT_CATEGORIES.has(entry.category)) return assertFormattedPercentScore(entry.formattedScore);
 }
 
 async function cleanupSeason(seasonId) {
@@ -44,6 +51,8 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     assert.ok(seasons.categories.some((category) => category.code === 'activity_score'));
     assert.ok(seasons.categories.some((category) => category.code === 'casino_loss'));
     assert.ok(seasons.categories.some((category) => category.code === 'cosmetic_spent'));
+    assert.ok(seasons.categories.some((category) => category.code === 'drawdown'));
+    assert.ok(seasons.categories.some((category) => category.code === 'point_turnover'));
     const current = await request('/api/seasons/current');
     assert.strictEqual(current.season.id, seasons.currentSeason.id);
     const activeSeasons = await request('/api/seasons?status=active');

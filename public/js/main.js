@@ -205,6 +205,14 @@ function renderCasinoResults(items) {
   `).join('') || '<p class="empty-state">아직 카지노 기록이 없습니다.</p>';
 }
 
+function renderCasinoEvents(items) {
+  const root = document.querySelector('#recent-casino-events-list');
+  if (!root) return;
+  root.innerHTML = (items || []).map((item) => `
+    <div class="feed-item"><span class="timeline-dot"></span><div>${escapeHtml(item.message || '')}<br /><span class="meta">${escapeHtml(item.createdAt || '')}</span></div></div>
+  `).join('') || '<p class="empty-state">아직 박제된 카지노 사건이 없습니다.</p>';
+}
+
 function renderLeaderboard(leaderboard) {
   const root = document.querySelector('#leaderboard-list');
 
@@ -249,6 +257,7 @@ async function loadDashboard() {
     renderFeed(data.recentFeed);
     renderAchievements(data.recentAchievements);
     renderCasinoResults(data.recentCasinoResults || []);
+    renderCasinoEvents(data.recentCasinoEvents || []);
     renderSeasonSummary(data.seasonSummary);
     await loadDailyMissions();
   } catch (error) {
