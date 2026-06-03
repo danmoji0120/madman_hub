@@ -58,7 +58,7 @@
 
       <article class="casino-card">
         <h2>주사위 블랙잭</h2>
-        <p class="meta">21 이하에서 딜러보다 높은 합계를 노립니다.</p>
+        <p class="meta">21 이하에서 딜러보다 높은 합계를 노립니다. 동점은 베팅액 반환입니다.</p>
         <div class="dice-row" id="blackjack-dice"></div>
         <div class="casino-controls">
           <input class="input" id="blackjack-bet" type="number" min="20" value="20" />
@@ -83,10 +83,10 @@
 
       <article class="casino-card">
         <h2>러시안 룰렛</h2>
-        <p class="meta">30P 고정. 생존할수록 보상이 커집니다.</p>
+        <p class="meta">30 P 고정. 초반 캐시아웃은 안전하지만 수익이 작고, 3발 이상부터 보상이 커집니다.</p>
         <div class="chamber-row" id="russian-chambers"></div>
         <div class="casino-controls">
-          <button class="button" id="russian-start" onclick="startRussian(this)">30P로 시작</button>
+          <button class="button" id="russian-start" onclick="startRussian(this)">30 P로 시작</button>
           <button class="button secondary" id="russian-pull" onclick="pullRussian(this)" disabled>방아쇠 당기기</button>
           <button class="button secondary" id="russian-cashout" onclick="cashoutRussian(this)" disabled>보상 받고 멈추기</button>
         </div>

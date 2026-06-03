@@ -3,6 +3,7 @@ const { getSupabaseAdminClient } = require('../supabaseClient');
 const { decoratePublicUsers } = require('./cosmetics.repo');
 const { getActiveSeason, getSeasonById } = require('./seasons.repo');
 const { formatPoints, formatRankingScore } = require('../utils/formatNumbers');
+const { targetForGame, balanceStatus } = require('../config/casinoBalance.config');
 
 const PUBLIC_EVENT_TYPES = new Set(['jackpot', 'disaster', 'biggest_win', 'biggest_loss', 'peak_balance', 'drawdown', 'comeback', 'suspicious_loop', 'high_turnover']);
 const POINT_LEADERBOARD_CATEGORIES = new Set(['balance_peak', 'drawdown', 'casino_net_profit', 'casino_net_loss', 'biggest_casino_win', 'biggest_casino_loss', 'blackjack_profit']);
@@ -442,6 +443,39 @@ async function getRussianTwoStepCounts(season) {
   return map;
 }
 
+async function getRussianStepStats(season) {
+  const rows = provider === 'supabase'
+    ? (assertData(await client().from('game_results').select('user_id,bet_amount,payout_amount,net_amount,state,result')
+      .eq('game_code', 'russian_roulette').gte('created_at', season.starts_at).lt('created_at', season.ends_at)) || [])
+    : await all(
+      `SELECT user_id, bet_amount, payout_amount, net_amount, state, result FROM game_results
+       WHERE game_code = 'russian_roulette' AND DATETIME(created_at) >= DATETIME(?) AND DATETIME(created_at) < DATETIME(?)`,
+      [season.starts_at, season.ends_at]
+    );
+  const map = new Map();
+  for (let step = 1; step <= 5; step += 1) {
+    map.set(step, { cashoutStep: step, plays: 0, cashouts: 0, busts: 0, totalBet: 0, totalPayout: 0, netProfit: 0 });
+  }
+  rows.forEach((row) => {
+    const state = parseJson(row.state);
+    const survived = Number(state.survivedCount || 0);
+    const chamber = Number(state.currentChamber || survived || 1);
+    const step = Math.min(5, Math.max(1, row.result === 'dead' ? chamber : survived));
+    const item = map.get(step);
+    item.plays += 1;
+    item.totalBet += Number(row.bet_amount || 0);
+    item.totalPayout += Number(row.payout_amount || 0);
+    item.netProfit += Number(row.net_amount || 0);
+    if (row.result === 'survived' || row.result === 'survived_max') item.cashouts += 1;
+    if (row.result === 'dead') item.busts += 1;
+  });
+  return [...map.values()].map((item) => ({
+    ...item,
+    returnRate: item.totalBet > 0 ? item.totalPayout / item.totalBet : 0,
+    successRate: item.plays > 0 ? item.cashouts / item.plays : 0
+  }));
+}
+
 async function buildCasinoLeaderboard({ category = 'drawdown', seasonId = null, limit = 10, offset = 0 }) {
   if (!POINT_LEADERBOARD_CATEGORIES.has(category) && !PERCENT_LEADERBOARD_CATEGORIES.has(category) && !COUNT_LEADERBOARD_CATEGORIES.has(category)) {
     const error = new Error('category is invalid.');
@@ -573,22 +607,32 @@ async function getAdminCasinoStats({ seasonId = null, gameKey = '', userId = nul
     item.totalBet += row.totalBet;
     item.totalPayout += row.totalPayout;
     item.netProfit += row.netProfit;
+    item.userNet = item.netProfit;
+    item.casinoNet = -item.netProfit;
     item.biggestWin = Math.max(item.biggestWin, row.biggestWin);
     item.biggestLoss = Math.max(item.biggestLoss, row.biggestLoss);
     item.returnRate = item.totalBet > 0 ? item.totalPayout / item.totalBet : 0;
     item.houseEdge = item.totalBet > 0 ? (item.totalBet - item.totalPayout) / item.totalBet : 0;
+    item.targetReturnRate = targetForGame(item.gameKey);
+    item.status = balanceStatus(item.returnRate, item.gameKey);
   });
   const userStats = await decorateLeaderboardRows(aggregateUserStats(stats)
     .sort((a, b) => Math.abs(b.casinoNet) - Math.abs(a.casinoNet))
     .slice(offset, offset + limit));
   return {
     season,
-    totals,
+    totals: {
+      ...totals,
+      userNet: totals.netProfit,
+      casinoNet: -totals.netProfit,
+      returnRate: totals.totalBet > 0 ? totals.totalPayout / totals.totalBet : 0
+    },
     gameStats: [...byGame.values()],
     userStats,
     biggestWins: [...stats].sort((a, b) => b.biggestWin - a.biggestWin).slice(0, limit),
     biggestLosses: [...stats].sort((a, b) => b.biggestLoss - a.biggestLoss).slice(0, limit),
-    suspiciousLoops: (await getSuspiciousLoops({ seasonId: season.id, limit })).rows
+    suspiciousLoops: (await getSuspiciousLoops({ seasonId: season.id, limit })).rows,
+    russianStepStats: await getRussianStepStats(season)
   };
 }
 

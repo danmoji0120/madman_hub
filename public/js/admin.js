@@ -353,7 +353,9 @@ async function loadAdminCasinoStats() {
       ['총 플레이', formatCount(totals.plays || 0)],
       ['총 베팅', formatPoints(totals.totalBet || 0)],
       ['총 지급', formatPoints(totals.totalPayout || 0)],
-      ['전체 Net', formatSignedPoints(totals.netProfit || 0)]
+      ['유저 기준 Net', formatSignedPoints(totals.userNet || 0)],
+      ['카지노 기준 Net', formatSignedPoints(totals.casinoNet || 0)],
+      ['전체 환급률', formatPercent(Math.round(Number(totals.returnRate || 0) * 1000))]
     ].map(([label, value]) => `<article class="metric-card"><span class="meta">${API.escape(label)}</span><strong>${API.escape(value)}</strong></article>`).join('');
     document.querySelector('#admin-casino-games').innerHTML = (data.gameStats || []).map((item) => `
       <tr>
@@ -361,10 +363,22 @@ async function loadAdminCasinoStats() {
         <td>${formatCount(item.plays || 0)}</td>
         <td>${formatPoints(item.totalBet || 0)}</td>
         <td>${formatPoints(item.totalPayout || 0)}</td>
-        <td>${formatSignedPoints(item.netProfit || 0)}</td>
-        <td>${formatPercent(Math.round(Number(item.returnRate || 0) * 1000))}</td>
+        <td>유저 ${formatSignedPoints(item.userNet || 0)}<br /><span class="meta">카지노 ${formatSignedPoints(item.casinoNet || 0)}</span></td>
+        <td>${formatPercent(Math.round(Number(item.returnRate || 0) * 1000))}<br /><span class="meta">목표 ${formatPercent(Math.round(Number(item.targetReturnRate?.min || 0) * 1000))}~${formatPercent(Math.round(Number(item.targetReturnRate?.max || 0) * 1000))}</span><br /><span class="badge">${API.escape(item.status?.label || '관측')}</span></td>
       </tr>
     `).join('') || '<tr><td colspan="6">기록 없음</td></tr>';
+    document.querySelector('#admin-casino-russian-steps').innerHTML = (data.russianStepStats || []).map((item) => `
+      <tr>
+        <td>${formatCount(item.cashoutStep || 0)}</td>
+        <td>${formatCount(item.plays || 0)}</td>
+        <td>${formatCount(item.cashouts || 0)} / ${formatCount(item.busts || 0)}</td>
+        <td>${formatPoints(item.totalBet || 0)}</td>
+        <td>${formatPoints(item.totalPayout || 0)}</td>
+        <td>${formatSignedPoints(item.netProfit || 0)}</td>
+        <td>${formatPercent(Math.round(Number(item.returnRate || 0) * 1000))}</td>
+        <td>${formatPercent(Math.round(Number(item.successRate || 0) * 1000))}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="8">러시안 룰렛 캐시아웃 기록 없음</td></tr>';
     document.querySelector('#admin-casino-loops').innerHTML = (data.suspiciousLoops || []).map((item) => `
       <div><strong>${API.escape(item.nickname || item.display_name || `ID ${item.userId}`)}</strong> · ${API.escape(item.formattedScore)} · <span class="meta">${API.escape(item.extraLabel || '')}</span></div>
     `).join('') || '<p class="meta">의심 루프 후보 없음</p>';

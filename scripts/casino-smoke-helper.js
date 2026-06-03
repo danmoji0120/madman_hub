@@ -1,6 +1,8 @@
 const assert = require('assert');
 const { addPointTransaction } = require('../server/services/points.service');
+const { casinoBalanceConfig } = require('../server/config/casinoBalance.config');
 const { getSupabaseAdminClient } = require('../server/supabaseClient');
+const { runAssertions: runBalanceAssertions } = require('./casino-balance-sim');
 
 async function safeDebugRequest(request, route, options = {}) {
   try {
@@ -35,6 +37,20 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     const publicGames = await request('/api/casino/games');
     assert.strictEqual(publicGames.games.length, 4);
     assert.ok(publicGames.games.some((game) => game.code === 'roulette'));
+    const russianGame = publicGames.games.find((game) => game.code === 'russian_roulette');
+    const blackjackGame = publicGames.games.find((game) => game.code === 'dice_blackjack');
+    assert.strictEqual(russianGame.fixedBet, casinoBalanceConfig.russianRoulette.baseBet);
+    assert.strictEqual(russianGame.rewardTable['1'], casinoBalanceConfig.russianRoulette.cashoutPayouts[1]);
+    assert.strictEqual(russianGame.rewardTable['2'], casinoBalanceConfig.russianRoulette.cashoutPayouts[2]);
+    assert.strictEqual(russianGame.rewardTable['3'], casinoBalanceConfig.russianRoulette.cashoutPayouts[3]);
+    assert.strictEqual(russianGame.rewardTable['4'], casinoBalanceConfig.russianRoulette.cashoutPayouts[4]);
+    assert.strictEqual(russianGame.rewardTable['5'], casinoBalanceConfig.russianRoulette.cashoutPayouts[5]);
+    assert.strictEqual(blackjackGame.payoutTable.find((item) => item.label === '일반 승리').multiplier, casinoBalanceConfig.diceBlackjack.winPayoutMultiplier);
+    assert.strictEqual(blackjackGame.payoutTable.find((item) => item.label === '정확히 21 승리').multiplier, casinoBalanceConfig.diceBlackjack.specialWinPayoutMultiplier);
+    assert.strictEqual(blackjackGame.payoutTable.find((item) => item.label === '동점 push').multiplier, 1);
+    const balanceSimulation = runBalanceAssertions();
+    assert.ok(balanceSimulation.russian.find((item) => item.cashoutStep === 2).expectedReturnRate < 1);
+    assert.ok(balanceSimulation.blackjack.returnRate >= 0.88 && balanceSimulation.blackjack.returnRate <= 1.02);
     await request('/api/casino/roulette/play', { method: 'POST' }, 401);
 
     await addPointTransaction({

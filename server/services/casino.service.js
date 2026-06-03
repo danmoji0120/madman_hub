@@ -28,6 +28,7 @@ const {
 const { incrementMission } = require('./dailyMissions.service');
 const { formatPoints } = require('../utils/formatNumbers');
 const { recordCasinoResultStats } = require('../repositories/casinoStats.repo');
+const { casinoBalanceConfig } = require('../config/casinoBalance.config');
 
 function casinoError(message, statusCode = 400) {
   const error = new Error(message);
@@ -455,7 +456,9 @@ async function hitDiceBlackjack(userId, sessionId) {
 async function standDiceBlackjack(userId, sessionId) {
   const session = await requireOwnedActiveSession({ userId, sessionId, gameCode: 'dice_blackjack' });
   const state = { ...session.state, dealerDice: [...session.state.dealerDice], dealerReveal: true, phase: 'completed' };
-  while (sumDice(state.dealerDice) < 17) state.dealerDice.push(randomInt(1, 6));
+  while (sumDice(state.dealerDice) <= casinoBalanceConfig.diceBlackjack.dealerHitUntil) {
+    state.dealerDice.push(randomInt(1, 6));
+  }
   state.dealerTotal = sumDice(state.dealerDice);
   state.playerTotal = sumDice(state.playerDice);
 
@@ -463,10 +466,14 @@ async function standDiceBlackjack(userId, sessionId) {
   let payoutAmount;
   if (state.dealerTotal > 21) {
     result = state.playerTotal === 21 ? 'blackjack_21' : 'dealer_bust';
-    payoutAmount = Math.floor(session.betAmount * (state.playerTotal === 21 ? 2.5 : 2));
+    payoutAmount = Math.floor(session.betAmount * (state.playerTotal === 21
+      ? casinoBalanceConfig.diceBlackjack.specialWinPayoutMultiplier
+      : casinoBalanceConfig.diceBlackjack.winPayoutMultiplier));
   } else if (state.playerTotal > state.dealerTotal) {
     result = state.playerTotal === 21 ? 'blackjack_21' : 'player_win';
-    payoutAmount = Math.floor(session.betAmount * (state.playerTotal === 21 ? 2.5 : 2));
+    payoutAmount = Math.floor(session.betAmount * (state.playerTotal === 21
+      ? casinoBalanceConfig.diceBlackjack.specialWinPayoutMultiplier
+      : casinoBalanceConfig.diceBlackjack.winPayoutMultiplier));
   } else if (state.playerTotal === state.dealerTotal) {
     result = 'push';
     payoutAmount = session.betAmount;

@@ -1,11 +1,12 @@
+const { formatPoints } = require('../utils/formatNumbers');
+const { casinoBalanceConfig } = require('../config/casinoBalance.config');
+
 function nonNegativeNumber(name, fallback) {
   const raw = process.env[name];
   if (raw === undefined || raw === '') return fallback;
   const value = Number(raw);
   return Number.isFinite(value) && value >= 0 ? value : fallback;
 }
-
-const { formatPoints } = require('../utils/formatNumbers');
 
 function nonNegativeInteger(name, fallback) {
   return Math.floor(nonNegativeNumber(name, fallback));
@@ -39,11 +40,11 @@ const games = {
     type: 'session',
     minBet: 20,
     dailyLimit: nonNegativeInteger('CASINO_BLACKJACK_DAILY_LIMIT', 10),
-    rules: '21을 넘지 않으면서 딜러보다 높은 합계를 만드세요. 딜러는 17 이상까지 굴립니다.',
+    rules: '21 이하에서 딜러보다 높은 합계를 만드세요. 딜러는 16 이하에서 굴리고 17 이상에서 멈춥니다. 동점은 베팅액 반환입니다.',
     payoutTable: [
-      { label: '일반 승리', multiplier: 2 },
-      { label: '정확히 21 승리', multiplier: 2.5 },
-      { label: '무승부', multiplier: 1 }
+      { label: '일반 승리', multiplier: casinoBalanceConfig.diceBlackjack.winPayoutMultiplier },
+      { label: '정확히 21 승리', multiplier: casinoBalanceConfig.diceBlackjack.specialWinPayoutMultiplier },
+      { label: '동점 push', multiplier: 1 }
     ]
   },
   crash: {
@@ -67,11 +68,11 @@ const games = {
     code: 'russian_roulette',
     name: '러시안 룰렛',
     type: 'session',
-    minBet: 30,
-    fixedBet: 30,
+    minBet: casinoBalanceConfig.russianRoulette.baseBet,
+    fixedBet: casinoBalanceConfig.russianRoulette.baseBet,
     dailyLimit: nonNegativeInteger('CASINO_RUSSIAN_DAILY_LIMIT', 10),
-    rules: '고정 참가비 30 P. 방아쇠를 당긴 뒤 생존 보상을 받고 멈추거나 계속 도전하세요.',
-    rewardTable: { 1: 40, 2: 65, 3: 110, 4: 190, 5: 350 }
+    rules: '초반 캐시아웃은 안전하지만 수익이 작습니다. 깊게 들어갈수록 보상은 커지지만, BB쨩은 책임지지 않아요.',
+    rewardTable: casinoBalanceConfig.russianRoulette.cashoutPayouts
   }
 };
 

@@ -61,6 +61,19 @@ async function runCosmeticsSmoke({ request, auth, ownerAuth, userId, runPrefix }
     method: 'POST', headers: auth, body: JSON.stringify({ body: 'anonymous cosmetic comment', isAnonymous: true })
   });
   assert.strictEqual(Object.hasOwn(anonymousComment.comment, 'cosmetics'), false);
+  const beforeExpensiveBuy = await request('/api/points/me', { headers: auth });
+  const balanceBeforeExpensiveBuy = Number(beforeExpensiveBuy.account?.balance || 0);
+  if (balanceBeforeExpensiveBuy >= expensive.price) {
+    await request('/api/admin/points/grant', {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({
+        userId,
+        amount: -(balanceBeforeExpensiveBuy - expensive.price + 1),
+        reason: 'cosmetics smoke insufficient balance setup'
+      })
+    });
+  }
   await request(`/api/cosmetics/${expensive.id}/buy`, { method: 'POST', headers: auth }, 400);
 
   if (process.env.DB_PROVIDER === 'supabase') {

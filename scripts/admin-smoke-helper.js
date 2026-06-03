@@ -172,6 +172,9 @@ async function runSupabaseAdminSmoke({ request, ownerAuth, ownerUserId, runPrefi
     assert.ok(overview.recentAdminLogs.every((log) => typeof log.metadata === 'string'));
     const casinoStats = await request('/api/admin/casino/stats', { headers: ownerAuth });
     assert.ok(casinoStats.totals);
+    assert.ok(Number.isFinite(casinoStats.totals.returnRate));
+    assert.ok(Array.isArray(casinoStats.russianStepStats));
+    assert.ok((casinoStats.gameStats || []).every((item) => item.targetReturnRate && item.status));
     const casinoGameStats = await request('/api/admin/casino/game-stats', { headers: ownerAuth });
     assert.ok(Array.isArray(casinoGameStats.gameStats));
     const suspiciousLoops = await request('/api/admin/casino/suspicious-loops', { headers: ownerAuth });
