@@ -5,7 +5,7 @@ const { normalizeTitle } = require('../utils/titles');
 const TITLE_BADGE_COLUMNS = `
   id, name, description, price, rarity, category, source_type,
   is_purchasable, is_reward_only, display_order, flavor_text,
-  unlock_hint, css_class, icon, is_limited, is_active
+  unlock_hint, css_class, icon, season_style, is_limited, is_active
 `;
 
 function assertResult(result) {
@@ -21,7 +21,7 @@ async function getTitleBadgesByNames(names) {
   if (provider === 'supabase') {
     rows = assertResult(await getSupabaseAdminClient()
       .from('titles')
-      .select(TITLE_BADGE_COLUMNS.replace(/\s+/g, ' ').trim())
+      .select('*')
       .in('name', uniqueNames)) || [];
   } else {
     rows = await all(

@@ -33,6 +33,10 @@ const PERCENT_SCORE_CATEGORIES = new Set([
   'point_turnover'
 ]);
 
+const SCORE_SCORE_CATEGORIES = new Set([
+  'community_activity'
+]);
+
 const koNumberFormatter = new Intl.NumberFormat('ko-KR');
 
 function toFiniteNumber(value, fallback = 0) {
@@ -69,6 +73,7 @@ function formatRankingScore(category, score, options = {}) {
   const normalizedCategory = String(category || '').trim();
   if (POINT_SCORE_CATEGORIES.has(normalizedCategory)) return formatPoints(score, options);
   if (PERCENT_SCORE_CATEGORIES.has(normalizedCategory)) return formatPercent(score);
+  if (SCORE_SCORE_CATEGORIES.has(normalizedCategory)) return `${formatNumber(toFiniteNumber(score))}점`;
   if (COUNT_SCORE_CATEGORIES.has(normalizedCategory)) return formatCount(score, options.unit || '회');
   return formatCount(score, options.unit || '회');
 }

@@ -157,7 +157,8 @@ async function getMySeasonSummary(userId) {
     casinoNet: (stats.casino_net_profit || 0) - (stats.casino_net_loss || 0),
     biggestCasinoWin: stats.biggest_casino_win || 0,
     biggestCasinoLoss: stats.biggest_casino_loss || 0,
-    pointTurnover: stats.point_turnover || 0
+    pointTurnover: stats.point_turnover || 0,
+    communityActivity: stats.community_activity || 0
   };
 }
 

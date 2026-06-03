@@ -11,6 +11,7 @@ const SEASON_RANKING_CATEGORIES = [
   { code: 'post_count', label: '게시글 작성', description: '공개 게시글 작성 수' },
   { code: 'comment_count', label: '댓글 작성', description: '공개 댓글 작성 수' },
   { code: 'song_count', label: '노래추천', description: '공개 노래추천 수' },
+  { code: 'community_activity', label: '커뮤니티 활동', description: '게시글×3 + 댓글×1 + 노래추천×2 통합 점수' },
   { code: 'daily_mission_count', label: '일일 미션', description: '완료한 일일 미션 수' },
   { code: 'cosmetic_spent', label: '꾸미기 소비', description: '꾸미기 아이템 구매에 사용한 포인트' },
   { code: 'attendance_count', label: '출석', description: '시즌 중 출석 수' },

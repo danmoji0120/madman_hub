@@ -379,8 +379,18 @@ function renderSeasonRewardPreview(data) {
   });
   root.innerHTML = rows.join('') || '<tr><td colspan="6">칭호 지급 예정 항목이 없습니다.</td></tr>';
   if (groupRoot) {
-    groupRoot.innerHTML = renderTrophyGroupCards(data.groupedTrophyRows || []);
+    groupRoot.innerHTML = renderTrophyGroupPanel(data.groupedTrophyRows || []);
   }
+}
+
+function renderTrophyGroupPanel(groups) {
+  const cards = renderTrophyGroupCards(groups);
+  return groups.length
+    ? `<details class="reward-preview-trophy-details">
+        <summary>세부 시즌 기록 보기</summary>
+        <div class="season-trophy-group-list">${cards}</div>
+      </details>`
+    : cards;
 }
 
 function renderTrophyGroupCards(groups) {

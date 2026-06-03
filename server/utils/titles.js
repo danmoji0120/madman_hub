@@ -11,10 +11,18 @@ function sanitizeCssClass(value) {
   return /^[a-zA-Z0-9_-]{0,64}$/.test(cleaned) ? cleaned : '';
 }
 
+const TITLE_SEASON_STYLES = ['dominator', 'disaster', 'fortune', 'archivist', 'battle', 'upset'];
+
+function sanitizeSeasonStyle(value) {
+  const cleaned = String(value || '').trim();
+  return TITLE_SEASON_STYLES.includes(cleaned) ? cleaned : '';
+}
+
 function normalizeTitle(row = {}) {
   const category = row.category || 'shop';
   const sourceType = row.sourceType || row.source_type || 'purchase';
   const cssClass = sanitizeCssClass(row.cssClass || row.css_class || '');
+  const seasonStyle = sanitizeSeasonStyle(row.seasonStyle || row.season_style || '');
   const flavorText = row.flavorText ?? row.flavor_text ?? '';
   const unlockHint = row.unlockHint ?? row.unlock_hint ?? '';
   const isPurchasable = row.isPurchasable ?? row.is_purchasable ?? row.isPurchasableFlag ?? 1;
@@ -40,6 +48,8 @@ function normalizeTitle(row = {}) {
     unlockHint,
     css_class: cssClass,
     cssClass,
+    season_style: seasonStyle,
+    seasonStyle,
     icon: row.icon || '',
     is_limited: toBoolean(isLimited),
     isLimited: toBoolean(isLimited),
@@ -67,6 +77,7 @@ module.exports = {
   TITLE_SOURCE_TYPES,
   normalizeTitle,
   sanitizeCssClass,
+  sanitizeSeasonStyle,
   toBoolean,
   validateTitleTaxonomy
 };

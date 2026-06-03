@@ -165,7 +165,7 @@ router.get('/titles', authRequired, async (req, res) => {
     all(
       `SELECT t.id, t.name, t.description, t.price, t.rarity, t.category, t.source_type,
               t.is_purchasable, t.is_reward_only, t.display_order, t.flavor_text, t.unlock_hint,
-              t.css_class, t.icon, t.is_limited, t.starts_at, t.ends_at, t.is_active,
+              t.css_class, t.icon, t.season_style, t.is_limited, t.starts_at, t.ends_at, t.is_active,
               ut.acquired_at, ut.source
        FROM user_titles ut
        JOIN titles t ON t.id = ut.title_id
@@ -201,7 +201,7 @@ router.post('/title/equip', authRequired, async (req, res) => {
   const title = await get(
     `SELECT t.id, t.name, t.description, t.price, t.rarity, t.category, t.source_type,
             t.is_purchasable, t.is_reward_only, t.display_order, t.flavor_text, t.unlock_hint,
-            t.css_class, t.icon, t.is_limited, t.starts_at, t.ends_at, t.is_active
+            t.css_class, t.icon, t.season_style, t.is_limited, t.starts_at, t.ends_at, t.is_active
      FROM user_titles ut
      JOIN titles t ON t.id = ut.title_id
      WHERE ut.user_id = ? AND ut.title_id = ?`,

@@ -169,19 +169,18 @@ V1.8.5.1부터 시즌 결과는 “칭호”와 “트로피 기록”으로 분
 - `season_reward_grants`: 시즌/유저/칭호/category별 지급 로그와 중복 지급 방지 상태
 - `user_season_trophies`: 프로필에 표시할 시즌 대표 기록, 점수, 보상 칭호, 설명
 
-기본 reward mapping은 seed와 서비스 보정 로직에 모두 들어 있습니다. active title mapping은 `activity_score`, `casino_loss`, `drawdown`, `point_spent`, `comment_count` 1위만 사용합니다. 나머지 주요 category는 trophy-only 기록으로 프로필에 남습니다. title id는 환경마다 다를 수 있으므로 seed는 칭호 이름 기준으로 매핑을 생성합니다.
+기본 reward mapping은 seed와 서비스 보정 로직에 모두 들어 있습니다. active title mapping은 `activity_score`, `casino_loss`, `point_earned`, `community_activity` 1위만 사용합니다. 나머지 주요 category는 trophy-only 기록으로 프로필에 남습니다. title id는 환경마다 다를 수 있으므로 seed는 칭호 이름 기준으로 매핑을 생성합니다.
 
 대표 시즌 칭호:
 
 - `activity_score`: 시즌의 지배자
 - `casino_loss`: 시즌 대참사
-- `drawdown`: 돈은 머무르지 않았다
-- `point_spent`: 시즌 소각왕
-- `comment_count`: 격리소 서기관
+- `point_earned`: 포인트 위에 누운 자
+- `community_activity`: 격리소 서기관
 
 trophy-only 기본 category:
 
-- `point_earned`, `net_points`, `casino_profit`, `casino_net_profit`, `casino_net_loss`
+- `net_points`, `casino_profit`, `casino_net_profit`, `casino_net_loss`
 - `casino_plays`, `post_count`, `song_count`, `daily_mission_count`, `cosmetic_spent`, `attendance_count`
 - `balance_peak`, `drawdown_rate`, `biggest_casino_win`, `biggest_casino_loss`, `point_turnover`
 - `russian_cashout_count`, `blackjack_profit`
@@ -233,6 +232,27 @@ V1.8.5.2부터 시즌 트로피는 원본 `user_season_trophies` row를 그대�
 1. `database/supabase.schema.sql`
 2. `database/supabase.seed.sql`
 3. `database/supabase.rpc.sql`
+
+## V1.8.5.3 시즌 칭호 4종 체계
+
+시즌 보상은 이제 4개 대표 시즌 칭호 중심으로 정리됩니다. 세부 트로피 기록은 `user_season_trophies`에 계속 보존하지만, 프로필과 관리자 preview에서는 보조 기록으로 접어 보여줍니다.
+
+active title reward mapping은 다음 4개만 사용합니다.
+
+- `activity_score` → `시즌의 지배자` (`season_style=dominator`)
+- `casino_loss` → `시즌 대참사` (`season_style=disaster`)
+- `point_earned` → `포인트 위에 누운 자` (`season_style=fortune`)
+- `community_activity` → `격리소 서기관` (`season_style=archivist`)
+
+`community_activity`는 시즌 랭킹/보상용 통합 커뮤니티 활동 점수입니다.
+
+```text
+community_activity = post_count * 3 + comment_count * 1 + song_count * 2
+```
+
+표시는 `12점`, `1,234점` 형식을 사용합니다. `drawdown`, `point_spent`, `comment_count`, `song_count`, `biggest_casino_loss`, `30000P의 꿈` 같은 기존 시즌 보상 매핑은 active title mapping에서 제외됩니다. 기존에 이미 지급된 칭호나 시즌 기록은 자동 삭제/회수하지 않습니다.
+
+시즌 전용 배지는 `title-season-reward`에 더해 `title-season-dominator`, `title-season-disaster`, `title-season-fortune`, `title-season-archivist` 클래스를 사용합니다. 향후 Battle/Deal Arena 시즌 칭호를 위해 `battle`, `upset` 스타일 값도 예약되어 있습니다.
 
 ## MVP 1.6 칭호 개편
 

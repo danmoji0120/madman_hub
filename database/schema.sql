@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS titles (
   unlock_hint TEXT DEFAULT '',
   css_class TEXT DEFAULT '',
   icon TEXT DEFAULT '',
+  season_style TEXT DEFAULT '',
   is_limited INTEGER NOT NULL DEFAULT 0,
   starts_at TEXT,
   ends_at TEXT,

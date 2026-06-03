@@ -15,6 +15,15 @@ const TITLE_BADGE_RARITIES = new Set([
   'anonymous'
 ]);
 
+const TITLE_SEASON_STYLES = new Set([
+  'dominator',
+  'disaster',
+  'fortune',
+  'archivist',
+  'battle',
+  'upset'
+]);
+
 function titleBadgeData(title) {
   if (typeof title === 'string') return { name: title };
   const data = title || {};
@@ -54,6 +63,10 @@ function renderTitleBadge(title, options = {}) {
   const rarity = TITLE_BADGE_RARITIES.has(rawRarity) ? rawRarity : 'common';
   const cssClass = titleBadgeClass(data.cssClass || data.css_class || '');
   const isSeasonReward = data.category === 'season' || data.sourceType === 'season_reward' || data.source_type === 'season_reward';
+  const rawSeasonStyle = String(data.seasonStyle || data.season_style || '').trim();
+  const seasonStyleClass = isSeasonReward && TITLE_SEASON_STYLES.has(rawSeasonStyle)
+    ? ` title-season-${rawSeasonStyle}`
+    : '';
   const compact = options.compact ? ' title-badge-compact' : '';
   const rarityText = isSeasonReward ? (options.seasonLabel || 'SEASON') : rarity.toUpperCase();
   const rarityLabel = options.showRarityLabel || isSeasonReward
@@ -62,5 +75,5 @@ function renderTitleBadge(title, options = {}) {
   const icon = data.icon ? `<span class="title-icon">${API.escape(data.icon)}</span>` : '';
   const name = data.name || '수상한 거주민';
   const seasonClass = isSeasonReward ? ' title-season-reward' : '';
-  return `<span class="title-badge title-rarity-${rarity}${seasonClass} ${cssClass}${compact}">${rarityLabel}${icon}${API.escape(name)}</span>`;
+  return `<span class="title-badge title-rarity-${rarity}${seasonClass}${seasonStyleClass} ${cssClass}${compact}">${rarityLabel}${icon}${API.escape(name)}</span>`;
 }

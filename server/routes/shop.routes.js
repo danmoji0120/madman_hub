@@ -82,7 +82,7 @@ async function listSqliteShopTitles(userId, filters) {
   const titles = await all(
     `SELECT t.id, t.name, t.description, t.price, t.rarity, t.category, t.source_type,
             t.is_purchasable, t.is_reward_only, t.display_order, t.flavor_text, t.unlock_hint,
-            t.css_class, t.icon, t.is_limited, t.starts_at, t.ends_at, t.is_active,
+            t.css_class, t.icon, t.season_style, t.is_limited, t.starts_at, t.ends_at, t.is_active,
             CASE WHEN ut.title_id IS NULL THEN 0 ELSE 1 END AS owned
      FROM titles t
      ${ownedJoin}
@@ -150,7 +150,7 @@ router.post('/titles/:id/buy', authRequired, async (req, res) => {
     const title = normalizeTitle(await get(
       `SELECT id, name, description, price, rarity, category, source_type, is_purchasable,
               is_reward_only, display_order, flavor_text, unlock_hint, css_class, icon,
-              is_limited, starts_at, ends_at, is_active
+              season_style, is_limited, starts_at, ends_at, is_active
        FROM titles WHERE id = ? AND is_active = 1`,
       [titleId]
     ));

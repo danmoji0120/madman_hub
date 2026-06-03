@@ -62,6 +62,7 @@ async function runPreSchemaMigrations() {
   await ensureColumn('titles', 'unlock_hint', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'css_class', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'icon', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'season_style', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('titles', 'starts_at', 'TEXT');
   await ensureColumn('titles', 'ends_at', 'TEXT');
@@ -93,6 +94,7 @@ async function runMigrations() {
   await ensureColumn('titles', 'unlock_hint', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'css_class', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'icon', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'season_style', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('titles', 'starts_at', 'TEXT');
   await ensureColumn('titles', 'ends_at', 'TEXT');

@@ -23,30 +23,85 @@ const USER_SEASON_TITLE_LIMIT = 2;
 const TITLE_REWARD_PRIORITY = new Map([
   ['activity_score', 1],
   ['casino_loss', 2],
-  ['drawdown', 3],
-  ['point_spent', 4],
-  ['comment_count', 5],
-  ['song_count', 6]
+  ['point_earned', 3],
+  ['community_activity', 4]
 ]);
 
 const DEFAULT_REWARD_MAPPINGS = [
-  { category: 'activity_score', rewardType: 'title', titleName: '시즌의 지배자', trophyLabel: '활동 종합 1위', description: '대표 시즌 칭호: 활동 종합 1위' },
-  { category: 'casino_loss', rewardType: 'title', titleName: '시즌 대참사', trophyLabel: '카지노 대참사 1위', description: '대표 시즌 칭호: 카지노 대참사 1위' },
-  { category: 'drawdown', rewardType: 'title', titleName: '돈은 머무르지 않았다', trophyLabel: '최고점 추락 1위', description: '대표 시즌 칭호: 최고점 추락 1위' },
-  { category: 'point_spent', rewardType: 'title', titleName: '시즌 소각왕', trophyLabel: '포인트 소비 1위', description: '대표 시즌 칭호: 포인트 소비 1위' },
-  { category: 'comment_count', rewardType: 'title', titleName: '격리소 서기관', trophyLabel: '댓글 활동 1위', description: '대표 시즌 칭호: 댓글 활동 1위' },
-  { category: 'point_earned', rewardType: 'trophy', trophyLabel: '포인트 획득 1위' },
+  {
+    category: 'activity_score',
+    rewardType: 'title',
+    titleName: '시즌의 지배자',
+    trophyLabel: '활동 종합 1위',
+    description: '대표 시즌 칭호: 활동 종합 1위',
+    titleDescription: '시즌 전체 활동 종합 1위에게 지급되는 대표 시즌 칭호',
+    rarity: 'legendary',
+    seasonStyle: 'dominator',
+    displayOrder: 507,
+    flavorText: '한 시즌 동안 격리소의 모든 시선을 빼앗은 자.',
+    unlockHint: '시즌 활동 종합 1위 보상',
+    cssClass: 'title-concept-legendary',
+    icon: '*'
+  },
+  {
+    category: 'casino_loss',
+    rewardType: 'title',
+    titleName: '시즌 대참사',
+    trophyLabel: '카지노 손실 1위',
+    description: '대표 시즌 칭호: 카지노 손실 1위',
+    titleDescription: '시즌 카지노 손실 1위에게 지급되는 대참사 박제 칭호',
+    rarity: 'legendary',
+    seasonStyle: 'disaster',
+    displayOrder: 503,
+    flavorText: '이 기록은 위로가 아니라 전시물입니다.',
+    unlockHint: '시즌 카지노 손실 1위 보상',
+    cssClass: 'title-concept-legendary',
+    icon: '!'
+  },
+  {
+    category: 'point_earned',
+    rewardType: 'title',
+    titleName: '포인트 위에 누운 자',
+    trophyLabel: '포인트 수입 1위',
+    description: '대표 시즌 칭호: 포인트 수입 1위',
+    titleDescription: '시즌 중 가장 많은 포인트를 벌어들인 유저에게 지급되는 시즌 칭호',
+    rarity: 'epic',
+    seasonStyle: 'fortune',
+    displayOrder: 501,
+    flavorText: '벌어들인 숫자가 잠깐 침대가 되었습니다.',
+    unlockHint: '시즌 포인트 수입 1위 보상',
+    cssClass: 'title-concept-epic',
+    icon: '*'
+  },
+  {
+    category: 'community_activity',
+    rewardType: 'title',
+    titleName: '격리소 서기관',
+    trophyLabel: '커뮤니티 활동 1위',
+    description: '대표 시즌 칭호: 커뮤니티 활동 1위',
+    titleDescription: '글, 댓글, 노래추천을 합산한 커뮤니티 활동 1위에게 지급되는 시즌 칭호',
+    rarity: 'epic',
+    seasonStyle: 'archivist',
+    displayOrder: 511,
+    flavorText: '격리소의 광기는 기록으로 완성됩니다.',
+    unlockHint: '시즌 커뮤니티 활동 1위 보상',
+    cssClass: 'title-concept-epic',
+    icon: '*'
+  },
+  { category: 'point_spent', rewardType: 'trophy', trophyLabel: '포인트 소비 1위' },
   { category: 'net_points', rewardType: 'trophy', trophyLabel: '포인트 순증감 1위' },
   { category: 'casino_profit', rewardType: 'trophy', trophyLabel: '카지노 수익 1위' },
   { category: 'casino_net_profit', rewardType: 'trophy', trophyLabel: '카지노 순수익 1위' },
   { category: 'casino_net_loss', rewardType: 'trophy', trophyLabel: '카지노 순손실 1위' },
   { category: 'casino_plays', rewardType: 'trophy', trophyLabel: '카지노 플레이 1위' },
   { category: 'post_count', rewardType: 'trophy', trophyLabel: '게시글 작성 1위' },
+  { category: 'comment_count', rewardType: 'trophy', trophyLabel: '댓글 작성 1위' },
   { category: 'song_count', rewardType: 'trophy', trophyLabel: '노래추천 1위' },
   { category: 'daily_mission_count', rewardType: 'trophy', trophyLabel: '일일 미션 1위' },
   { category: 'cosmetic_spent', rewardType: 'trophy', trophyLabel: '꾸미기 소비 1위' },
   { category: 'attendance_count', rewardType: 'trophy', trophyLabel: '출석 1위' },
   { category: 'balance_peak', rewardType: 'trophy', trophyLabel: '최고 보유 포인트 1위' },
+  { category: 'drawdown', rewardType: 'trophy', trophyLabel: '최고점 추락폭 1위' },
   { category: 'drawdown_rate', rewardType: 'trophy', trophyLabel: '최고점 추락률 1위' },
   { category: 'biggest_casino_win', rewardType: 'trophy', trophyLabel: '단일 최대 승리 1위' },
   { category: 'biggest_casino_loss', rewardType: 'trophy', trophyLabel: '단일 최대 손실 1위' },
@@ -531,7 +586,11 @@ async function listSeasonTrophiesForUser(userId, filters = {}) {
   const seasonId = filters.seasonId ? Number(filters.seasonId) : null;
   const featuredOnly = filters.featuredOnly === true || filters.featuredOnly === 'true';
   const items = await listUserSeasonTrophies(userId, { seasonId, limit, featuredOnly });
-  return { items, groupedItems: groupSeasonTrophies(items) };
+  const seasonRewardTitles = items.filter((item) => (
+    item.titleData &&
+    (item.titleData.category === 'season' || item.titleData.sourceType === 'season_reward' || item.titleData.source_type === 'season_reward')
+  ));
+  return { items, groupedItems: groupSeasonTrophies(items), seasonRewardTitles };
 }
 
 module.exports = {

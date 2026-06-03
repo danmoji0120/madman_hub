@@ -109,6 +109,40 @@ ON CONFLICT (name) DO UPDATE SET
   is_limited = EXCLUDED.is_limited,
   updated_at = NOW();
 
+INSERT INTO titles (
+  name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,
+  display_order, flavor_text, unlock_hint, css_class, icon, season_style, is_limited, is_active
+) VALUES
+  ('시즌의 지배자', '시즌 전체 활동 종합 1위에게 지급되는 대표 시즌 칭호', 0, 'legendary', 'season', 'season_reward', FALSE, TRUE, 507, '한 시즌 동안 격리소의 모든 시선을 빼앗은 자.', '시즌 활동 종합 1위 보상', 'title-concept-legendary', '*', 'dominator', FALSE, TRUE),
+  ('시즌 대참사', '시즌 카지노 손실 1위에게 지급되는 대참사 박제 칭호', 0, 'legendary', 'season', 'season_reward', FALSE, TRUE, 503, '이 기록은 위로가 아니라 전시물입니다.', '시즌 카지노 손실 1위 보상', 'title-concept-legendary', '!', 'disaster', FALSE, TRUE),
+  ('포인트 위에 누운 자', '시즌 중 가장 많은 포인트를 벌어들인 유저에게 지급되는 시즌 칭호', 0, 'epic', 'season', 'season_reward', FALSE, TRUE, 501, '벌어들인 숫자가 잠깐 침대가 되었습니다.', '시즌 포인트 수입 1위 보상', 'title-concept-epic', '*', 'fortune', FALSE, TRUE),
+  ('격리소 서기관', '글, 댓글, 노래추천을 합산한 커뮤니티 활동 1위에게 지급되는 시즌 칭호', 0, 'epic', 'season', 'season_reward', FALSE, TRUE, 511, '격리소의 광기는 기록으로 완성됩니다.', '시즌 커뮤니티 활동 1위 보상', 'title-concept-epic', '*', 'archivist', FALSE, TRUE)
+ON CONFLICT (name) DO UPDATE SET
+  description = EXCLUDED.description,
+  price = EXCLUDED.price,
+  rarity = EXCLUDED.rarity,
+  category = EXCLUDED.category,
+  source_type = EXCLUDED.source_type,
+  is_purchasable = EXCLUDED.is_purchasable,
+  is_reward_only = EXCLUDED.is_reward_only,
+  display_order = EXCLUDED.display_order,
+  flavor_text = EXCLUDED.flavor_text,
+  unlock_hint = EXCLUDED.unlock_hint,
+  css_class = EXCLUDED.css_class,
+  icon = EXCLUDED.icon,
+  season_style = EXCLUDED.season_style,
+  is_limited = EXCLUDED.is_limited,
+  is_active = EXCLUDED.is_active,
+  updated_at = NOW();
+
+UPDATE titles
+SET category = 'casino', source_type = 'event_reward', updated_at = NOW()
+WHERE name IN ('30000P의 꿈', '돈은 머무르지 않았다', '내리막의 품격', '카지노 생존자', '딜러의 장난감', '잔고 통과 의례');
+
+UPDATE titles
+SET is_active = FALSE, updated_at = NOW()
+WHERE name IN ('시즌 소각왕', '시즌 파산왕', '시즌 포인트 베개', '시즌 꾸미기 중독자', '시즌 플레이리스트 DJ');
+
 UPDATE titles
 SET category = 'admin', source_type = 'admin_grant', is_purchasable = FALSE, is_reward_only = TRUE
 WHERE rarity = 'admin';
@@ -129,6 +163,21 @@ SELECT 'point_spent', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 포인트 
 ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
 INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
 SELECT 'comment_count', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 댓글 활동 1위' FROM titles WHERE name = '격리소 서기관'
+ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
+
+UPDATE season_reward_mappings SET is_active = FALSE;
+
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'activity_score', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 활동 종합 1위' FROM titles WHERE name = '시즌의 지배자'
+ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_loss', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 카지노 손실 1위' FROM titles WHERE name = '시즌 대참사'
+ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'point_earned', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 포인트 수입 1위' FROM titles WHERE name = '포인트 위에 누운 자'
+ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'community_activity', 1, 1, id, 'title', TRUE, '대표 시즌 칭호: 커뮤니티 활동 1위' FROM titles WHERE name = '격리소 서기관'
 ON CONFLICT (category, rank_min, rank_max, title_id) DO UPDATE SET reward_type = 'title', is_active = TRUE, description = EXCLUDED.description, updated_at = NOW();
 
 INSERT INTO cosmetic_items (code, name, description, type, rarity, price, css_class, preview_text) VALUES

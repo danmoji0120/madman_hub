@@ -110,6 +110,102 @@ async function getTitlesByNames(names) {
   return new Map(rows.map((row) => [row.name, row]));
 }
 
+function buildRewardTitlePayload(spec, includeSeasonStyle = true) {
+  const payload = {
+    name: spec.titleName,
+    description: spec.titleDescription || spec.description || '',
+    price: 0,
+    rarity: spec.rarity || 'epic',
+    category: 'season',
+    source_type: 'season_reward',
+    is_purchasable: false,
+    is_reward_only: true,
+    display_order: spec.displayOrder || 0,
+    flavor_text: spec.flavorText || '',
+    unlock_hint: spec.unlockHint || '',
+    css_class: spec.cssClass || `title-concept-${spec.rarity || 'epic'}`,
+    icon: spec.icon || '',
+    is_limited: false,
+    is_active: true
+  };
+  if (includeSeasonStyle) payload.season_style = spec.seasonStyle || '';
+  return payload;
+}
+
+function isMissingSeasonStyleColumn(error) {
+  const message = `${error?.message || ''} ${error?.details || ''}`;
+  return error?.code === 'PGRST204' || /season_style/i.test(message);
+}
+
+async function ensureRewardTitleDefaults(specs) {
+  const titleSpecs = specs.filter((spec) => spec.rewardType !== 'trophy' && spec.titleName);
+  if (!titleSpecs.length) return;
+  if (provider === 'supabase') {
+    const client = getSupabaseAdminClient();
+    for (const spec of titleSpecs) {
+      const payload = {
+        ...buildRewardTitlePayload(spec, true),
+        updated_at: new Date().toISOString()
+      };
+      const result = await client.from('titles').upsert(payload, { onConflict: 'name' }).select('*');
+      if (result.error && isMissingSeasonStyleColumn(result.error)) {
+        const fallback = {
+          ...buildRewardTitlePayload(spec, false),
+          updated_at: new Date().toISOString()
+        };
+        assertResult(await client.from('titles').upsert(fallback, { onConflict: 'name' }).select('*'));
+      } else {
+        assertResult(result);
+      }
+    }
+    return;
+  }
+  for (const spec of titleSpecs) {
+    const payload = buildRewardTitlePayload(spec, true);
+    await run(
+      `INSERT INTO titles
+       (name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,
+        display_order, flavor_text, unlock_hint, css_class, icon, season_style, is_limited, is_active, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(name) DO UPDATE SET
+         description = excluded.description,
+         price = excluded.price,
+         rarity = excluded.rarity,
+         category = excluded.category,
+         source_type = excluded.source_type,
+         is_purchasable = excluded.is_purchasable,
+         is_reward_only = excluded.is_reward_only,
+         display_order = excluded.display_order,
+         flavor_text = excluded.flavor_text,
+         unlock_hint = excluded.unlock_hint,
+         css_class = excluded.css_class,
+         icon = excluded.icon,
+         season_style = excluded.season_style,
+         is_limited = excluded.is_limited,
+         is_active = excluded.is_active,
+         updated_at = CURRENT_TIMESTAMP`,
+      [
+        payload.name,
+        payload.description,
+        payload.price,
+        payload.rarity,
+        payload.category,
+        payload.source_type,
+        payload.is_purchasable ? 1 : 0,
+        payload.is_reward_only ? 1 : 0,
+        payload.display_order,
+        payload.flavor_text,
+        payload.unlock_hint,
+        payload.css_class,
+        payload.icon,
+        payload.season_style,
+        payload.is_limited ? 1 : 0,
+        payload.is_active ? 1 : 0
+      ]
+    );
+  }
+}
+
 async function getUsersByIds(userIds) {
   const ids = [...new Set(userIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
   if (!ids.length) return new Map();
@@ -157,6 +253,7 @@ async function listRewardMappings({ includeInactive = false } = {}) {
 }
 
 async function ensureRewardMappings(specs) {
+  await ensureRewardTitleDefaults(specs);
   const titleMap = await getTitlesByNames(specs.map((spec) => spec.titleName));
   const ensured = [];
   const activeTitleSpecs = specs.filter((spec) => spec.rewardType !== 'trophy' && spec.titleName);

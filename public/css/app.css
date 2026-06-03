@@ -896,6 +896,63 @@ button {
   color: #d5f7ff;
 }
 
+.title-season-dominator {
+  border-color: rgba(255, 220, 120, 0.95) !important;
+  background:
+    linear-gradient(135deg, rgba(90, 58, 10, 0.96), rgba(22, 28, 60, 0.9)),
+    radial-gradient(circle at 20% 0%, rgba(255, 245, 185, 0.22), transparent 55%);
+  color: #fff2bd !important;
+  text-shadow: 0 0 10px rgba(255, 218, 110, 0.46);
+  box-shadow: 0 0 20px rgba(255, 210, 90, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.title-season-disaster {
+  border-color: rgba(255, 92, 112, 0.95) !important;
+  background:
+    linear-gradient(135deg, rgba(45, 8, 16, 0.97), rgba(110, 14, 32, 0.84)),
+    radial-gradient(circle at 80% 0%, rgba(255, 92, 112, 0.18), transparent 56%);
+  color: #ffd2d8 !important;
+  text-shadow: 0 0 10px rgba(255, 68, 98, 0.38);
+  box-shadow: 0 0 20px rgba(255, 68, 98, 0.24), inset 0 0 0 1px rgba(255, 190, 198, 0.1);
+}
+
+.title-season-fortune {
+  border-color: rgba(66, 245, 190, 0.9) !important;
+  background:
+    linear-gradient(135deg, rgba(8, 65, 49, 0.94), rgba(18, 82, 75, 0.82)),
+    radial-gradient(circle at 12% 0%, rgba(255, 218, 100, 0.18), transparent 54%);
+  color: #c8ffe8 !important;
+  text-shadow: 0 0 10px rgba(66, 245, 190, 0.34);
+  box-shadow: 0 0 20px rgba(66, 245, 190, 0.22), inset 0 0 0 1px rgba(255, 222, 130, 0.11);
+}
+
+.title-season-archivist {
+  border-color: rgba(136, 164, 255, 0.9) !important;
+  background:
+    linear-gradient(135deg, rgba(18, 31, 79, 0.96), rgba(68, 34, 116, 0.82)),
+    radial-gradient(circle at 85% 0%, rgba(150, 205, 255, 0.18), transparent 54%);
+  color: #dce6ff !important;
+  text-shadow: 0 0 10px rgba(116, 160, 255, 0.34);
+  box-shadow: 0 0 20px rgba(116, 160, 255, 0.22), inset 0 0 0 1px rgba(225, 232, 255, 0.11);
+}
+
+.title-season-battle {
+  border-color: rgba(212, 95, 255, 0.88) !important;
+  background: linear-gradient(135deg, rgba(48, 13, 70, 0.95), rgba(112, 22, 58, 0.82));
+  color: #f3d1ff !important;
+}
+
+.title-season-upset {
+  border-color: rgba(255, 214, 92, 0.86) !important;
+  background: linear-gradient(135deg, rgba(12, 12, 20, 0.96), rgba(86, 70, 22, 0.78));
+  color: #ffe9a8 !important;
+}
+
+.title-season-reward .title-rarity-label {
+  color: inherit;
+  opacity: 0.92;
+}
+
 .season-reward-label {
   background: rgba(255, 215, 128, 0.18);
   color: #ffe6a0;
@@ -930,6 +987,22 @@ button {
 
 .reward-preview-section h4 {
   margin: 0 0 0.25rem;
+}
+
+.season-trophy-details-panel,
+.reward-preview-trophy-details {
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.season-trophy-details-panel > summary,
+.reward-preview-trophy-details > summary {
+  cursor: pointer;
+  color: var(--neon-2);
+  font-weight: 800;
 }
 
 .season-trophy-group-list {

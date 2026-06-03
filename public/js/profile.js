@@ -114,7 +114,7 @@ function renderSeasonTrophies(data) {
   if (!root) return;
   const items = data.items || [];
   const groupedItems = data.groupedItems || [];
-  const rewardTitles = items.filter((item) => item.titleData);
+  const rewardTitles = data.seasonRewardTitles || items.filter((item) => item.titleData);
   if (titleRoot) {
     titleRoot.innerHTML = rewardTitles.slice(0, 5).map((item) => `
       <article class="season-trophy-card featured">
@@ -126,7 +126,7 @@ function renderSeasonTrophies(data) {
       </article>
     `).join('') || '<p class="empty-state">아직 시즌 보상 칭호가 없습니다. 기록표는 기회를 기다리는 중입니다.</p>';
   }
-  root.innerHTML = groupedItems.slice(0, 6).map((group) => {
+  const groupedCards = groupedItems.slice(0, 6).map((group) => {
     const representative = group.representative || {};
     return `
       <article class="season-trophy-group-card ${API.escape(group.groupClass || '')}">
@@ -150,6 +150,12 @@ function renderSeasonTrophies(data) {
       </article>
     `;
   }).join('') || '<p class="empty-state">아직 시즌 박제 기록이 없습니다. 오늘은 기록표가 조용하네요.</p>';
+  root.innerHTML = groupedCards.includes('empty-state')
+    ? groupedCards
+    : `<details class="season-trophy-details-panel">
+        <summary>세부 시즌 기록 보기</summary>
+        <div class="season-trophy-group-list">${groupedCards}</div>
+      </details>`;
 }
 
 async function loadProfile() {

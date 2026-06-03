@@ -51,10 +51,11 @@ const TROPHY_GROUPS = {
   },
   activity: {
     label: '활동 기록',
-    categories: ['activity_score', 'post_count', 'comment_count', 'daily_mission_count', 'attendance_count'],
-    priority: ['activity_score', 'comment_count', 'post_count', 'daily_mission_count', 'attendance_count'],
+    categories: ['activity_score', 'community_activity', 'post_count', 'comment_count', 'daily_mission_count', 'attendance_count'],
+    priority: ['activity_score', 'community_activity', 'comment_count', 'post_count', 'daily_mission_count', 'attendance_count'],
     itemLabels: {
       activity_score: '활동 종합',
+      community_activity: '커뮤니티 활동',
       comment_count: '댓글',
       post_count: '게시글',
       daily_mission_count: '일일 미션',

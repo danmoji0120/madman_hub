@@ -243,6 +243,9 @@ async function buildSeasonRankings(season, limit = 10, offset = 0) {
   const rows = [...stats.entries()].map(([userId, values]) => {
     const user = userMap.get(userId) || {};
     const profile = profileMap.get(userId) || {};
+    const communityActivity = Number(values.post_count || 0) * 3 +
+      Number(values.comment_count || 0) +
+      Number(values.song_count || 0) * 2;
     return {
       id: userId,
       userId,
@@ -251,6 +254,7 @@ async function buildSeasonRankings(season, limit = 10, offset = 0) {
       avatarUrl: profile.avatar_url || '',
       equippedTitle: profile.title || '',
       ...values,
+      community_activity: communityActivity,
       activity_score: ['attendance_count', 'post_count', 'comment_count', 'song_count', 'daily_mission_count', 'casino_plays']
         .reduce((sum, key) => sum + Number(values[key] || 0), 0)
     };
@@ -261,14 +265,24 @@ async function buildSeasonRankings(season, limit = 10, offset = 0) {
     const ranked = decorated
       .map((row) => ({ ...row, score: Number(row[category.code] || 0) }))
       .filter((row) => category.code === 'net_points' ? row.score !== 0 : row.score > 0)
-      .sort((a, b) => b.score - a.score || a.nickname.localeCompare(b.nickname))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (category.code === 'community_activity') {
+          if (Number(b.post_count || 0) !== Number(a.post_count || 0)) return Number(b.post_count || 0) - Number(a.post_count || 0);
+          if (Number(b.comment_count || 0) !== Number(a.comment_count || 0)) return Number(b.comment_count || 0) - Number(a.comment_count || 0);
+          if (Number(b.song_count || 0) !== Number(a.song_count || 0)) return Number(b.song_count || 0) - Number(a.song_count || 0);
+        }
+        return Number(a.userId || a.id) - Number(b.userId || b.id) || a.nickname.localeCompare(b.nickname);
+      })
       .slice(offset, offset + limit)
       .map((row, index) => ({
         ...row,
         rank: offset + index + 1,
         category: category.code,
         formattedScore: formatScore(category.code, row.score),
-        extraLabel: category.description,
+        extraLabel: category.code === 'community_activity'
+          ? `게시글 ${Number(row.post_count || 0)}개 · 댓글 ${Number(row.comment_count || 0)}개 · 노래추천 ${Number(row.song_count || 0)}개`
+          : category.description,
         seasonId: season.id,
         seasonName: season.name
       }));
