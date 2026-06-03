@@ -127,7 +127,14 @@ router.post('/titles/:id/buy', authRequired, async (req, res) => {
         userId: req.user.id,
         action: 'title_purchased',
         platform: 'hub',
-        metadata: { titleId: title.id, titleName: title.name, price: title.price },
+        metadata: {
+          titleId: title.id,
+          titleName: title.name,
+          titleRarity: title.rarity,
+          titleCategory: title.category,
+          titleCssClass: title.cssClass,
+          price: title.price
+        },
         isPublic: true
       });
       const unlockedAchievements = await checkAndUnlockAchievements(req.user.id);
@@ -187,7 +194,14 @@ router.post('/titles/:id/buy', authRequired, async (req, res) => {
       userId: req.user.id,
       action: 'title_purchased',
       platform: 'hub',
-      metadata: { titleId: title.id, titleName: title.name, price: title.price },
+      metadata: {
+        titleId: title.id,
+        titleName: title.name,
+        titleRarity: title.rarity,
+        titleCategory: title.category,
+        titleCssClass: title.cssClass,
+        price: title.price
+      },
       isPublic: true
     });
     const unlockedAchievements = await checkAndUnlockAchievements(req.user.id);

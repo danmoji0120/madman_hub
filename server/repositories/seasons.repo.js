@@ -1,6 +1,7 @@
 const { provider, get, all, run } = require('../db');
 const { getSupabaseAdminClient } = require('../supabaseClient');
 const { decoratePublicUsers } = require('./cosmetics.repo');
+const { getTitleBadgesByNames, attachTitleBadge } = require('./titles.repo');
 const { SEASON_RANKING_CATEGORIES, getSeasonRankingCategory } = require('../config/seasons.config');
 
 const POINT_CATEGORIES = new Set(['point_earned', 'point_spent', 'net_points', 'casino_profit', 'casino_loss', 'cosmetic_spent']);
@@ -50,6 +51,14 @@ function normalizeHallEntry(row) {
     extraLabel: category?.description || '',
     seasonName: metadata.seasonName || ''
   };
+}
+
+async function decorateHallEntries(entries) {
+  const titleBadges = await getTitleBadgesByNames(entries.map((entry) => entry.equippedTitle));
+  return entries.map((entry) => {
+    const title = titleBadges.get(entry.equippedTitle);
+    return attachTitleBadge(attachTitleBadge(entry, title, 'title'), title, 'equippedTitle');
+  });
 }
 
 function formatScore(category, score) {
@@ -239,15 +248,15 @@ async function listHallOfFame({ seasonId, category = '' }) {
     let query = getSupabaseAdminClient().from('season_hall_of_fame').select('*').eq('season_id', seasonId);
     if (category) query = query.eq('category', category);
     const rows = assertResult(await query.order('category').order('rank')) || [];
-    return rows.map(normalizeHallEntry);
+    return decorateHallEntries(rows.map(normalizeHallEntry));
   }
   const params = [seasonId];
   const filter = category ? ' AND category = ?' : '';
   if (category) params.push(category);
-  return (await all(
+  return decorateHallEntries((await all(
     `SELECT * FROM season_hall_of_fame WHERE season_id = ?${filter} ORDER BY category ASC, rank ASC`,
     params
-  )).map(normalizeHallEntry);
+  )).map(normalizeHallEntry));
 }
 
 async function finalizeSeason(season, entries) {

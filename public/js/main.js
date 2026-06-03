@@ -35,7 +35,7 @@ function renderMyStatus(me) {
   card.className = `card ${me.cosmetics?.profileFrameClass || ''} ${me.cosmetics?.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h2>내 상태</h2>
-    ${renderTitleBadge({ name: me.title || '수상한 거주민', rarity: 'common' })}
+    ${renderTitleBadge(me)}
     <h3 class="${escapeHtml(me.cosmetics?.nicknameColorClass || '')}">${escapeHtml(me.nickname || me.display_name)}</h3>
     <a class="meta" href="/cosmetics.html">꾸미기 상점 보기</a>
     <div class="stat-row">
@@ -61,7 +61,7 @@ function renderMadman(member) {
   card.innerHTML = `
     <h2>오늘의 미친놈</h2>
     <p class="point ${escapeHtml(member.cosmetics?.nicknameColorClass || '')}">${escapeHtml(member.nickname || member.display_name)}</p>
-    <p>${renderTitleBadge({ name: member.title || '수상한 거주민', rarity: 'common' })}</p>
+    <p>${renderTitleBadge(member)}</p>
     <p class="meta">위험도: ${'★'.repeat(member.danger_level || 1)}</p>
   `;
 }
@@ -163,8 +163,10 @@ function feedText(item) {
     guestbook_posted: `${name} 님이 방명록을 남겼습니다.`,
     post_created: `${name} 님이 게시글을 작성했습니다.`,
     comment_created: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 게시글에 댓글을 남겼습니다.`,
-    title_purchased: `${name} 님이 [${escapeHtml(metadata.titleName || '')}] 칭호를 구매했습니다.`,
-    title_equipped: `${name} 님이 [${escapeHtml(metadata.titleName || '')}] 칭호를 장착했습니다.`,
+    title_purchased: `${name} 님이 ${renderTitleBadge({ name: metadata.titleName || '', rarity: metadata.titleRarity || metadata.rarity, cssClass: metadata.titleCssClass }, { compact: true })} 칭호를 구매했습니다.`,
+    title_equipped: `${name} 님이 ${renderTitleBadge({ name: metadata.titleName || '', rarity: metadata.titleRarity || metadata.rarity, cssClass: metadata.titleCssClass }, { compact: true })} 칭호를 장착했습니다.`,
+    admin_title_granted: `${name} 님이 ${renderTitleBadge({ name: metadata.titleName || '', rarity: metadata.titleRarity || metadata.rarity, cssClass: metadata.titleCssClass }, { compact: true })} 칭호를 지급했습니다.`,
+    season_reward_title_granted: `${name} 님이 시즌 보상 ${renderTitleBadge({ name: metadata.titleName || '', rarity: metadata.titleRarity || metadata.rarity, cssClass: metadata.titleCssClass }, { compact: true })} 칭호를 받았습니다.`,
     achievement_unlocked: `${name} 님이 업적 [${escapeHtml(metadata.achievementName || '')}]을 달성했습니다.`,
     song_recommended: `${metadata.isAnonymous ? '익명의 누군가' : name} 님이 노래를 추천했습니다.`,
     daily_missions_completed_all: `${name} 님이 오늘의 관찰 과제를 모두 완료했습니다.`
@@ -226,8 +228,8 @@ function renderSeasonSummary(summary) {
     <div class="section-heading"><h2>${escapeHtml(summary.season.name)}</h2><a class="meta" href="/seasons.html">전체 랭킹 보기</a></div>
     <p class="meta">${escapeHtml(summary.season.startsAt)} ~ ${escapeHtml(summary.season.endsAt)}</p>
     <div class="season-dashboard-grid">
-      <div><strong>포인트 획득 TOP 3</strong>${earned.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
-      <div><strong>활동 종합 TOP 3</strong>${activity.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+      <div><strong>포인트 획득 TOP 3</strong>${earned.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
+      <div><strong>활동 종합 TOP 3</strong>${activity.map((item) => `<p class="meta">#${item.rank} ${escapeHtml(item.nickname)} ${renderTitleBadge(item, { compact: true })} · ${escapeHtml(item.formattedScore)}</p>`).join('') || '<p class="meta">기록 없음</p>'}</div>
     </div>
   `;
 }

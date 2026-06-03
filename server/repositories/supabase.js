@@ -85,9 +85,17 @@ async function deleteRows(table, configure) {
 async function attachAuthors(rows) {
   const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
   if (!userIds.length) return rows.map((row) => normalizePostRow({ ...row, author_name: null }));
-  const users = await selectRows('users', (query) => query.in('id', userIds), 'id, display_name');
+  const [users, profiles] = await Promise.all([
+    selectRows('users', (query) => query.in('id', userIds), 'id, display_name'),
+    selectRows('user_profiles', (query) => query.in('user_id', userIds), 'user_id, title')
+  ]);
   const names = new Map(users.map((user) => [user.id, user.display_name]));
-  return rows.map((row) => normalizePostRow({ ...row, author_name: names.get(row.user_id) || null }));
+  const titles = new Map(profiles.map((profile) => [profile.user_id, profile.title]));
+  return rows.map((row) => normalizePostRow({
+    ...row,
+    author_name: names.get(row.user_id) || null,
+    author_title: titles.get(row.user_id) || null
+  }));
 }
 
 async function attachUsersAndProfiles(rows) {
@@ -130,6 +138,7 @@ function normalizePostRow(row) {
   const targetName = row.targetName ?? row.target_name ?? '';
   const isAnonymous = Boolean(row.is_anonymous);
   const authorName = isAnonymous ? '익명' : (row.authorName ?? row.author_name ?? null);
+  const authorTitle = isAnonymous ? null : (row.authorTitle ?? row.author_title ?? null);
   const createdAt = row.createdAt ?? row.created_at ?? null;
 
   return {
@@ -140,6 +149,8 @@ function normalizePostRow(row) {
     targetName,
     author_name: authorName,
     authorName,
+    author_title: authorTitle,
+    authorTitle,
     is_anonymous: isAnonymous ? 1 : 0,
     created_at: createdAt,
     createdAt,
@@ -477,7 +488,7 @@ async function all(sql, params = []) {
   if (statement.startsWith('select * from point_transactions where user_id')) {
     return selectRows('point_transactions', (query) => query.eq('user_id', params[0]).order('created_at', { ascending: false }).limit(params[1]));
   }
-  if (statement.startsWith('select q.*, u.display_name as author_name from quotes q') && statement.includes('where q.is_hidden = 0')) {
+  if (statement.startsWith('select q.*, u.display_name as author_name') && statement.includes('from quotes q') && statement.includes('where q.is_hidden = 0')) {
     return listPosts(params, statement);
   }
   if (statement.startsWith('select g.*, u.display_name as author_name from guestbook_entries g') && statement.includes('where g.is_hidden = 0')) {

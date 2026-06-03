@@ -99,7 +99,7 @@ async function loadAdminUsers() {
       <tr>
         <td>${user.id}</td>
         <td><strong>${API.escape(user.nickname || user.display_name)}</strong><br /><span class="meta">${API.escape(user.email)}<br />가입 ${API.escape(user.created_at)}<br />로그인 ${API.escape(user.last_login_at || '-')}</span></td>
-        <td>${API.escape(user.title || '-')}<br /><span class="meta">보유 ${user.owned_title_count}</span></td>
+        <td>${renderTitleBadge(user, { allowEmpty: true }) || '-'}<br /><span class="meta">보유 ${user.owned_title_count}</span></td>
         <td>${user.balance}P<br /><span class="meta">획득 ${user.total_earned} / 사용 ${user.total_spent}</span></td>
         <td><span class="meta">게시글 ${user.quote_count}<br />방명록 ${user.guestbook_count}</span></td>
         <td><select class="input compact-input" id="role-${user.id}">${options(user.role)}</select><button class="button secondary small-button" onclick="updateRole(${user.id})">적용</button></td>

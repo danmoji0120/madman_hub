@@ -1,6 +1,7 @@
 const { provider, run, get, all } = require('../db');
 const { getSupabaseAdminClient } = require('../supabaseClient');
 const { COSMETIC_SLOTS } = require('../config/cosmetics.config');
+const { getTitleBadgesByNames, attachTitleBadge } = require('./titles.repo');
 
 function assertResult(result) {
   if (result.error) throw result.error;
@@ -85,16 +86,32 @@ async function getEquippedCosmetics(userId) {
 }
 
 async function decoratePublicUsers(rows) {
-  const equips = await getEquippedCosmeticsByUserIds(rows.map((row) => row.id ?? row.user_id));
-  return rows.map((row) => ({ ...row, cosmetics: equips.get(row.id ?? row.user_id) || emptyEquips() }));
+  const [equips, titleBadges] = await Promise.all([
+    getEquippedCosmeticsByUserIds(rows.map((row) => row.id ?? row.user_id)),
+    getTitleBadgesByNames(rows.flatMap((row) => [row.title, row.equippedTitle, row.equipped_title]))
+  ]);
+  return rows.map((row) => {
+    const titleName = row.title || row.equippedTitle || row.equipped_title || '';
+    const title = titleBadges.get(titleName);
+    return {
+      ...attachTitleBadge(attachTitleBadge(row, title, 'title'), title, 'equippedTitle'),
+      cosmetics: equips.get(row.id ?? row.user_id) || emptyEquips()
+    };
+  });
 }
 
 async function decorateAuthorRows(rows) {
-  const equips = await getEquippedCosmeticsByUserIds(rows.map((row) => row.user_id));
-  return rows.map((row) => ({
-    ...row,
-    cosmetics: row.is_anonymous ? emptyEquips() : (equips.get(row.user_id) || emptyEquips())
-  }));
+  const [equips, titleBadges] = await Promise.all([
+    getEquippedCosmeticsByUserIds(rows.map((row) => row.user_id)),
+    getTitleBadgesByNames(rows.map((row) => row.author_title))
+  ]);
+  return rows.map((row) => {
+    const title = row.is_anonymous ? null : titleBadges.get(row.author_title);
+    return {
+      ...attachTitleBadge(row, title, 'authorTitle'),
+      cosmetics: row.is_anonymous ? emptyEquips() : (equips.get(row.user_id) || emptyEquips())
+    };
+  });
 }
 
 async function listCosmetics({ activeOnly = false, type = '', rarity = '', q = '', userId = null } = {}) {

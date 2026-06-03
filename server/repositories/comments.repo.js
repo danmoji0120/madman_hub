@@ -16,6 +16,10 @@ function publicComment(row) {
     body: row.body,
     authorName: isAnonymous ? '익명' : (row.author_name || '알 수 없음'),
     authorTitle: isAnonymous ? null : (row.author_title || null),
+    authorTitleData: isAnonymous ? null : (row.authorTitleData ?? row.author_title_data ?? null),
+    author_title_data: isAnonymous ? null : (row.authorTitleData ?? row.author_title_data ?? null),
+    authorTitleRarity: isAnonymous ? null : (row.authorTitleRarity ?? row.author_title_rarity ?? row.authorTitleData?.rarity ?? row.author_title_data?.rarity ?? null),
+    author_title_rarity: isAnonymous ? null : (row.authorTitleRarity ?? row.author_title_rarity ?? row.authorTitleData?.rarity ?? row.author_title_data?.rarity ?? null),
     isAnonymous,
     createdAt: row.created_at,
     cosmetics: isAnonymous ? undefined : row.cosmetics

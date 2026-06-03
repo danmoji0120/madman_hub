@@ -10,6 +10,7 @@ const {
 } = require('./comments.repo');
 const { getPostCategory } = require('../config/postCategories.config');
 const { normalizeTitle, sanitizeCssClass } = require('../utils/titles');
+const { getTitleBadgesByNames, attachTitleBadge } = require('./titles.repo');
 
 function assertResult(result) {
   if (result.error) {
@@ -437,9 +438,12 @@ async function listSupabaseAdminUsers({ q, role, limit, offset }) {
 }
 
 async function listAdminUsers(options) {
-  return provider === 'supabase'
+  const users = provider === 'supabase'
     ? listSupabaseAdminUsers(options)
     : listSqliteAdminUsers(options);
+  const rows = await users;
+  const titles = await getTitleBadgesByNames(rows.map((user) => user.title));
+  return rows.map((user) => attachTitleBadge(attachTitleBadge(user, titles.get(user.title), 'title'), titles.get(user.title), 'equippedTitle'));
 }
 
 async function findUserRole(userId) {
@@ -964,14 +968,32 @@ async function adminGrantTitle({ actorUser, userId, titleId, reason = '', source
   await logActivity({
     userId: actorUser.id,
     action: 'admin_title_granted',
-    metadata: { targetUserId: userId, titleId, titleName: title.name, reason, sourceType, sourceId }
+    metadata: {
+      targetUserId: userId,
+      titleId,
+      titleName: title.name,
+      titleRarity: title.rarity,
+      titleCategory: title.category,
+      titleCssClass: title.cssClass,
+      reason,
+      sourceType,
+      sourceId
+    }
   });
   if (!alreadyOwned && sourceType === 'season_reward') {
     await logActivity({
       userId,
       action: 'season_reward_title_granted',
       platform: 'hub',
-      metadata: { titleId, titleName: title.name, reason, sourceId },
+      metadata: {
+        titleId,
+        titleName: title.name,
+        titleRarity: title.rarity,
+        titleCategory: title.category,
+        titleCssClass: title.cssClass,
+        reason,
+        sourceId
+      },
       isPublic: true
     });
   }

@@ -3,6 +3,7 @@ const authRequired = require('../middleware/auth');
 const { get, run, all } = require('../db');
 const { ensurePointAccount, getTransactions } = require('../services/points.service');
 const { logActivity } = require('../services/activity.service');
+const { getTitleBadgesByNames, attachTitleBadge } = require('../repositories/titles.repo');
 const {
   getMyCosmetics,
   getEquippedCosmetics,
@@ -48,8 +49,15 @@ function getProfile(userId) {
   );
 }
 
+async function decorateProfileTitle(profile) {
+  if (!profile) return profile;
+  const titles = await getTitleBadgesByNames([profile.title]);
+  const title = titles.get(profile.title);
+  return attachTitleBadge(attachTitleBadge(profile, title, 'title'), title, 'equippedTitle');
+}
+
 router.get('/', authRequired, async (req, res) => {
-  const user = await getProfile(req.user.id);
+  const user = await decorateProfileTitle(await getProfile(req.user.id));
   user.cosmetics = await getEquippedCosmetics(req.user.id);
   const points = await ensurePointAccount(req.user.id);
   return res.json({ success: true, user, points });
@@ -151,9 +159,16 @@ router.get('/titles', authRequired, async (req, res) => {
     ensurePointAccount(req.user.id)
   ]);
 
+  const equippedTitleData = titles.map((title) => normalizeTitle({ ...title, equipped: title.name === profile?.title }))
+    .find((title) => title.name === profile?.title) || null;
+
   return res.json({
     success: true,
     equippedTitle: profile?.title || '',
+    equippedTitleData,
+    equipped_title_data: equippedTitleData,
+    equippedTitleRarity: equippedTitleData?.rarity || null,
+    equipped_title_rarity: equippedTitleData?.rarity || null,
     titles: titles.map((title) => normalizeTitle({ ...title, equipped: title.name === profile?.title })),
     account
   });
@@ -186,10 +201,16 @@ router.post('/title/equip', authRequired, async (req, res) => {
     userId: req.user.id,
     action: 'title_equipped',
     platform: 'hub',
-    metadata: { titleId: normalizedTitle.id, titleName: normalizedTitle.name },
+    metadata: {
+      titleId: normalizedTitle.id,
+      titleName: normalizedTitle.name,
+      titleRarity: normalizedTitle.rarity,
+      titleCategory: normalizedTitle.category,
+      titleCssClass: normalizedTitle.cssClass
+    },
     isPublic: true
   });
-  const profile = await getProfile(req.user.id);
+  const profile = await decorateProfileTitle(await getProfile(req.user.id));
   return res.json({ success: true, equippedTitle: normalizedTitle.name, equippedTitleData: normalizedTitle, profile });
 });
 

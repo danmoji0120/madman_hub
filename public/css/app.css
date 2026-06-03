@@ -224,6 +224,12 @@ button {
   color: #fecaca;
 }
 
+.title-rarity-anonymous {
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #cbd5e1;
+  opacity: 0.82;
+}
+
 .title-meta-grid {
   display: flex;
   flex-wrap: wrap;

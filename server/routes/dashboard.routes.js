@@ -33,9 +33,10 @@ router.get('/', optionalAuth, async (req, res) => {
          LIMIT 1`
       ),
       get(
-        `SELECT q.*, u.display_name AS author_name
+        `SELECT q.*, u.display_name AS author_name, p.title AS author_title
          FROM quotes q
          LEFT JOIN users u ON u.id = q.user_id
+         LEFT JOIN user_profiles p ON p.user_id = q.user_id
          WHERE q.is_hidden = 0
          ORDER BY RANDOM()
          LIMIT 1`
@@ -49,9 +50,10 @@ router.get('/', optionalAuth, async (req, res) => {
          LIMIT 3`
       ),
       all(
-        `SELECT q.*, u.display_name AS author_name
+        `SELECT q.*, u.display_name AS author_name, p.title AS author_title
          FROM quotes q
          LEFT JOIN users u ON u.id = q.user_id
+         LEFT JOIN user_profiles p ON p.user_id = q.user_id
          WHERE q.is_hidden = 0
          ORDER BY q.created_at DESC, q.id DESC
          LIMIT 10`
@@ -108,8 +110,9 @@ router.get('/', optionalAuth, async (req, res) => {
           )
         ]);
 
+        const decoratedMe = (await decoratePublicUsers([user]))[0];
         me = {
-          ...user,
+          ...decoratedMe,
           points,
           checkedInToday: Boolean(checkin),
           cosmetics: await getEquippedCosmetics(req.user.id)

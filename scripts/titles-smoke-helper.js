@@ -65,6 +65,43 @@ async function runTitlesSmoke({ request, auth, ownerAuth, userId, runPrefix }) {
   });
   assert.strictEqual(equipped.equippedTitle, created.title.name);
   assert.strictEqual(equipped.equippedTitleData.category, 'season');
+  assert.strictEqual(equipped.equippedTitleData.rarity, 'event');
+
+  const me = await request('/api/me', { headers: auth });
+  assert.strictEqual(me.user.titleData.rarity, 'event');
+  assert.strictEqual(me.user.equippedTitleData.rarity, 'event');
+  const dashboard = await request('/api/dashboard', { headers: auth });
+  assert.strictEqual(dashboard.me.titleData.rarity, 'event');
+
+  const badgePost = await request('/api/posts', {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({
+      category: 'general',
+      title: `${runPrefix}title-badge-post`,
+      body: 'title badge smoke body',
+      targetName: 'title badge',
+      tags: ['title-badge'],
+      isAnonymous: false
+    })
+  });
+  assert.strictEqual(badgePost.post.authorTitleData.rarity, 'event');
+  const listedPosts = await request(`/api/posts?q=${encodeURIComponent(`${runPrefix}title-badge-post`)}`);
+  assert.ok(listedPosts.posts.some((post) => post.authorTitleData?.rarity === 'event'));
+  const postDetail = await request(`/api/posts/${badgePost.post.id}`);
+  assert.strictEqual(postDetail.post.authorTitleData.rarity, 'event');
+  const comment = await request(`/api/posts/${badgePost.post.id}/comments`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ body: `${runPrefix}title-badge-comment`, isAnonymous: false })
+  });
+  assert.strictEqual(comment.comment.authorTitleData.rarity, 'event');
+  const anonymousComment = await request(`/api/posts/${badgePost.post.id}/comments`, {
+    method: 'POST',
+    headers: auth,
+    body: JSON.stringify({ body: `${runPrefix}anonymous-title-badge-comment`, isAnonymous: true })
+  });
+  assert.strictEqual(anonymousComment.comment.authorTitleData, null);
 
   const revoked = await request(`/api/admin/users/${userId}/titles/${created.title.id}/revoke`, {
     method: 'POST',

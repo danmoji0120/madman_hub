@@ -19,7 +19,7 @@ function renderRankings(items) {
       <strong class="season-rank-number">#${item.rank}</strong>
       <div>
         <strong class="${API.escape(item.cosmetics?.nicknameColorClass || '')}">${API.escape(item.nickname || item.displayName)}</strong>
-        ${item.equippedTitle ? renderTitleBadge({ name: item.equippedTitle, rarity: 'common' }, { compact: true }) : ''}
+        ${renderTitleBadge(item, { compact: true })}
         <p class="meta">${API.escape(item.displayName || '')}</p>
       </div>
       <strong class="season-rank-score">${API.escape(item.formattedScore || item.score)}</strong>

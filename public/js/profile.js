@@ -16,7 +16,7 @@ function renderProfile(user) {
   card.className = `card ${cosmetics.profileFrameClass || ''} ${cosmetics.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h1 class="${API.escape(cosmetics.nicknameColorClass || '')}">${API.escape(user.nickname || user.display_name)}</h1>
-    ${renderTitleBadge({ name: user.title || '수상한 거주민', rarity: 'common' })}
+    ${renderTitleBadge(user)}
     <p>${API.escape(user.bio || '자기소개가 없습니다.')}</p>
     <p class="meta">위험도: ${'★'.repeat(user.danger_level || 1)}</p>
     <p class="meta">좋아하는 문장: ${API.escape(user.favorite_quote || '아직 없음')}</p>

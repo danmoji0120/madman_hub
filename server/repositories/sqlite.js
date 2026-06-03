@@ -43,9 +43,28 @@ function close() {
 
 async function ensureColumn(table, column, definition) {
   const columns = await all(`PRAGMA table_info(${table})`);
+  if (!columns.length) return;
   if (columns.some((item) => item.name === column)) return;
 
   await run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+async function runPreSchemaMigrations() {
+  await ensureColumn('quotes', 'is_hidden', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('quotes', 'category', "TEXT NOT NULL DEFAULT 'general'");
+  await ensureColumn('post_comments', 'is_hidden', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'category', "TEXT NOT NULL DEFAULT 'shop'");
+  await ensureColumn('titles', 'source_type', "TEXT NOT NULL DEFAULT 'purchase'");
+  await ensureColumn('titles', 'is_purchasable', 'INTEGER NOT NULL DEFAULT 1');
+  await ensureColumn('titles', 'is_reward_only', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'display_order', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'flavor_text', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'unlock_hint', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'css_class', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'icon', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'starts_at', 'TEXT');
+  await ensureColumn('titles', 'ends_at', 'TEXT');
 }
 
 async function runMigrations() {
@@ -198,6 +217,8 @@ async function initDatabase() {
   const seedPath = path.join(__dirname, '../../database/seed.sql');
   const schema = fs.readFileSync(schemaPath, 'utf8');
   const seed = fs.readFileSync(seedPath, 'utf8');
+
+  await runPreSchemaMigrations();
 
   await new Promise((resolve, reject) => {
     db.exec(schema, (error) => {
