@@ -326,6 +326,66 @@ CREATE TABLE IF NOT EXISTS season_hall_of_fame (
   FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS season_reward_mappings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  rank_min INTEGER NOT NULL DEFAULT 1,
+  rank_max INTEGER NOT NULL DEFAULT 1,
+  title_id INTEGER NOT NULL,
+  reward_type TEXT NOT NULL DEFAULT 'title',
+  is_active INTEGER NOT NULL DEFAULT 1,
+  description TEXT DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(category, rank_min, rank_max, title_id),
+  FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS season_reward_grants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  title_id INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  grant_type TEXT NOT NULL DEFAULT 'season_reward',
+  granted_by INTEGER,
+  source_hall_of_fame_id INTEGER,
+  status TEXT NOT NULL DEFAULT 'granted',
+  reason TEXT DEFAULT '',
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(season_id, user_id, title_id, category),
+  FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (source_hall_of_fame_id) REFERENCES season_hall_of_fame(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_season_trophies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  category TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  formatted_score TEXT,
+  title_id INTEGER,
+  trophy_label TEXT NOT NULL,
+  trophy_description TEXT DEFAULT '',
+  metadata_json TEXT NOT NULL DEFAULT '{}',
+  is_featured INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(season_id, user_id, category),
+  FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS season_user_point_peaks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   season_id INTEGER NOT NULL,
@@ -418,6 +478,9 @@ CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = 1;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at, ends_at);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);
+CREATE INDEX IF NOT EXISTS idx_season_reward_mappings_category ON season_reward_mappings(category, is_active);
+CREATE INDEX IF NOT EXISTS idx_season_reward_grants_season_user ON season_reward_grants(season_id, user_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_season_trophies_user ON user_season_trophies(user_id, season_id, is_featured);
 CREATE INDEX IF NOT EXISTS idx_season_point_peaks_season_drawdown ON season_user_point_peaks(season_id, drawdown);
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_season_game ON casino_user_stats(season_id, game_key);
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id);

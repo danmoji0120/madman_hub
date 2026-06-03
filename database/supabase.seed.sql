@@ -110,6 +110,39 @@ UPDATE titles
 SET category = 'admin', source_type = 'admin_grant', is_purchasable = FALSE, is_reward_only = TRUE
 WHERE rarity = 'admin';
 
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'activity_score', 1, 1, id, 'title', TRUE, '이번 시즌 전체 활동 종합 1위' FROM titles WHERE name = '시즌의 지배자' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'point_earned', 1, 1, id, 'title', TRUE, '이번 시즌 가장 많이 포인트를 벌어들인 유저' FROM titles WHERE name = '시즌 포인트 베개' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'point_spent', 1, 1, id, 'title', TRUE, '이번 시즌 가장 많이 포인트를 태운 유저' FROM titles WHERE name = '시즌 파산왕' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_loss', 1, 1, id, 'title', TRUE, '이번 시즌 카지노에 가장 많이 바친 유저' FROM titles WHERE name = '시즌 대참사' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_profit', 1, 1, id, 'title', TRUE, '이번 시즌 카지노 수익 1위' FROM titles WHERE name = '30000P의 꿈' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_net_profit', 1, 1, id, 'title', TRUE, '이번 시즌 카지노 순수익 1위' FROM titles WHERE name = '카지노 생존자' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'casino_net_loss', 1, 1, id, 'title', TRUE, '이번 시즌 카지노 순손실 1위' FROM titles WHERE name = '시즌 대참사' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'comment_count', 1, 1, id, 'title', TRUE, '이번 시즌 댓글 활동 1위' FROM titles WHERE name = '시즌 댓글왕' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'song_count', 1, 1, id, 'title', TRUE, '이번 시즌 노래 추천 1위' FROM titles WHERE name = '시즌 플레이리스트 DJ' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'cosmetic_spent', 1, 1, id, 'title', TRUE, '이번 시즌 꾸미기 소비 1위' FROM titles WHERE name = '시즌 꾸미기 중독자' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'balance_peak', 1, 1, id, 'title', TRUE, '이번 시즌 최고 보유 포인트 1위' FROM titles WHERE name = '시즌 포인트 베개' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'drawdown', 1, 1, id, 'title', TRUE, '이번 시즌 최고점 대비 추락폭 1위' FROM titles WHERE name = '내리막의 품격' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'drawdown_rate', 1, 1, id, 'title', TRUE, '이번 시즌 최고점 대비 추락률 1위' FROM titles WHERE name = '내리막의 품격' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'biggest_casino_win', 1, 1, id, 'title', TRUE, '이번 시즌 단일 카지노 최대 수익' FROM titles WHERE name = '30000P의 꿈' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'biggest_casino_loss', 1, 1, id, 'title', TRUE, '이번 시즌 단일 카지노 최대 손실' FROM titles WHERE name = '시즌 대참사' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+INSERT INTO season_reward_mappings (category, rank_min, rank_max, title_id, reward_type, is_active, description)
+SELECT 'point_turnover', 1, 1, id, 'title', TRUE, '이번 시즌 포인트 회전율 1위' FROM titles WHERE name = '시즌 파산왕' ON CONFLICT (category, rank_min, rank_max, title_id) DO NOTHING;
+
 INSERT INTO cosmetic_items (code, name, description, type, rarity, price, css_class, preview_text) VALUES
   ('default_frame', '기본 테두리', '차분한 기본 프로필 테두리', 'profile_frame', 'common', 0, 'cosmetic-frame-default', '기본'),
   ('neon_frame', '네온 테두리', '은은하게 빛나는 네온 프로필 테두리', 'profile_frame', 'rare', 500, 'cosmetic-frame-neon', 'NEON'),

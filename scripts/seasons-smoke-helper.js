@@ -32,12 +32,16 @@ async function cleanupSeason(seasonId) {
   if (!seasonId) return;
   if (provider === 'supabase') {
     const client = getSupabaseAdminClient();
+    await client.from('user_season_trophies').delete().eq('season_id', seasonId);
+    await client.from('season_reward_grants').delete().eq('season_id', seasonId);
     const { error: hallError } = await client.from('season_hall_of_fame').delete().eq('season_id', seasonId);
     if (hallError) throw hallError;
     const { error: seasonError } = await client.from('seasons').delete().eq('id', seasonId);
     if (seasonError) throw seasonError;
     return;
   }
+  await run('DELETE FROM user_season_trophies WHERE season_id = ?', [seasonId]);
+  await run('DELETE FROM season_reward_grants WHERE season_id = ?', [seasonId]);
   await run('DELETE FROM season_hall_of_fame WHERE season_id = ?', [seasonId]);
   await run('DELETE FROM seasons WHERE id = ?', [seasonId]);
 }
@@ -79,6 +83,11 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     if (visibleEarnedEntry) assert.ok(visibleEarnedEntry.score > 0);
 
     await request('/api/admin/seasons', { headers: auth }, 403);
+    await request('/api/admin/points/grant', {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ userId, amount: 12345, reason: 'season reward smoke funding' })
+    });
     const now = Date.now();
     const code = `${runPrefix}season`.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 55);
     const created = await request('/api/admin/seasons', {
@@ -121,6 +130,7 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     const ended = await request(`/api/admin/seasons/${createdSeasonId}/end`, { method: 'POST', headers: ownerAuth });
     assert.strictEqual(ended.season.status, 'ended');
     assert.ok(ended.hallOfFameEntries > 0);
+    assert.ok(Array.isArray(ended.rewardTitles));
 
     const hall = await request(`/api/seasons/hall-of-fame?seasonId=${createdSeasonId}&category=point_earned`);
     assert.strictEqual(hall.season.status, 'ended');
@@ -141,6 +151,48 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
       method: 'POST', headers: ownerAuth
     });
     assert.ok(regenerated.hallOfFameEntries > 0);
+
+    await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: auth }, 403);
+    const rewardPreview = await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: ownerAuth });
+    assert.ok(rewardPreview.items.length > 0);
+    assert.ok(rewardPreview.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.titleData));
+    rewardPreview.items.forEach((item) => {
+      if (item.formattedScore) assertFormattedRankingScore(item);
+    });
+    const rewardDryRun = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ dryRun: true, categories: ['point_earned'] })
+    });
+    assert.strictEqual(rewardDryRun.dryRun, true);
+    assert.ok(rewardDryRun.items.some((item) => item.category === 'point_earned' && item.userId === userId));
+    const grantedRewards = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ categories: ['point_earned'] })
+    });
+    assert.ok(grantedRewards.grants.some((grant) => grant.userId === userId && grant.category === 'point_earned' && grant.status === 'granted'));
+    const grantedAgain = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ categories: ['point_earned'] })
+    });
+    assert.ok(grantedAgain.items.some((item) => item.userId === userId && item.category === 'point_earned' && item.skipped));
+    const myTrophies = await request('/api/me/season-trophies?limit=10', { headers: auth });
+    assert.ok(myTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned' && item.titleData));
+    const publicTrophies = await request(`/api/users/${userId}/season-trophies?limit=10`);
+    assert.ok(publicTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned'));
+    const notifications = await request('/api/notifications?type=season_hall_of_fame&limit=20', { headers: auth });
+    assert.ok(notifications.items.some((item) => item.metadata?.seasonId === createdSeasonId));
+    const mappings = await request('/api/admin/season-reward-mappings', { headers: ownerAuth });
+    assert.ok(mappings.mappings.some((item) => item.category === 'point_earned' && item.titleData));
+    const grantToRevoke = grantedRewards.grants.find((grant) => grant.userId === userId && grant.category === 'point_earned');
+    const revoked = await request(`/api/admin/seasons/${createdSeasonId}/revoke-reward`, {
+      method: 'POST',
+      headers: ownerAuth,
+      body: JSON.stringify({ grantId: grantToRevoke.id, revokeTitle: false, reason: 'season reward smoke revoke' })
+    });
+    assert.strictEqual(revoked.grant.status, 'revoked');
     await request(`/api/admin/seasons/${createdSeasonId}/activate`, { method: 'POST', headers: ownerAuth }, 409);
   } finally {
     await cleanupSeason(createdSeasonId);

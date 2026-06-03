@@ -47,6 +47,12 @@ const {
   listAdminNotifications
 } = require('../services/notifications.service');
 const {
+  getSeasonRewardPreview,
+  grantSeasonRewards,
+  revokeSeasonReward,
+  listSeasonRewardMappings
+} = require('../services/seasonRewards.service');
+const {
   TITLE_RARITIES,
   TITLE_CATEGORIES,
   TITLE_SOURCE_TYPES,
@@ -353,6 +359,40 @@ safe('post', '/seasons/:id/generate-hall-of-fame', async (req, res) => {
     success: true,
     ...(await generateAdminHallOfFame(req.user, parseId(req.params.id, 'season id')))
   });
+});
+
+safe('get', '/seasons/:id/reward-preview', async (req, res) => {
+  const categories = typeof req.query.categories === 'string' ? req.query.categories : '';
+  return res.json({
+    success: true,
+    ...(await getSeasonRewardPreview(parseId(req.params.id, 'season id'), { categories }))
+  });
+});
+
+safe('post', '/seasons/:id/grant-rewards', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await grantSeasonRewards(req.user, parseId(req.params.id, 'season id'), {
+      categories: req.body.categories,
+      dryRun: req.body.dryRun === true,
+      reissue: req.body.reissue === true
+    }))
+  });
+});
+
+safe('post', '/seasons/:id/revoke-reward', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await revokeSeasonReward(req.user, parseId(req.params.id, 'season id'), {
+      grantId: parseId(req.body.grantId, 'grant id'),
+      revokeTitle: req.body.revokeTitle === true,
+      reason: cleanText(req.body.reason, 'reason', 300) || ''
+    }))
+  });
+});
+
+safe('get', '/season-reward-mappings', async (req, res) => {
+  return res.json({ success: true, ...(await listSeasonRewardMappings()) });
 });
 
 safe('get', '/casino/stats', async (req, res) => {

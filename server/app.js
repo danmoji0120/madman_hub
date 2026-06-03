@@ -8,6 +8,7 @@ const { initDatabase } = require('./db');
 const authRoutes = require('./routes/auth.routes');
 const meRoutes = require('./routes/me.routes');
 const pointsRoutes = require('./routes/points.routes');
+const usersRoutes = require('./routes/users.routes');
 const membersRoutes = require('./routes/members.routes');
 const quotesRoutes = require('./routes/quotes.routes');
 const guestbookRoutes = require('./routes/guestbook.routes');
@@ -40,6 +41,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/me', meRoutes);
 app.use('/api/points', pointsRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/members', membersRoutes);
 app.use('/api/quotes', quotesRoutes);
 app.use('/api/guestbook', guestbookRoutes);

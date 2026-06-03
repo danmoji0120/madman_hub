@@ -313,6 +313,57 @@ CREATE TABLE IF NOT EXISTS season_hall_of_fame (
   UNIQUE(season_id, category, rank)
 );
 
+CREATE TABLE IF NOT EXISTS season_reward_mappings (
+  id BIGSERIAL PRIMARY KEY,
+  category TEXT NOT NULL,
+  rank_min INTEGER NOT NULL DEFAULT 1,
+  rank_max INTEGER NOT NULL DEFAULT 1,
+  title_id BIGINT NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+  reward_type TEXT NOT NULL DEFAULT 'title',
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  description TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(category, rank_min, rank_max, title_id)
+);
+
+CREATE TABLE IF NOT EXISTS season_reward_grants (
+  id BIGSERIAL PRIMARY KEY,
+  season_id BIGINT NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title_id BIGINT NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  grant_type TEXT NOT NULL DEFAULT 'season_reward',
+  granted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  source_hall_of_fame_id BIGINT REFERENCES season_hall_of_fame(id) ON DELETE SET NULL,
+  status TEXT NOT NULL DEFAULT 'granted' CHECK (status IN ('granted', 'revoked')),
+  reason TEXT DEFAULT '',
+  metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(season_id, user_id, title_id, category)
+);
+
+CREATE TABLE IF NOT EXISTS user_season_trophies (
+  id BIGSERIAL PRIMARY KEY,
+  season_id BIGINT NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  score INTEGER NOT NULL DEFAULT 0,
+  formatted_score TEXT,
+  title_id BIGINT REFERENCES titles(id) ON DELETE SET NULL,
+  trophy_label TEXT NOT NULL,
+  trophy_description TEXT DEFAULT '',
+  metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(season_id, user_id, category)
+);
+
 CREATE TABLE IF NOT EXISTS season_user_point_peaks (
   id BIGSERIAL PRIMARY KEY,
   season_id BIGINT NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
@@ -397,6 +448,9 @@ CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);
+CREATE INDEX IF NOT EXISTS idx_season_reward_mappings_category ON season_reward_mappings(category, is_active);
+CREATE INDEX IF NOT EXISTS idx_season_reward_grants_season_user ON season_reward_grants(season_id, user_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_season_trophies_user ON user_season_trophies(user_id, season_id, is_featured);
 CREATE INDEX IF NOT EXISTS idx_season_point_peaks_season_drawdown ON season_user_point_peaks(season_id, drawdown DESC);
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_season_game ON casino_user_stats(season_id, game_key);
 CREATE INDEX IF NOT EXISTS idx_casino_user_stats_user ON casino_user_stats(user_id, season_id);

@@ -108,15 +108,36 @@ function renderCasinoSummary(data) {
   `;
 }
 
+function renderSeasonTrophies(data) {
+  const root = document.querySelector('#season-trophies');
+  if (!root) return;
+  const items = data.items || [];
+  root.innerHTML = items.map((item) => {
+    const score = item.formattedScore || formatRankingScore(item.category, item.score || 0);
+    return `
+      <article class="season-trophy-card ${item.isFeatured ? 'featured' : ''}">
+        <div class="season-trophy-title">
+          ${item.titleData ? renderTitleBadge(item.titleData, { showRarityLabel: true }) : '<span class="badge">season</span>'}
+          <strong>${API.escape(item.trophyLabel || `${item.seasonName || '시즌'} ${item.categoryLabel || item.category}`)}</strong>
+        </div>
+        <p class="season-trophy-score">${API.escape(score)}</p>
+        <p>${API.escape(item.trophyDescription || '이 기록은 프로필에 남는 시즌 박제입니다.')}</p>
+        <p class="meta">${API.escape(item.seasonName || '')} · ${API.escape(item.categoryLabel || item.category)} · #${API.escape(item.rank || '-')}</p>
+      </article>
+    `;
+  }).join('') || '<p class="empty-state">아직 시즌 박제 기록이 없습니다. 오늘은 기록표가 조용하네요.</p>';
+}
+
 async function loadProfile() {
   try {
-    const [data, tx, titleData, achievementData, cosmeticsData, casinoSummary] = await Promise.all([
+    const [data, tx, titleData, achievementData, cosmeticsData, casinoSummary, seasonTrophies] = await Promise.all([
       API.request('/api/me'),
       API.request('/api/me/transactions'),
       API.request('/api/me/titles'),
       API.request('/api/me/achievements'),
       API.request('/api/me/cosmetics'),
-      API.request('/api/me/casino-summary')
+      API.request('/api/me/casino-summary'),
+      API.request('/api/me/season-trophies?limit=5')
     ]);
 
     renderProfile(data.user);
@@ -125,6 +146,7 @@ async function loadProfile() {
     renderAchievements(achievementData);
     renderCosmetics(cosmeticsData);
     renderCasinoSummary(casinoSummary);
+    renderSeasonTrophies(seasonTrophies);
     document.querySelector('#points-card .point').textContent = formatPoints(data.points.balance);
   } catch (error) {
     location.href = '/login.html';

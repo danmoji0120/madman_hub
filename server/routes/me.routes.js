@@ -11,6 +11,7 @@ const {
   unequipCosmetic
 } = require('../services/cosmetics.service');
 const { getMySeasonSummary } = require('../services/seasons.service');
+const { listSeasonTrophiesForUser } = require('../services/seasonRewards.service');
 const { getMyCasinoStats } = require('../repositories/casinoStats.repo');
 const { normalizeTitle } = require('../utils/titles');
 
@@ -141,6 +142,17 @@ router.get('/transactions', authRequired, async (req, res) => {
 
 router.get('/season-summary', authRequired, async (req, res) => {
   return res.json({ success: true, ...(await getMySeasonSummary(req.user.id)) });
+});
+
+router.get('/season-trophies', authRequired, async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await listSeasonTrophiesForUser(req.user.id, {
+      seasonId: req.query.seasonId,
+      limit: req.query.limit,
+      featuredOnly: req.query.featuredOnly
+    }))
+  });
 });
 
 router.get('/casino-summary', authRequired, async (req, res) => {

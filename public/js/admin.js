@@ -339,10 +339,33 @@ async function loadAdminSeasons() {
           ${season.status === 'scheduled' ? `<button class="button secondary small-button" onclick="activateSeason(${season.id})">활성화</button>` : ''}
           ${!['ended', 'archived'].includes(season.status) ? `<button class="button secondary small-button danger-button" onclick="endSeason(${season.id})">종료</button>` : ''}
           ${['ended', 'archived'].includes(season.status) ? `<button class="button secondary small-button" onclick="regenerateHallOfFame(${season.id})">명예의 전당 재생성</button>` : ''}
+          <button class="button secondary small-button" onclick="previewSeasonRewards(${season.id})">보상 미리보기</button>
+          ${['ended', 'archived'].includes(season.status) ? `<button class="button secondary small-button" onclick="grantSeasonRewards(${season.id})">보상 지급</button>` : ''}
         </td>
       </tr>
     `).join('') || '<tr><td colspan="5">등록된 시즌 없음</td></tr>';
   } catch (error) { showAdminMessage(error.message); }
+}
+
+function renderSeasonRewardPreview(data) {
+  const root = document.querySelector('#season-reward-preview');
+  if (!root) return;
+  const grantMap = new Map((data.grants || []).map((grant) => [`${grant.userId}:${grant.titleId}:${grant.category}`, grant]));
+  const rows = (data.items || []).map((item) => {
+    const grant = grantMap.get(`${item.userId}:${item.titleId}:${item.category}`);
+    const status = grant?.status || (item.alreadyGranted ? 'granted' : item.alreadyOwned ? 'already owned' : 'ready');
+    return `
+      <tr>
+        <td>${API.escape(item.categoryLabel || item.category)}<br /><span class="meta">#${API.escape(item.rank)}</span></td>
+        <td><strong>${API.escape(item.nickname || item.displayName || `ID ${item.userId}`)}</strong><br /><span class="meta">ID ${API.escape(item.userId)}</span></td>
+        <td>${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</td>
+        <td>${item.titleData ? renderTitleBadge(item.titleData, { showRarityLabel: true }) : API.escape(item.titleId)}</td>
+        <td><span class="reward-status-badge">${API.escape(status)}</span><br /><span class="meta">${item.alreadyOwned ? 'alreadyOwned' : 'notOwned'} · ${item.alreadyGranted ? 'alreadyGranted' : 'notGranted'}</span></td>
+        <td>${grant ? `<button class="button secondary small-button danger-button" onclick="revokeSeasonReward(${item.seasonId}, ${grant.id})">기록 회수</button>` : '-'}</td>
+      </tr>
+    `;
+  });
+  root.innerHTML = rows.join('') || '<tr><td colspan="6">지급 가능한 시즌 보상이 없습니다.</td></tr>';
 }
 
 async function loadAdminCasinoStats() {
@@ -480,6 +503,41 @@ async function regenerateHallOfFame(id) {
   try {
     const data = await API.request(`/api/admin/seasons/${id}/generate-hall-of-fame`, { method: 'POST' });
     showAdminMessage(`명예의 전당 ${data.hallOfFameEntries}개 기록을 다시 저장했습니다.`);
+    await previewSeasonRewards(id);
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function previewSeasonRewards(id) {
+  try {
+    const data = await API.request(`/api/admin/seasons/${id}/reward-preview`);
+    renderSeasonRewardPreview(data);
+    showAdminMessage(`시즌 보상 미리보기: ${data.items.length}개 후보`);
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function grantSeasonRewards(id) {
+  if (!confirm('이 시즌의 보상 칭호를 지급하고 프로필 박제 기록을 남길까요?')) return;
+  try {
+    const data = await API.request(`/api/admin/seasons/${id}/grant-rewards`, {
+      method: 'POST',
+      body: JSON.stringify({})
+    });
+    renderSeasonRewardPreview(data);
+    showAdminMessage(`시즌 보상 지급 완료: ${data.items.filter((item) => item.granted).length}개 지급 · ${data.items.filter((item) => item.skipped).length}개 중복 건너뜀`);
+    await Promise.all([loadAdminTitles(), loadAdminNotifications()]);
+  } catch (error) { showAdminMessage(error.message); }
+}
+
+async function revokeSeasonReward(seasonId, grantId) {
+  const revokeTitle = confirm('실제 보유 칭호도 함께 회수할까요? 취소하면 지급 기록만 revoked로 바뀝니다.');
+  const reason = prompt('회수 사유', 'season reward revoke') || '';
+  try {
+    await API.request(`/api/admin/seasons/${seasonId}/revoke-reward`, {
+      method: 'POST',
+      body: JSON.stringify({ grantId, revokeTitle, reason })
+    });
+    showAdminMessage('시즌 보상 기록을 회수했습니다.');
+    await previewSeasonRewards(seasonId);
   } catch (error) { showAdminMessage(error.message); }
 }
 

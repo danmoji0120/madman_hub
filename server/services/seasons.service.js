@@ -1,7 +1,6 @@
 const { logActivity } = require('./activity.service');
-const { get } = require('../db');
-const { adminGrantTitle } = require('../repositories/admin.repo');
 const { notifySeasonHallOfFame } = require('./notifications.service');
+const { grantSeasonRewardsFromEntries } = require('./seasonRewards.service');
 const {
   SEASON_STATUSES,
   SEASON_RANKING_CATEGORIES,
@@ -20,16 +19,6 @@ const {
 } = require('../repositories/seasons.repo');
 
 const HALL_OF_FAME_LIMIT = 3;
-const SEASON_REWARD_TITLES = {
-  point_earned: '시즌 포인트 베개',
-  point_spent: '시즌 파산왕',
-  casino_loss: '시즌 대참사',
-  casino_profit: '30,000 P의 꿈',
-  comment_count: '시즌 댓글왕',
-  song_count: '시즌 플레이리스트 DJ',
-  cosmetic_spent: '시즌 꾸미기 중독자',
-  activity_score: '시즌의 지배자'
-};
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -211,24 +200,6 @@ async function activateAdminSeason(actorUser, seasonId) {
   return updateAdminSeason(actorUser, seasonId, { isActive: true, status: 'active' });
 }
 
-async function grantSeasonRewardTitles(actorUser, season, entries) {
-  const rewards = [];
-  for (const entry of entries.filter((item) => item.rank === 1 && SEASON_REWARD_TITLES[item.category])) {
-    const title = await get('SELECT id FROM titles WHERE name = ?', [SEASON_REWARD_TITLES[entry.category]]);
-    if (!title?.id) continue;
-    const granted = await adminGrantTitle({
-      actorUser,
-      userId: entry.userId,
-      titleId: title.id,
-      reason: `${season.name} ${entry.category} #1 reward`,
-      sourceType: 'season_reward',
-      sourceId: `season:${season.id}:${entry.category}`
-    });
-    rewards.push({ category: entry.category, userId: entry.userId, titleId: title.id, alreadyOwned: granted.alreadyOwned });
-  }
-  return rewards;
-}
-
 async function endAdminSeason(actorUser, seasonId) {
   const season = await getSeasonById(seasonId);
   if (!season) throw httpError(404, 'Season not found.');
@@ -250,7 +221,7 @@ async function endAdminSeason(actorUser, seasonId) {
     }
   })));
   const ended = await finalizeSeason(season, entries);
-  const rewardTitles = await grantSeasonRewardTitles(actorUser, ended, entries);
+  const rewardTitles = await grantSeasonRewardsFromEntries(actorUser, ended, entries);
   await notifySeasonHallOfFame({ season: ended, entries }).catch((error) => console.error('Notification creation failed:', error));
   await logActivity({ userId: actorUser.id, action: 'admin_season_ended', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
   return { season: ended, hallOfFameEntries: entries.length, rewardTitles };
@@ -281,7 +252,7 @@ async function generateAdminHallOfFame(actorUser, seasonId) {
     }
   })));
   const hallOfFame = await replaceHallOfFame(season, entries);
-  const rewardTitles = await grantSeasonRewardTitles(actorUser, season, entries);
+  const rewardTitles = await grantSeasonRewardsFromEntries(actorUser, season, entries);
   await notifySeasonHallOfFame({ season, entries }).catch((error) => console.error('Notification creation failed:', error));
   await logActivity({ userId: actorUser.id, action: 'admin_season_hall_of_fame_generated', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
   return { season, hallOfFameEntries: entries.length, hallOfFame, rewardTitles };

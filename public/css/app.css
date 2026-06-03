@@ -830,6 +830,50 @@ button {
   margin-top: 10px;
 }
 
+.season-trophy-list {
+  display: grid;
+  gap: 12px;
+}
+
+.season-trophy-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.season-trophy-card.featured {
+  border-color: rgba(255, 209, 102, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.12);
+}
+
+.season-trophy-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.season-trophy-score {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 10px 0 6px;
+}
+
+.reward-preview-table .title-badge {
+  white-space: nowrap;
+}
+
+.reward-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: rgba(111, 214, 255, 0.12);
+  color: #bfefff;
+  font-size: 0.82rem;
+}
+
 @media (max-width: 720px) {
   .nav {
     align-items: flex-start;
