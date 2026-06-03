@@ -59,6 +59,18 @@ CREATE TABLE IF NOT EXISTS titles (
   description TEXT DEFAULT '',
   price INTEGER NOT NULL DEFAULT 0,
   rarity TEXT NOT NULL DEFAULT 'common',
+  category TEXT NOT NULL DEFAULT 'shop',
+  source_type TEXT NOT NULL DEFAULT 'purchase',
+  is_purchasable BOOLEAN NOT NULL DEFAULT TRUE,
+  is_reward_only BOOLEAN NOT NULL DEFAULT FALSE,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  flavor_text TEXT DEFAULT '',
+  unlock_hint TEXT DEFAULT '',
+  css_class TEXT DEFAULT '',
+  icon TEXT DEFAULT '',
+  is_limited BOOLEAN NOT NULL DEFAULT FALSE,
+  starts_at TIMESTAMPTZ,
+  ends_at TIMESTAMPTZ,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ,
@@ -71,6 +83,30 @@ CREATE TABLE IF NOT EXISTS user_titles (
   acquired_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   source TEXT NOT NULL DEFAULT 'shop',
   PRIMARY KEY (user_id, title_id)
+);
+
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'shop';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'purchase';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS is_purchasable BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS is_reward_only BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS display_order INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS flavor_text TEXT DEFAULT '';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS unlock_hint TEXT DEFAULT '';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS css_class TEXT DEFAULT '';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT '';
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS is_limited BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ;
+ALTER TABLE titles ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS title_grants (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title_id BIGINT NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+  grant_type TEXT NOT NULL,
+  granted_by BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  reason TEXT DEFAULT '',
+  source_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS cosmetic_items (
@@ -288,6 +324,7 @@ CREATE INDEX IF NOT EXISTS idx_quotes_category_created ON quotes(category, creat
 CREATE INDEX IF NOT EXISTS idx_quotes_hidden_category_created ON quotes(is_hidden, category, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_cosmetic_items_type_active ON cosmetic_items(type, is_active);
 CREATE INDEX IF NOT EXISTS idx_user_cosmetics_user_id ON user_cosmetics(user_id);
+CREATE INDEX IF NOT EXISTS idx_title_grants_user_title ON title_grants(user_id, title_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at DESC);

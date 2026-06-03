@@ -15,6 +15,7 @@ function publicComment(row) {
     postId: row.post_id,
     body: row.body,
     authorName: isAnonymous ? '익명' : (row.author_name || '알 수 없음'),
+    authorTitle: isAnonymous ? null : (row.author_title || null),
     isAnonymous,
     createdAt: row.created_at,
     cosmetics: isAnonymous ? undefined : row.cosmetics
@@ -97,13 +98,22 @@ async function listPublicComments(postId) {
     const users = ids.length
       ? assertResult(await getSupabaseAdminClient().from('users').select('id,display_name').in('id', ids)) || []
       : [];
+    const profiles = ids.length
+      ? assertResult(await getSupabaseAdminClient().from('user_profiles').select('user_id,title').in('user_id', ids)) || []
+      : [];
     const names = new Map(users.map((user) => [user.id, user.display_name]));
-    return (await decorateAuthorRows(rows.map((row) => ({ ...row, author_name: names.get(row.user_id) })))).map(publicComment);
+    const titles = new Map(profiles.map((profile) => [profile.user_id, profile.title]));
+    return (await decorateAuthorRows(rows.map((row) => ({
+      ...row,
+      author_name: names.get(row.user_id),
+      author_title: titles.get(row.user_id)
+    })))).map(publicComment);
   }
   const rows = await all(
-    `SELECT c.*, u.display_name AS author_name
+    `SELECT c.*, u.display_name AS author_name, p.title AS author_title
      FROM post_comments c
      LEFT JOIN users u ON u.id = c.user_id
+     LEFT JOIN user_profiles p ON p.user_id = c.user_id
      WHERE c.post_id = ? AND c.is_hidden = 0
      ORDER BY c.created_at ASC, c.id ASC`,
     [postId]

@@ -38,10 +38,46 @@
       <p class="message" id="shop-message"></p>
     </section>
 
+    <section class="card">
+      <div class="admin-toolbar">
+        <input class="input" id="title-search-filter" placeholder="칭호 검색" />
+        <select class="input" id="title-rarity-filter">
+          <option value="">전체 rarity</option>
+          <option value="common">common</option>
+          <option value="uncommon">uncommon</option>
+          <option value="rare">rare</option>
+          <option value="epic">epic</option>
+          <option value="legendary">legendary</option>
+          <option value="event">event</option>
+          <option value="admin">admin</option>
+          <option value="punishment">punishment</option>
+        </select>
+        <select class="input" id="title-category-filter">
+          <option value="">전체 category</option>
+          <option value="shop">shop</option>
+          <option value="achievement">achievement</option>
+          <option value="season">season</option>
+          <option value="casino">casino</option>
+          <option value="activity">activity</option>
+          <option value="event">event</option>
+          <option value="admin">admin</option>
+          <option value="punishment">punishment</option>
+          <option value="legacy">legacy</option>
+        </select>
+        <select class="input" id="title-availability-filter">
+          <option value="">전체</option>
+          <option value="purchasable">구매 가능</option>
+          <option value="reward">보상 전용</option>
+          <option value="owned">보유 중</option>
+        </select>
+      </div>
+    </section>
+
     <section class="shop-grid" id="shop-titles" style="margin-top: 18px;"></section>
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/titleBadge.js"></script>
   <script src="/js/shop.js"></script>
 </body>
 </html>

@@ -19,10 +19,16 @@ function parseTags(value) {
 function attachAuthor(rows, mapper) {
   const ids = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
   if (!ids.length) return Promise.resolve(rows.map(mapper));
-  return getSupabaseAdminClient().from('users').select('id,display_name').in('id', ids).then((result) => {
+  return getSupabaseAdminClient().from('users').select('id,display_name').in('id', ids).then(async (result) => {
     const users = assertResult(result) || [];
+    const profiles = assertResult(await getSupabaseAdminClient().from('user_profiles').select('user_id,title').in('user_id', ids)) || [];
     const names = new Map(users.map((user) => [user.id, user.display_name]));
-    return decorateAuthorRows(rows.map((row) => ({ ...row, author_name: names.get(row.user_id) || null })))
+    const titles = new Map(profiles.map((profile) => [profile.user_id, profile.title]));
+    return decorateAuthorRows(rows.map((row) => ({
+      ...row,
+      author_name: names.get(row.user_id) || null,
+      author_title: titles.get(row.user_id) || null
+    })))
       .then((decorated) => decorated.map(mapper));
   });
 }
@@ -77,7 +83,9 @@ async function listPublicPosts({ q = '', category = '', tag = '', author = '', s
   if (author) { filters.push('LOWER(u.display_name) LIKE LOWER(?)'); params.push(`%${author}%`); }
   params.push(limit + 1, offset);
   const rows = await all(
-    `SELECT q.*, u.display_name AS author_name FROM quotes q LEFT JOIN users u ON u.id = q.user_id
+    `SELECT q.*, u.display_name AS author_name, p.title AS author_title FROM quotes q
+     LEFT JOIN users u ON u.id = q.user_id
+     LEFT JOIN user_profiles p ON p.user_id = q.user_id
      WHERE ${filters.join(' AND ')} ORDER BY q.created_at ${sort === 'oldest' ? 'ASC' : 'DESC'}, q.id ${sort === 'oldest' ? 'ASC' : 'DESC'}
      LIMIT ? OFFSET ?`,
     params
@@ -91,7 +99,9 @@ async function getPublicPost(postId, mapper) {
     return row ? (await attachAuthor([row], mapper))[0] : null;
   }
   const row = await get(
-    `SELECT q.*, u.display_name AS author_name FROM quotes q LEFT JOIN users u ON u.id = q.user_id
+    `SELECT q.*, u.display_name AS author_name, p.title AS author_title FROM quotes q
+     LEFT JOIN users u ON u.id = q.user_id
+     LEFT JOIN user_profiles p ON p.user_id = q.user_id
      WHERE q.id = ? AND q.is_hidden = 0`,
     [postId]
   );
@@ -112,7 +122,9 @@ async function getRandomPublicPost({ category = '', tag = '' }, mapper) {
   if (category) { filters.push('q.category = ?'); params.push(category); }
   if (tag) { filters.push('q.tags LIKE ?'); params.push(`%${tag}%`); }
   const row = await get(
-    `SELECT q.*, u.display_name AS author_name FROM quotes q LEFT JOIN users u ON u.id = q.user_id
+    `SELECT q.*, u.display_name AS author_name, p.title AS author_title FROM quotes q
+     LEFT JOIN users u ON u.id = q.user_id
+     LEFT JOIN user_profiles p ON p.user_id = q.user_id
      WHERE ${filters.join(' AND ')} ORDER BY RANDOM() LIMIT 1`,
     params
   );

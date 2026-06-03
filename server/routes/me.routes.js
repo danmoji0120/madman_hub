@@ -10,6 +10,7 @@ const {
   unequipCosmetic
 } = require('../services/cosmetics.service');
 const { getMySeasonSummary } = require('../services/seasons.service');
+const { normalizeTitle } = require('../utils/titles');
 
 const router = express.Router();
 
@@ -137,7 +138,10 @@ router.get('/titles', authRequired, async (req, res) => {
   const [profile, titles, account] = await Promise.all([
     getProfile(req.user.id),
     all(
-      `SELECT t.id, t.name, t.description, t.rarity, ut.acquired_at, ut.source
+      `SELECT t.id, t.name, t.description, t.price, t.rarity, t.category, t.source_type,
+              t.is_purchasable, t.is_reward_only, t.display_order, t.flavor_text, t.unlock_hint,
+              t.css_class, t.icon, t.is_limited, t.starts_at, t.ends_at, t.is_active,
+              ut.acquired_at, ut.source
        FROM user_titles ut
        JOIN titles t ON t.id = ut.title_id
        WHERE ut.user_id = ?
@@ -150,10 +154,7 @@ router.get('/titles', authRequired, async (req, res) => {
   return res.json({
     success: true,
     equippedTitle: profile?.title || '',
-    titles: titles.map((title) => ({
-      ...title,
-      equipped: title.name === profile?.title
-    })),
+    titles: titles.map((title) => normalizeTitle({ ...title, equipped: title.name === profile?.title })),
     account
   });
 });
@@ -166,7 +167,9 @@ router.post('/title/equip', authRequired, async (req, res) => {
   }
 
   const title = await get(
-    `SELECT t.id, t.name
+    `SELECT t.id, t.name, t.description, t.price, t.rarity, t.category, t.source_type,
+            t.is_purchasable, t.is_reward_only, t.display_order, t.flavor_text, t.unlock_hint,
+            t.css_class, t.icon, t.is_limited, t.starts_at, t.ends_at, t.is_active
      FROM user_titles ut
      JOIN titles t ON t.id = ut.title_id
      WHERE ut.user_id = ? AND ut.title_id = ?`,
@@ -177,16 +180,17 @@ router.post('/title/equip', authRequired, async (req, res) => {
     return res.status(403).json({ success: false, message: '보유한 칭호만 장착할 수 있습니다.' });
   }
 
-  await run('UPDATE user_profiles SET title = ? WHERE user_id = ?', [title.name, req.user.id]);
+  const normalizedTitle = normalizeTitle(title);
+  await run('UPDATE user_profiles SET title = ? WHERE user_id = ?', [normalizedTitle.name, req.user.id]);
   await logActivity({
     userId: req.user.id,
     action: 'title_equipped',
     platform: 'hub',
-    metadata: { titleId: title.id, titleName: title.name },
+    metadata: { titleId: normalizedTitle.id, titleName: normalizedTitle.name },
     isPublic: true
   });
   const profile = await getProfile(req.user.id);
-  return res.json({ success: true, equippedTitle: title.name, profile });
+  return res.json({ success: true, equippedTitle: normalizedTitle.name, equippedTitleData: normalizedTitle, profile });
 });
 
 router.get('/achievements', authRequired, async (req, res) => {

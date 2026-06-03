@@ -33,6 +33,7 @@ const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
 const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 const { runSeasonsSmoke } = require('./seasons-smoke-helper');
+const { runTitlesSmoke } = require('./titles-smoke-helper');
 const baseUrl = `http://127.0.0.1:${process.env.PORT}`;
 
 async function request(route, options = {}, expectedStatus = 200) {
@@ -289,6 +290,8 @@ async function main() {
     });
     console.log('Supabase smoke stage: cosmetics');
     await runCosmeticsSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
+    console.log('Supabase smoke stage: titles');
+    await runTitlesSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
     console.log('Supabase smoke stage: songs-missions');
     await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix });
     console.log('Supabase smoke stage: seasons');

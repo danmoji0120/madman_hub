@@ -9,6 +9,7 @@ const {
   setCommentHidden: setProviderCommentHidden
 } = require('./comments.repo');
 const { getPostCategory } = require('../config/postCategories.config');
+const { normalizeTitle, sanitizeCssClass } = require('../utils/titles');
 
 function assertResult(result) {
   if (result.error) {
@@ -684,24 +685,26 @@ async function listSqliteAdminTitles({ includeInactive, q }) {
   const filters = [];
   if (!includeInactive) filters.push('t.is_active = 1');
   if (q) {
-    filters.push('(t.name LIKE ? OR t.description LIKE ?)');
+    filters.push('(t.name LIKE ? OR t.description LIKE ? OR t.flavor_text LIKE ? OR t.unlock_hint LIKE ?)');
     const like = `%${q}%`;
-    params.push(like, like);
+    params.push(like, like, like, like);
   }
-  return all(
+  const titles = await all(
     `SELECT t.*, (SELECT COUNT(*) FROM user_titles ut WHERE ut.title_id = t.id) AS owner_count
      FROM titles t
      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
-     ORDER BY t.created_at DESC, t.id DESC`,
+     ORDER BY t.display_order ASC, t.created_at DESC, t.id DESC`,
     params
   );
+  return titles.map((title) => normalizeTitle(title));
 }
 
 async function listSupabaseAdminTitles({ includeInactive, q }) {
   let query = getSupabaseAdminClient().from('titles').select('*');
   if (!includeInactive) query = query.eq('is_active', true);
-  query = applyTextSearch(query, ['name', 'description'], q);
+  query = applyTextSearch(query, ['name', 'description', 'flavor_text', 'unlock_hint'], q);
   const titles = assertResult(await query
+    .order('display_order', { ascending: true })
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })) || [];
   const titleIds = titles.map((title) => title.id);
@@ -710,7 +713,7 @@ async function listSupabaseAdminTitles({ includeInactive, q }) {
     map.set(row.title_id, (map.get(row.title_id) || 0) + 1);
     return map;
   }, new Map());
-  return titles.map((title) => ({ ...title, owner_count: counts.get(title.id) || 0 }));
+  return titles.map((title) => normalizeTitle({ ...title, owner_count: counts.get(title.id) || 0 }));
 }
 
 async function listAdminTitles(options) {
@@ -721,31 +724,70 @@ async function listAdminTitles(options) {
 
 async function createAdminTitle({ actorUser, input }) {
   let title;
+  const payload = normalizeTitle({
+    name: input.name,
+    description: input.description || '',
+    price: input.price ?? 0,
+    rarity: input.rarity || 'common',
+    category: input.category || 'shop',
+    source_type: input.sourceType || input.source_type || 'purchase',
+    is_purchasable: input.isPurchasable ?? input.is_purchasable ?? true,
+    is_reward_only: input.isRewardOnly ?? input.is_reward_only ?? false,
+    display_order: input.displayOrder ?? input.display_order ?? 0,
+    flavor_text: input.flavorText ?? input.flavor_text ?? '',
+    unlock_hint: input.unlockHint ?? input.unlock_hint ?? '',
+    css_class: sanitizeCssClass(input.cssClass ?? input.css_class ?? ''),
+    icon: input.icon || '',
+    is_limited: input.isLimited ?? input.is_limited ?? false,
+    starts_at: input.startsAt ?? input.starts_at ?? null,
+    ends_at: input.endsAt ?? input.ends_at ?? null,
+    is_active: input.isActive !== false
+  });
   try {
     if (provider === 'supabase') {
       title = assertResult(await getSupabaseAdminClient().from('titles').insert({
-        name: input.name,
-        description: input.description || '',
-        price: input.price ?? 0,
-        rarity: input.rarity || 'common',
-        is_active: input.isActive !== false,
+        name: payload.name,
+        description: payload.description,
+        price: payload.price,
+        rarity: payload.rarity,
+        category: payload.category,
+        source_type: payload.sourceType,
+        is_purchasable: payload.isPurchasable,
+        is_reward_only: payload.isRewardOnly,
+        display_order: payload.displayOrder,
+        flavor_text: payload.flavorText,
+        unlock_hint: payload.unlockHint,
+        css_class: payload.cssClass,
+        icon: payload.icon,
+        is_limited: payload.isLimited,
+        starts_at: payload.startsAt,
+        ends_at: payload.endsAt,
+        is_active: payload.isActive,
         updated_at: new Date().toISOString(),
         updated_by: actorUser.id
       }).select().single());
     } else {
       const created = await run(
-        `INSERT INTO titles (name, description, price, rarity, is_active, updated_at, updated_by)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
-        [input.name, input.description || '', input.price ?? 0, input.rarity || 'common', input.isActive === false ? 0 : 1, actorUser.id]
+        `INSERT INTO titles (name, description, price, rarity, category, source_type, is_purchasable,
+         is_reward_only, display_order, flavor_text, unlock_hint, css_class, icon, is_limited,
+         starts_at, ends_at, is_active, updated_at, updated_by)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?)`,
+        [
+          payload.name, payload.description, payload.price, payload.rarity, payload.category,
+          payload.sourceType, payload.isPurchasable ? 1 : 0, payload.isRewardOnly ? 1 : 0,
+          payload.displayOrder, payload.flavorText, payload.unlockHint, payload.cssClass,
+          payload.icon, payload.isLimited ? 1 : 0, payload.startsAt, payload.endsAt,
+          payload.isActive ? 1 : 0, actorUser.id
+        ]
       );
-      title = { id: created.id, ...input };
+      title = { id: created.id, ...payload };
     }
   } catch (error) {
     if (isUniqueViolation(error)) throw createHttpError(409, 'A title with this name already exists.', 'TITLE_NAME_CONFLICT');
     throw error;
   }
-  await logActivity({ userId: actorUser.id, action: 'admin_title_created', metadata: { titleId: title.id, name: input.name } });
-  return title;
+  await logActivity({ userId: actorUser.id, action: 'admin_title_created', metadata: { titleId: title.id, name: payload.name } });
+  return normalizeTitle(title);
 }
 
 async function findTitle(titleId) {
@@ -762,29 +804,67 @@ async function updateAdminTitle({ actorUser, titleId, input }) {
     description: input.description ?? previous.description,
     price: input.price ?? previous.price,
     rarity: input.rarity ?? previous.rarity,
+    category: input.category ?? previous.category ?? 'shop',
+    source_type: input.sourceType ?? input.source_type ?? previous.source_type ?? 'purchase',
+    is_purchasable: input.isPurchasable ?? input.is_purchasable ?? previous.is_purchasable ?? true,
+    is_reward_only: input.isRewardOnly ?? input.is_reward_only ?? previous.is_reward_only ?? false,
+    display_order: input.displayOrder ?? input.display_order ?? previous.display_order ?? 0,
+    flavor_text: input.flavorText ?? input.flavor_text ?? previous.flavor_text ?? '',
+    unlock_hint: input.unlockHint ?? input.unlock_hint ?? previous.unlock_hint ?? '',
+    css_class: sanitizeCssClass(input.cssClass ?? input.css_class ?? previous.css_class ?? ''),
+    icon: input.icon ?? previous.icon ?? '',
+    is_limited: input.isLimited ?? input.is_limited ?? previous.is_limited ?? false,
+    starts_at: input.startsAt ?? input.starts_at ?? previous.starts_at ?? null,
+    ends_at: input.endsAt ?? input.ends_at ?? previous.ends_at ?? null,
     is_active: input.isActive === undefined ? previous.is_active : input.isActive
   };
+  const normalizedNext = normalizeTitle(next);
 
   try {
     if (provider === 'supabase') {
       assertResult(await getSupabaseAdminClient().from('titles').update({
-        ...next,
+        name: normalizedNext.name,
+        description: normalizedNext.description,
+        price: normalizedNext.price,
+        rarity: normalizedNext.rarity,
+        category: normalizedNext.category,
+        source_type: normalizedNext.sourceType,
+        is_purchasable: normalizedNext.isPurchasable,
+        is_reward_only: normalizedNext.isRewardOnly,
+        display_order: normalizedNext.displayOrder,
+        flavor_text: normalizedNext.flavorText,
+        unlock_hint: normalizedNext.unlockHint,
+        css_class: normalizedNext.cssClass,
+        icon: normalizedNext.icon,
+        is_limited: normalizedNext.isLimited,
+        starts_at: normalizedNext.startsAt,
+        ends_at: normalizedNext.endsAt,
+        is_active: normalizedNext.isActive,
         updated_at: new Date().toISOString(),
         updated_by: actorUser.id
       }).eq('id', titleId).select());
-      if (next.name !== previous.name) {
-        assertResult(await getSupabaseAdminClient().from('user_profiles').update({ title: next.name }).eq('title', previous.name).select());
+      if (normalizedNext.name !== previous.name) {
+        assertResult(await getSupabaseAdminClient().from('user_profiles').update({ title: normalizedNext.name }).eq('title', previous.name).select());
       }
     } else {
       await run('BEGIN IMMEDIATE TRANSACTION');
       try {
         await run(
-          `UPDATE titles SET name = ?, description = ?, price = ?, rarity = ?, is_active = ?,
+          `UPDATE titles SET name = ?, description = ?, price = ?, rarity = ?, category = ?, source_type = ?,
+           is_purchasable = ?, is_reward_only = ?, display_order = ?, flavor_text = ?, unlock_hint = ?,
+           css_class = ?, icon = ?, is_limited = ?, starts_at = ?, ends_at = ?, is_active = ?,
            updated_at = CURRENT_TIMESTAMP, updated_by = ? WHERE id = ?`,
-          [next.name, next.description, next.price, next.rarity, next.is_active ? 1 : 0, actorUser.id, titleId]
+          [
+            normalizedNext.name, normalizedNext.description, normalizedNext.price, normalizedNext.rarity,
+            normalizedNext.category, normalizedNext.sourceType, normalizedNext.isPurchasable ? 1 : 0,
+            normalizedNext.isRewardOnly ? 1 : 0, normalizedNext.displayOrder, normalizedNext.flavorText,
+            normalizedNext.unlockHint, normalizedNext.cssClass, normalizedNext.icon, normalizedNext.isLimited ? 1 : 0,
+            normalizedNext.startsAt, normalizedNext.endsAt, normalizedNext.isActive ? 1 : 0,
+            actorUser.id, titleId
+          ]
         );
-        if (next.name !== previous.name) {
-          await run('UPDATE user_profiles SET title = ? WHERE title = ?', [next.name, previous.name]);
+        if (normalizedNext.name !== previous.name) {
+          await run('UPDATE user_profiles SET title = ? WHERE title = ?', [normalizedNext.name, previous.name]);
         }
         await run('COMMIT');
       } catch (error) {
@@ -796,8 +876,8 @@ async function updateAdminTitle({ actorUser, titleId, input }) {
     if (isUniqueViolation(error)) throw createHttpError(409, 'A title with this name already exists.', 'TITLE_NAME_CONFLICT');
     throw error;
   }
-  await logActivity({ userId: actorUser.id, action: 'admin_title_updated', metadata: { titleId, previousName: previous.name, nextName: next.name } });
-  return findTitle(titleId);
+  await logActivity({ userId: actorUser.id, action: 'admin_title_updated', metadata: { titleId, previousName: previous.name, nextName: normalizedNext.name } });
+  return normalizeTitle(await findTitle(titleId));
 }
 
 async function setTitleActive({ actorUser, titleId, isActive }) {
@@ -820,7 +900,136 @@ async function setTitleActive({ actorUser, titleId, isActive }) {
     action: isActive ? 'admin_title_enabled' : 'admin_title_disabled',
     metadata: { titleId, name: title.name }
   });
-  return { ...title, is_active: isActive };
+  return normalizeTitle({ ...title, is_active: isActive });
+}
+
+async function getFallbackTitleName(userId) {
+  if (provider === 'supabase') {
+    const owned = assertResult(await getSupabaseAdminClient()
+      .from('user_titles')
+      .select('title_id')
+      .eq('user_id', userId)
+      .order('acquired_at', { ascending: true })
+      .limit(1)) || [];
+    if (!owned.length) return '수상한 거주민';
+    const title = await selectOne('titles', 'name', (query) => query.eq('id', owned[0].title_id));
+    return title?.name || '수상한 거주민';
+  }
+  const title = await get(
+    `SELECT t.name FROM user_titles ut
+     JOIN titles t ON t.id = ut.title_id
+     WHERE ut.user_id = ?
+     ORDER BY ut.acquired_at ASC, t.id ASC LIMIT 1`,
+    [userId]
+  );
+  return title?.name || '수상한 거주민';
+}
+
+async function adminGrantTitle({ actorUser, userId, titleId, reason = '', sourceType = 'admin_grant', sourceId = null }) {
+  const target = await findUserRole(userId);
+  if (!target) throw createHttpError(404, 'User not found.');
+  const title = normalizeTitle(await findTitle(titleId));
+  if (!title.id) throw createHttpError(404, 'Title not found.');
+
+  let alreadyOwned = false;
+  if (provider === 'supabase') {
+    const owned = await selectOne('user_titles', 'title_id', (query) => query.eq('user_id', userId).eq('title_id', titleId));
+    alreadyOwned = Boolean(owned);
+    if (!alreadyOwned) {
+      assertResult(await getSupabaseAdminClient().from('user_titles').insert({
+        user_id: userId,
+        title_id: titleId,
+        source: sourceType
+      }).select());
+    }
+    assertResult(await getSupabaseAdminClient().from('title_grants').insert({
+      user_id: userId,
+      title_id: titleId,
+      grant_type: sourceType,
+      granted_by: actorUser.id,
+      reason,
+      source_id: sourceId
+    }).select());
+  } else {
+    const owned = await get('SELECT title_id FROM user_titles WHERE user_id = ? AND title_id = ?', [userId, titleId]);
+    alreadyOwned = Boolean(owned);
+    if (!alreadyOwned) {
+      await run('INSERT INTO user_titles (user_id, title_id, source) VALUES (?, ?, ?)', [userId, titleId, sourceType]);
+    }
+    await run(
+      'INSERT INTO title_grants (user_id, title_id, grant_type, granted_by, reason, source_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, titleId, sourceType, actorUser.id, reason, sourceId]
+    );
+  }
+  await logActivity({
+    userId: actorUser.id,
+    action: 'admin_title_granted',
+    metadata: { targetUserId: userId, titleId, titleName: title.name, reason, sourceType, sourceId }
+  });
+  if (!alreadyOwned && sourceType === 'season_reward') {
+    await logActivity({
+      userId,
+      action: 'season_reward_title_granted',
+      platform: 'hub',
+      metadata: { titleId, titleName: title.name, reason, sourceId },
+      isPublic: true
+    });
+  }
+  return { title, alreadyOwned };
+}
+
+async function adminRevokeTitle({ actorUser, userId, titleId, reason = '' }) {
+  const target = await findUserRole(userId);
+  if (!target) throw createHttpError(404, 'User not found.');
+  const title = normalizeTitle(await findTitle(titleId));
+  if (!title.id) throw createHttpError(404, 'Title not found.');
+
+  let removed = false;
+  let wasEquipped = false;
+  if (provider === 'supabase') {
+    const profile = await selectOne('user_profiles', 'title', (query) => query.eq('user_id', userId));
+    wasEquipped = profile?.title === title.name;
+    const deleted = assertResult(await getSupabaseAdminClient()
+      .from('user_titles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('title_id', titleId)
+      .select()) || [];
+    removed = deleted.length > 0;
+    assertResult(await getSupabaseAdminClient().from('title_grants').insert({
+      user_id: userId,
+      title_id: titleId,
+      grant_type: 'revoke',
+      granted_by: actorUser.id,
+      reason,
+      source_id: null
+    }).select());
+    if (wasEquipped) {
+      assertResult(await getSupabaseAdminClient()
+        .from('user_profiles')
+        .update({ title: await getFallbackTitleName(userId) })
+        .eq('user_id', userId)
+        .select());
+    }
+  } else {
+    const profile = await get('SELECT title FROM user_profiles WHERE user_id = ?', [userId]);
+    wasEquipped = profile?.title === title.name;
+    const deleted = await run('DELETE FROM user_titles WHERE user_id = ? AND title_id = ?', [userId, titleId]);
+    removed = deleted.changes > 0;
+    await run(
+      'INSERT INTO title_grants (user_id, title_id, grant_type, granted_by, reason, source_id) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, titleId, 'revoke', actorUser.id, reason, null]
+    );
+    if (wasEquipped) {
+      await run('UPDATE user_profiles SET title = ? WHERE user_id = ?', [await getFallbackTitleName(userId), userId]);
+    }
+  }
+  await logActivity({
+    userId: actorUser.id,
+    action: 'admin_title_revoked',
+    metadata: { targetUserId: userId, titleId, titleName: title.name, reason, removed, wasEquipped }
+  });
+  return { title, removed, wasEquipped };
 }
 
 module.exports = {
@@ -838,5 +1047,7 @@ module.exports = {
   listAdminTitles,
   createAdminTitle,
   updateAdminTitle,
-  setTitleActive
+  setTitleActive,
+  adminGrantTitle,
+  adminRevokeTitle
 };

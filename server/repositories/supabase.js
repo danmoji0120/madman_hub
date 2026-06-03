@@ -1,6 +1,6 @@
 const { getSupabaseAdminClient } = require('../supabaseClient');
 
-const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'is_admin_only', 'completed', 'claimed']);
+const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'is_admin_only', 'is_purchasable', 'is_reward_only', 'is_limited', 'completed', 'claimed']);
 const jsonColumns = new Set(['metadata', 'tags']);
 
 function client() {
@@ -220,15 +220,37 @@ async function run(sql, params = []) {
   if (statement.startsWith('insert into user_titles ')) {
     return insertRow('user_titles', { user_id: params[0], title_id: params[1], source: params[2] });
   }
+  if (statement.startsWith('insert into title_grants ')) {
+    return insertRow('title_grants', {
+      user_id: params[0],
+      title_id: params[1],
+      grant_type: params[2],
+      granted_by: params[3],
+      reason: params[4],
+      source_id: params[5]
+    });
+  }
   if (statement.startsWith('insert into titles ')) {
     return insertRow('titles', {
       name: params[0],
       description: params[1],
       price: params[2],
       rarity: params[3],
-      is_active: params[4],
+      category: params[4] ?? 'shop',
+      source_type: params[5] ?? 'purchase',
+      is_purchasable: params[6] ?? 1,
+      is_reward_only: params[7] ?? 0,
+      display_order: params[8] ?? 0,
+      flavor_text: params[9] ?? '',
+      unlock_hint: params[10] ?? '',
+      css_class: params[11] ?? '',
+      icon: params[12] ?? '',
+      is_limited: params[13] ?? 0,
+      starts_at: params[14] ?? null,
+      ends_at: params[15] ?? null,
+      is_active: params[16] ?? 1,
       updated_at: new Date().toISOString(),
-      updated_by: params[5]
+      updated_by: params[17]
     });
   }
 
@@ -280,10 +302,22 @@ async function run(sql, params = []) {
       description: params[1],
       price: params[2],
       rarity: params[3],
-      is_active: params[4],
+      category: params[4],
+      source_type: params[5],
+      is_purchasable: params[6],
+      is_reward_only: params[7],
+      display_order: params[8],
+      flavor_text: params[9],
+      unlock_hint: params[10],
+      css_class: params[11],
+      icon: params[12],
+      is_limited: params[13],
+      starts_at: params[14],
+      ends_at: params[15],
+      is_active: params[16],
       updated_at: new Date().toISOString(),
-      updated_by: params[5]
-    }, (query) => query.eq('id', params[6]));
+      updated_by: params[17]
+    }, (query) => query.eq('id', params[18]));
   }
   if (statement.startsWith('update titles set is_active')) {
     return updateRows('titles', {
@@ -381,9 +415,9 @@ async function get(sql, params = []) {
   if (statement.startsWith('select title_id from user_titles where user_id')) {
     return selectOne('user_titles', (query) => query.eq('user_id', params[0]).eq('title_id', params[1]), 'title_id');
   }
-  if (statement.startsWith('select t.id, t.name from user_titles')) {
+  if (statement.startsWith('select t.id, t.name') && statement.includes('from user_titles')) {
     const owned = await selectOne('user_titles', (query) => query.eq('user_id', params[0]).eq('title_id', params[1]), 'title_id');
-    return owned ? selectOne('titles', (query) => query.eq('id', owned.title_id), 'id, name') : undefined;
+    return owned ? selectOne('titles', (query) => query.eq('id', owned.title_id)) : undefined;
   }
   if (statement.startsWith('select id from daily_checkins where user_id')) {
     return selectOne('daily_checkins', (query) => query.eq('user_id', params[0]).eq('checkin_date', params[1]), 'id');
@@ -462,7 +496,7 @@ async function all(sql, params = []) {
     const ownedIds = new Set(owned.map((item) => item.achievement_id));
     return achievements.filter((achievement) => !ownedIds.has(achievement.id));
   }
-  if (statement.startsWith('select t.id, t.name, t.description, t.rarity, ut.acquired_at')) {
+  if (statement.startsWith('select t.id, t.name, t.description') && statement.includes('from user_titles ut')) {
     const owned = await selectRows('user_titles', (query) => query.eq('user_id', params[0]).order('acquired_at'));
     const titleIds = owned.map((item) => item.title_id);
     const titles = titleIds.length ? await selectRows('titles', (query) => query.in('id', titleIds)) : [];
@@ -550,6 +584,7 @@ async function cleanupSmokeUsers(prefix) {
   await deleteRows('game_sessions', (query) => query.in('user_id', userIds));
   await deleteRows('point_transactions', (query) => query.in('user_id', userIds));
   await deleteRows('activity_logs', (query) => query.in('user_id', userIds));
+  await deleteRows('title_grants', (query) => query.in('user_id', userIds));
   await deleteRows('user_cosmetic_equips', (query) => query.in('user_id', userIds));
   await deleteRows('user_cosmetics', (query) => query.in('user_id', userIds));
   await deleteRows('user_titles', (query) => query.in('user_id', userIds));
@@ -566,8 +601,9 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame] = await Promise.all([
-    client().from('titles').select('id', { count: 'exact', head: true }),
+  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame] = await Promise.all([
+    client().from('titles').select('id,category,source_type,is_purchasable,is_reward_only,css_class', { count: 'exact', head: true }),
+    client().from('title_grants').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
     client().from('users').select('id,account_status').limit(1),
     client().from('quotes').select('id,is_anonymous,anonymous_name,category').limit(1),
@@ -581,7 +617,7 @@ async function initDatabase() {
     client().from('seasons').select('id').limit(1),
     client().from('season_hall_of_fame').select('id').limit(1)
   ]);
-  const schemaError = titles.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error;
+  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }

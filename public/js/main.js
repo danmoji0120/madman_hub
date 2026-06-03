@@ -35,7 +35,7 @@ function renderMyStatus(me) {
   card.className = `card ${me.cosmetics?.profileFrameClass || ''} ${me.cosmetics?.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h2>내 상태</h2>
-    <span class="badge">${escapeHtml(me.title || '수상한 거주민')}</span>
+    ${renderTitleBadge({ name: me.title || '수상한 거주민', rarity: 'common' })}
     <h3 class="${escapeHtml(me.cosmetics?.nicknameColorClass || '')}">${escapeHtml(me.nickname || me.display_name)}</h3>
     <a class="meta" href="/cosmetics.html">꾸미기 상점 보기</a>
     <div class="stat-row">
@@ -61,7 +61,7 @@ function renderMadman(member) {
   card.innerHTML = `
     <h2>오늘의 미친놈</h2>
     <p class="point ${escapeHtml(member.cosmetics?.nicknameColorClass || '')}">${escapeHtml(member.nickname || member.display_name)}</p>
-    <p>${escapeHtml(member.title || '수상한 거주민')}</p>
+    <p>${renderTitleBadge({ name: member.title || '수상한 거주민', rarity: 'common' })}</p>
     <p class="meta">위험도: ${'★'.repeat(member.danger_level || 1)}</p>
   `;
 }

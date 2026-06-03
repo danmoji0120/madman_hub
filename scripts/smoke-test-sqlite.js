@@ -35,6 +35,7 @@ const { runSongsMissionsSmoke } = require('./songs-missions-smoke-helper');
 const { runPostCategoriesSmoke } = require('./post-categories-smoke-helper');
 const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 const { runSeasonsSmoke } = require('./seasons-smoke-helper');
+const { runTitlesSmoke } = require('./titles-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -108,7 +109,7 @@ async function main() {
     assert.ok(profileJs.includes("API.request('/api/me/profile'"));
     assert.ok(postsJs.includes("API.request('/api/posts'"));
     assert.ok(postJs.includes('API.escape(comment.body)'));
-    assert.ok(shopJs.includes("API.request('/api/shop/titles'"));
+    assert.ok(shopJs.includes('API.request(`/api/shop/titles'));
     assert.ok(adminJs.includes("API.request('/api/admin/overview'"));
     assert.ok(casinoJs.includes("API.request('/api/casino/games'"));
     assert.ok(seasonsJs.includes("API.request('/api/seasons'"));
@@ -568,6 +569,10 @@ async function main() {
     await runCosmeticsSmoke({
       request, auth, ownerAuth, userId: registered.user.id,
       runPrefix: `sqlite-cosmetics-${Date.now()}-`
+    });
+    await runTitlesSmoke({
+      request, auth, ownerAuth, userId: registered.user.id,
+      runPrefix: `sqlite-titles-${Date.now()}-`
     });
 
     await runCasinoSmoke({

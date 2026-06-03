@@ -47,6 +47,7 @@ function cleanCategory(value, allowAll = false) {
 function mapPost(row) {
   const isAnonymous = Boolean(row.is_anonymous);
   const authorName = isAnonymous ? '익명' : (row.authorName ?? row.author_name ?? '알 수 없음');
+  const authorTitle = isAnonymous ? null : (row.authorTitle ?? row.author_title ?? null);
   const targetName = row.targetName ?? row.target_name ?? '';
   const createdAt = row.createdAt ?? row.created_at;
   const category = row.category || 'general';
@@ -58,6 +59,8 @@ function mapPost(row) {
     targetName,
     author_name: authorName,
     authorName,
+    author_title: authorTitle,
+    authorTitle,
     tags: parseTags(row.tags),
     created_at: createdAt,
     createdAt,

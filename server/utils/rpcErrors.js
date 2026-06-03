@@ -8,6 +8,7 @@ const mappings = [
   ['title_not_found', 404, '칭호를 찾을 수 없습니다.'],
   ['inactive_title', 400, '비활성 칭호입니다.'],
   ['admin_title_not_buyable', 400, '관리자 전용 칭호는 구매할 수 없습니다.'],
+  ['reward_title_not_buyable', 403, '보상 전용 칭호는 구매할 수 없습니다.'],
   ['cosmetic_not_found', 404, '꾸미기 아이템을 찾을 수 없습니다.'],
   ['inactive_cosmetic', 404, '비활성화된 꾸미기 아이템입니다.'],
   ['admin_cosmetic_not_buyable', 403, '관리자 전용 꾸미기 아이템입니다.'],

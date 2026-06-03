@@ -86,6 +86,9 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'title_not_found'; END IF;
   IF NOT v_title.is_active THEN RAISE EXCEPTION 'inactive_title'; END IF;
   IF v_title.rarity = 'admin' THEN RAISE EXCEPTION 'admin_title_not_buyable'; END IF;
+  IF v_title.rarity = 'punishment' OR NOT v_title.is_purchasable OR v_title.is_reward_only THEN
+    RAISE EXCEPTION 'reward_title_not_buyable';
+  END IF;
 
   INSERT INTO point_accounts (user_id, balance, total_earned, total_spent)
   VALUES (p_user_id, 0, 0, 0)
@@ -111,6 +114,8 @@ BEGIN
 
   INSERT INTO user_titles (user_id, title_id, source)
   VALUES (p_user_id, p_title_id, 'shop');
+  INSERT INTO title_grants (user_id, title_id, grant_type, granted_by, reason, source_id)
+  VALUES (p_user_id, p_title_id, 'purchase', p_user_id, 'Title purchase: ' || v_title.name, p_title_id::TEXT);
   SELECT * INTO v_account FROM point_accounts WHERE user_id = p_user_id;
 
   RETURN jsonb_build_object(

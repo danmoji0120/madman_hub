@@ -29,6 +29,8 @@ function adminActionText(action) {
     admin_title_updated: '칭호 수정',
     admin_title_disabled: '칭호 비활성화',
     admin_title_enabled: '칭호 활성화',
+    admin_title_granted: '칭호 지급',
+    admin_title_revoked: '칭호 회수',
     admin_season_created: '시즌 생성',
     admin_season_updated: '시즌 수정',
     admin_season_ended: '시즌 종료',
@@ -259,11 +261,13 @@ async function loadAdminTitles() {
     document.querySelector('#admin-titles').innerHTML = data.titles.map((title) => `
       <tr class="${title.is_active ? '' : 'status-inactive'}">
         <td>${title.id}</td>
-        <td><strong>${API.escape(title.name)}</strong> <span class="badge">${API.escape(title.rarity)}</span><br /><span class="meta">${API.escape(title.description || '-')}</span></td>
+        <td>${renderTitleBadge(title, { showRarityLabel: true })}<br /><strong>${API.escape(title.name)}</strong><br /><span class="meta">${API.escape(title.description || '-')}</span><br /><span class="meta">${API.escape(title.category || 'shop')} · ${API.escape(title.sourceType || title.source_type || 'purchase')} · ${title.isRewardOnly ? 'reward only' : 'purchasable'}</span></td>
         <td>${title.price}P</td>
         <td>${title.owner_count}</td>
         <td>${title.is_active ? '<span class="status-active">활성</span>' : '비활성'}<br /><span class="meta">${API.escape(title.updated_at || '-')}</span></td>
         <td><button class="button secondary small-button" onclick="editTitle(${title.id})">수정</button>
+        <button class="button secondary small-button" onclick="grantTitle(${title.id})">지급</button>
+        <button class="button secondary small-button danger-button" onclick="revokeTitle(${title.id})">회수</button>
         <button class="button secondary small-button ${title.is_active ? 'danger-button' : ''}" onclick="toggleTitle(${title.id}, ${!title.is_active})">${title.is_active ? '비활성화' : '활성화'}</button></td>
       </tr>
     `).join('');
@@ -412,6 +416,13 @@ async function createTitle(event) {
         description: document.querySelector('#new-title-description').value,
         price: Number(document.querySelector('#new-title-price').value),
         rarity: document.querySelector('#new-title-rarity').value,
+        category: document.querySelector('#new-title-category')?.value || 'shop',
+        sourceType: document.querySelector('#new-title-source-type')?.value || 'purchase',
+        cssClass: document.querySelector('#new-title-css-class')?.value || '',
+        flavorText: document.querySelector('#new-title-flavor')?.value || '',
+        unlockHint: document.querySelector('#new-title-unlock-hint')?.value || '',
+        isPurchasable: Boolean(document.querySelector('#new-title-purchasable')?.checked),
+        isRewardOnly: Boolean(document.querySelector('#new-title-reward-only')?.checked),
         isActive: true
       })
     });
@@ -432,13 +443,25 @@ async function editTitle(titleId) {
   const description = prompt('칭호 설명', title.description || '');
   if (description === null) return;
   const price = Number(prompt('가격', String(title.price)));
-  const rarity = prompt('등급: common, uncommon, rare, epic, admin', title.rarity);
+  const rarity = prompt('등급: common, uncommon, rare, epic, legendary, event, admin, punishment', title.rarity);
   if (rarity === null) return;
+  const category = prompt('category', title.category || 'shop');
+  if (category === null) return;
+  const sourceType = prompt('sourceType', title.sourceType || title.source_type || 'purchase');
+  if (sourceType === null) return;
+  const cssClass = prompt('CSS class', title.cssClass || title.css_class || '');
+  if (cssClass === null) return;
+  const flavorText = prompt('flavor text', title.flavorText || title.flavor_text || '');
+  if (flavorText === null) return;
+  const unlockHint = prompt('unlock hint', title.unlockHint || title.unlock_hint || '');
+  if (unlockHint === null) return;
+  const isPurchasable = confirm('구매 가능 칭호로 설정할까요?');
+  const isRewardOnly = confirm('보상 전용 칭호로 설정할까요?');
 
   try {
     await API.request(`/api/admin/titles/${titleId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ name, description, price, rarity })
+      body: JSON.stringify({ name, description, price, rarity, category, sourceType, cssClass, flavorText, unlockHint, isPurchasable, isRewardOnly })
     });
     showAdminMessage('칭호를 수정했습니다.');
     await Promise.all([loadAdminTitles(), loadOverview()]);
@@ -455,6 +478,40 @@ async function toggleTitle(titleId, isActive) {
     });
     showAdminMessage('칭호 활성 상태를 변경했습니다.');
     await Promise.all([loadAdminTitles(), loadOverview()]);
+  } catch (error) {
+    showAdminMessage(error.message);
+  }
+}
+
+async function grantTitle(titleId) {
+  const userId = Number(prompt('지급할 유저 ID'));
+  if (!Number.isInteger(userId) || userId < 1) return;
+  const reason = prompt('지급 사유', 'admin grant') || '';
+  const sourceType = prompt('sourceType', 'admin_grant') || 'admin_grant';
+  const sourceId = prompt('sourceId', '') || null;
+  try {
+    const data = await API.request(`/api/admin/users/${userId}/titles/${titleId}/grant`, {
+      method: 'POST',
+      body: JSON.stringify({ reason, sourceType, sourceId })
+    });
+    showAdminMessage(data.alreadyOwned ? '이미 보유 중인 칭호입니다.' : '칭호를 지급했습니다.');
+    await Promise.all([loadAdminTitles(), loadOverview()]);
+  } catch (error) {
+    showAdminMessage(error.message);
+  }
+}
+
+async function revokeTitle(titleId) {
+  const userId = Number(prompt('회수할 유저 ID'));
+  if (!Number.isInteger(userId) || userId < 1) return;
+  const reason = prompt('회수 사유', 'admin revoke') || '';
+  try {
+    const data = await API.request(`/api/admin/users/${userId}/titles/${titleId}/revoke`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    showAdminMessage(data.removed ? '칭호를 회수했습니다.' : '대상 유저가 해당 칭호를 보유하지 않았습니다.');
+    await Promise.all([loadAdminTitles(), loadOverview(), loadAdminUsers()]);
   } catch (error) {
     showAdminMessage(error.message);
   }

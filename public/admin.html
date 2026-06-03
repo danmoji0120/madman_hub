@@ -241,8 +241,38 @@
             <option value="uncommon">uncommon</option>
             <option value="rare">rare</option>
             <option value="epic">epic</option>
+            <option value="legendary">legendary</option>
+            <option value="event">event</option>
             <option value="admin">admin: 일반 구매 불가</option>
+            <option value="punishment">punishment</option>
           </select>
+        </div>
+        <div class="form-grid">
+          <select class="input" id="new-title-category">
+            <option value="shop">shop</option>
+            <option value="achievement">achievement</option>
+            <option value="season">season</option>
+            <option value="casino">casino</option>
+            <option value="activity">activity</option>
+            <option value="event">event</option>
+            <option value="admin">admin</option>
+            <option value="punishment">punishment</option>
+            <option value="legacy">legacy</option>
+          </select>
+          <select class="input" id="new-title-source-type">
+            <option value="purchase">purchase</option>
+            <option value="achievement">achievement</option>
+            <option value="season_reward">season_reward</option>
+            <option value="admin_grant">admin_grant</option>
+            <option value="event_reward">event_reward</option>
+            <option value="system_grant">system_grant</option>
+            <option value="legacy">legacy</option>
+          </select>
+          <input class="input" id="new-title-css-class" placeholder="safe CSS class" maxlength="64" />
+          <input class="input" id="new-title-flavor" placeholder="flavor text" maxlength="300" />
+          <input class="input" id="new-title-unlock-hint" placeholder="unlock hint" maxlength="300" />
+          <label class="checkbox-label"><input type="checkbox" id="new-title-purchasable" checked /> purchasable</label>
+          <label class="checkbox-label"><input type="checkbox" id="new-title-reward-only" /> reward only</label>
         </div>
         <button class="button inline" type="submit">생성</button>
       </form>
@@ -261,6 +291,7 @@
   </main>
 
   <script src="/js/api.js"></script>
+  <script src="/js/titleBadge.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

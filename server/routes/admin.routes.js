@@ -16,7 +16,9 @@ const {
   listAdminTitles,
   createAdminTitle,
   updateAdminTitle,
-  setTitleActive
+  setTitleActive,
+  adminGrantTitle,
+  adminRevokeTitle
 } = require('../repositories/admin.repo');
 const { listAdminSongs, adminSetSongHidden } = require('../services/songs.service');
 const { getPostCategory } = require('../config/postCategories.config');
@@ -35,10 +37,17 @@ const {
   previewAdminSeasonRankings,
   generateAdminHallOfFame
 } = require('../services/seasons.service');
+const {
+  TITLE_RARITIES,
+  TITLE_CATEGORIES,
+  TITLE_SOURCE_TYPES,
+  sanitizeCssClass,
+  validateTitleTaxonomy
+} = require('../utils/titles');
 
 const router = express.Router();
 const allowedRoles = ['owner', 'admin', 'member', 'guest'];
-const allowedRarities = ['common', 'uncommon', 'rare', 'epic', 'admin'];
+const allowedRarities = TITLE_RARITIES;
 
 router.use(authRequired);
 router.use(requireRole('admin'));
@@ -88,19 +97,54 @@ function cleanText(value, name, maxLength, required = false) {
 function cleanTitleInput(body, partial = false) {
   const name = cleanText(body.name, 'name', 40, !partial);
   const description = cleanText(body.description, 'description', 300);
+  const flavorText = cleanText(body.flavorText ?? body.flavor_text, 'flavorText', 300);
+  const unlockHint = cleanText(body.unlockHint ?? body.unlock_hint, 'unlockHint', 300);
+  const cssClass = cleanText(body.cssClass ?? body.css_class, 'cssClass', 64);
+  const icon = cleanText(body.icon, 'icon', 20);
+  const startsAt = cleanText(body.startsAt ?? body.starts_at, 'startsAt', 40);
+  const endsAt = cleanText(body.endsAt ?? body.ends_at, 'endsAt', 40);
   const price = body.price;
   const rarity = body.rarity;
+  const category = body.category;
+  const sourceType = body.sourceType ?? body.source_type;
+  const isPurchasable = body.isPurchasable ?? body.is_purchasable;
+  const isRewardOnly = body.isRewardOnly ?? body.is_reward_only;
+  const isLimited = body.isLimited ?? body.is_limited;
+  const displayOrder = body.displayOrder ?? body.display_order;
   const isActive = body.isActive;
   if (price !== undefined && (!Number.isInteger(price) || price < 0)) {
     throw createHttpError(400, 'price must be a non-negative integer.');
   }
-  if (rarity !== undefined && !allowedRarities.includes(rarity)) {
-    throw createHttpError(400, 'rarity is invalid.');
+  if (displayOrder !== undefined && (!Number.isInteger(displayOrder) || displayOrder < 0)) {
+    throw createHttpError(400, 'displayOrder must be a non-negative integer.');
+  }
+  const taxonomyError = validateTitleTaxonomy({ rarity, category, sourceType });
+  if (taxonomyError) throw createHttpError(400, taxonomyError);
+  for (const [field, value] of [['isActive', isActive], ['isPurchasable', isPurchasable], ['isRewardOnly', isRewardOnly], ['isLimited', isLimited]]) {
+    if (value !== undefined && typeof value !== 'boolean') throw createHttpError(400, `${field} must be a boolean.`);
   }
   if (isActive !== undefined && typeof isActive !== 'boolean') {
     throw createHttpError(400, 'isActive must be a boolean.');
   }
-  return { name, description, price, rarity, isActive };
+  return {
+    name,
+    description,
+    price,
+    rarity,
+    category,
+    sourceType,
+    isPurchasable,
+    isRewardOnly,
+    displayOrder,
+    flavorText,
+    unlockHint,
+    cssClass: cssClass === undefined ? undefined : sanitizeCssClass(cssClass),
+    icon,
+    isLimited,
+    startsAt,
+    endsAt,
+    isActive
+  };
 }
 
 safe('get', '/overview', async (req, res) => {
@@ -324,6 +368,38 @@ safe('patch', '/titles/:id/active', async (req, res) => {
     isActive: req.body.isActive
   });
   return res.json({ success: true, title });
+});
+
+safe('post', '/users/:userId/titles/:titleId/grant', async (req, res) => {
+  const sourceType = typeof req.body.sourceType === 'string'
+    ? req.body.sourceType
+    : typeof req.body.source_type === 'string'
+      ? req.body.source_type
+      : 'admin_grant';
+  if (!TITLE_SOURCE_TYPES.includes(sourceType)) throw createHttpError(400, 'sourceType is invalid.');
+  return res.json({
+    success: true,
+    ...(await adminGrantTitle({
+      actorUser: req.user,
+      userId: parseId(req.params.userId, 'user id'),
+      titleId: parseId(req.params.titleId, 'title id'),
+      reason: cleanText(req.body.reason, 'reason', 300) || '',
+      sourceType,
+      sourceId: cleanText(req.body.sourceId, 'sourceId', 100) || null
+    }))
+  });
+});
+
+safe('post', '/users/:userId/titles/:titleId/revoke', async (req, res) => {
+  return res.json({
+    success: true,
+    ...(await adminRevokeTitle({
+      actorUser: req.user,
+      userId: parseId(req.params.userId, 'user id'),
+      titleId: parseId(req.params.titleId, 'title id'),
+      reason: cleanText(req.body.reason, 'reason', 300) || ''
+    }))
+  });
 });
 
 router.use((error, req, res, next) => {

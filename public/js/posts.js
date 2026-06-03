@@ -61,7 +61,7 @@ async function loadPosts() {
         <h2><a href="/post.html?id=${post.id}">${API.escape(post.title)}</a></h2>
         <p>${API.escape(post.body)}</p>
         ${post.tags.length ? `<p>${tagBadges(post.tags)}</p>` : ''}
-        <p class="meta">작성자 <span class="${API.escape(post.cosmetics?.nicknameColorClass || '')}">${API.escape(post.authorName || '알 수 없음')}</span> · ${API.escape(post.createdAt)}</p>
+        <p class="meta">작성자 <span class="${API.escape(post.cosmetics?.nicknameColorClass || '')}">${API.escape(post.authorName || '알 수 없음')}</span> ${post.authorTitle ? renderTitleBadge({ name: post.authorTitle, rarity: 'common' }, { compact: true }) : ''} · ${API.escape(post.createdAt)}</p>
       </article>
     `).join('') || '<p class="empty-state">조건에 맞는 게시글이 없습니다.</p>';
   } catch (error) {

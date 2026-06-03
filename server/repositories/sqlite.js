@@ -63,7 +63,29 @@ async function runMigrations() {
   await ensureColumn('guestbook_entries', 'hidden_reason', "TEXT DEFAULT ''");
   await ensureColumn('titles', 'updated_at', 'TEXT');
   await ensureColumn('titles', 'updated_by', 'INTEGER');
+  await ensureColumn('titles', 'category', "TEXT NOT NULL DEFAULT 'shop'");
+  await ensureColumn('titles', 'source_type', "TEXT NOT NULL DEFAULT 'purchase'");
+  await ensureColumn('titles', 'is_purchasable', 'INTEGER NOT NULL DEFAULT 1');
+  await ensureColumn('titles', 'is_reward_only', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'display_order', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'flavor_text', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'unlock_hint', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'css_class', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'icon', "TEXT DEFAULT ''");
+  await ensureColumn('titles', 'is_limited', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('titles', 'starts_at', 'TEXT');
+  await ensureColumn('titles', 'ends_at', 'TEXT');
   await ensureColumn('activity_logs', 'is_public', 'INTEGER NOT NULL DEFAULT 0');
+  await run(
+    `CREATE TABLE IF NOT EXISTS title_grants (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, title_id INTEGER NOT NULL,
+       grant_type TEXT NOT NULL, granted_by INTEGER, reason TEXT DEFAULT '', source_id TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+       FOREIGN KEY (title_id) REFERENCES titles(id) ON DELETE CASCADE,
+       FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL
+     )`
+  );
   await run(
     `CREATE TABLE IF NOT EXISTS post_comments (
        id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,6 +139,7 @@ async function runMigrations() {
   );
   await run('CREATE INDEX IF NOT EXISTS idx_cosmetic_items_type_active ON cosmetic_items(type, is_active)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_cosmetics_user_id ON user_cosmetics(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_title_grants_user_title ON title_grants(user_id, title_id, created_at)');
   await run(
     `CREATE TABLE IF NOT EXISTS song_recommendations (
        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, title TEXT NOT NULL, artist TEXT DEFAULT '',

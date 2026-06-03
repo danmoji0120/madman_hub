@@ -1,4 +1,6 @@
 const { logActivity } = require('./activity.service');
+const { get } = require('../db');
+const { adminGrantTitle } = require('../repositories/admin.repo');
 const {
   SEASON_STATUSES,
   SEASON_RANKING_CATEGORIES,
@@ -17,6 +19,16 @@ const {
 } = require('../repositories/seasons.repo');
 
 const HALL_OF_FAME_LIMIT = 3;
+const SEASON_REWARD_TITLES = {
+  point_earned: 'MVP16 Legendary 01',
+  point_spent: 'MVP16 Legendary 02',
+  casino_loss: 'MVP16 Legendary 03',
+  casino_profit: 'MVP16 Legendary 04',
+  comment_count: 'MVP16 Epic 01',
+  song_count: 'MVP16 Epic 02',
+  cosmetic_spent: 'MVP16 Epic 03',
+  activity_score: 'MVP16 Legendary 05'
+};
 
 function httpError(status, message) {
   const error = new Error(message);
@@ -187,6 +199,24 @@ async function activateAdminSeason(actorUser, seasonId) {
   return updateAdminSeason(actorUser, seasonId, { isActive: true, status: 'active' });
 }
 
+async function grantSeasonRewardTitles(actorUser, season, entries) {
+  const rewards = [];
+  for (const entry of entries.filter((item) => item.rank === 1 && SEASON_REWARD_TITLES[item.category])) {
+    const title = await get('SELECT id FROM titles WHERE name = ?', [SEASON_REWARD_TITLES[entry.category]]);
+    if (!title?.id) continue;
+    const granted = await adminGrantTitle({
+      actorUser,
+      userId: entry.userId,
+      titleId: title.id,
+      reason: `${season.name} ${entry.category} #1 reward`,
+      sourceType: 'season_reward',
+      sourceId: `season:${season.id}:${entry.category}`
+    });
+    rewards.push({ category: entry.category, userId: entry.userId, titleId: title.id, alreadyOwned: granted.alreadyOwned });
+  }
+  return rewards;
+}
+
 async function endAdminSeason(actorUser, seasonId) {
   const season = await getSeasonById(seasonId);
   if (!season) throw httpError(404, 'Season not found.');
@@ -208,8 +238,9 @@ async function endAdminSeason(actorUser, seasonId) {
     }
   })));
   const ended = await finalizeSeason(season, entries);
-  await logActivity({ userId: actorUser.id, action: 'admin_season_ended', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length } });
-  return { season: ended, hallOfFameEntries: entries.length };
+  const rewardTitles = await grantSeasonRewardTitles(actorUser, ended, entries);
+  await logActivity({ userId: actorUser.id, action: 'admin_season_ended', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
+  return { season: ended, hallOfFameEntries: entries.length, rewardTitles };
 }
 
 async function previewAdminSeasonRankings(seasonId, limit = 5) {
@@ -237,8 +268,9 @@ async function generateAdminHallOfFame(actorUser, seasonId) {
     }
   })));
   const hallOfFame = await replaceHallOfFame(season, entries);
-  await logActivity({ userId: actorUser.id, action: 'admin_season_hall_of_fame_generated', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length } });
-  return { season, hallOfFameEntries: entries.length, hallOfFame };
+  const rewardTitles = await grantSeasonRewardTitles(actorUser, season, entries);
+  await logActivity({ userId: actorUser.id, action: 'admin_season_hall_of_fame_generated', metadata: { seasonId, code: season.code, hallOfFameEntries: entries.length, rewardTitles } });
+  return { season, hallOfFameEntries: entries.length, hallOfFame, rewardTitles };
 }
 
 module.exports = {

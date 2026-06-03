@@ -29,6 +29,97 @@ SELECT u.id, t.id, 'default'
 FROM users u
 JOIN titles t ON t.name = '신규 격리 대상';
 
+WITH RECURSIVE seq(n) AS (
+  SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 100
+),
+title_seed AS (
+  SELECT
+    CASE
+      WHEN n <= 30 THEN 'MVP16 Common ' || printf('%02d', n)
+      WHEN n <= 55 THEN 'MVP16 Uncommon ' || printf('%02d', n - 30)
+      WHEN n <= 73 THEN 'MVP16 Rare ' || printf('%02d', n - 55)
+      WHEN n <= 87 THEN 'MVP16 Epic ' || printf('%02d', n - 73)
+      WHEN n <= 94 THEN 'MVP16 Legendary ' || printf('%02d', n - 87)
+      WHEN n <= 97 THEN 'MVP16 Event ' || printf('%02d', n - 94)
+      WHEN n <= 99 THEN 'MVP16 Admin ' || printf('%02d', n - 97)
+      ELSE 'MVP16 Punishment 01'
+    END AS name,
+    'MVP 1.6 title seed' AS description,
+    CASE WHEN n <= 73 THEN n * 10 ELSE 0 END AS price,
+    CASE
+      WHEN n <= 30 THEN 'common'
+      WHEN n <= 55 THEN 'uncommon'
+      WHEN n <= 73 THEN 'rare'
+      WHEN n <= 87 THEN 'epic'
+      WHEN n <= 94 THEN 'legendary'
+      WHEN n <= 97 THEN 'event'
+      WHEN n <= 99 THEN 'admin'
+      ELSE 'punishment'
+    END AS rarity,
+    CASE
+      WHEN n <= 55 THEN 'shop'
+      WHEN n <= 73 THEN 'casino'
+      WHEN n <= 87 THEN 'achievement'
+      WHEN n <= 94 THEN 'season'
+      WHEN n <= 97 THEN 'event'
+      WHEN n <= 99 THEN 'admin'
+      ELSE 'punishment'
+    END AS category,
+    CASE
+      WHEN n <= 73 THEN 'purchase'
+      WHEN n <= 87 THEN 'achievement'
+      WHEN n <= 94 THEN 'season_reward'
+      WHEN n <= 97 THEN 'event_reward'
+      WHEN n <= 99 THEN 'admin_grant'
+      ELSE 'system_grant'
+    END AS source_type,
+    CASE WHEN n <= 73 THEN 1 ELSE 0 END AS is_purchasable,
+    CASE WHEN n <= 73 THEN 0 ELSE 1 END AS is_reward_only,
+    n AS display_order,
+    'Seeded badge flavor for MVP 1.6' AS flavor_text,
+    CASE WHEN n <= 73 THEN 'Purchase in the title shop.' ELSE 'Granted as an activity, season, event, or admin reward.' END AS unlock_hint,
+    CASE
+      WHEN n <= 30 THEN 'title-seed-common'
+      WHEN n <= 55 THEN 'title-seed-uncommon'
+      WHEN n <= 73 THEN 'title-seed-rare'
+      WHEN n <= 87 THEN 'title-seed-epic'
+      WHEN n <= 94 THEN 'title-seed-legendary'
+      WHEN n <= 97 THEN 'title-seed-event'
+      WHEN n <= 99 THEN 'title-seed-admin'
+      ELSE 'title-seed-punishment'
+    END AS css_class,
+    CASE WHEN n > 94 THEN '!' ELSE '' END AS icon,
+    CASE WHEN n BETWEEN 95 AND 97 THEN 1 ELSE 0 END AS is_limited
+  FROM seq
+)
+INSERT INTO titles (
+  name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,
+  display_order, flavor_text, unlock_hint, css_class, icon, is_limited
+)
+SELECT name, description, price, rarity, category, source_type, is_purchasable, is_reward_only,
+       display_order, flavor_text, unlock_hint, css_class, icon, is_limited
+FROM title_seed
+WHERE true
+ON CONFLICT(name) DO UPDATE SET
+  description = excluded.description,
+  price = excluded.price,
+  rarity = excluded.rarity,
+  category = excluded.category,
+  source_type = excluded.source_type,
+  is_purchasable = excluded.is_purchasable,
+  is_reward_only = excluded.is_reward_only,
+  display_order = excluded.display_order,
+  flavor_text = excluded.flavor_text,
+  unlock_hint = excluded.unlock_hint,
+  css_class = excluded.css_class,
+  icon = excluded.icon,
+  is_limited = excluded.is_limited,
+  updated_at = CURRENT_TIMESTAMP;
+
+UPDATE titles
+SET category = 'admin', source_type = 'admin_grant', is_purchasable = 0, is_reward_only = 1
+WHERE rarity = 'admin';
+
 INSERT OR IGNORE INTO cosmetic_items (code, name, description, type, rarity, price, css_class, preview_text) VALUES
   ('default_frame', '기본 테두리', '차분한 기본 프로필 테두리', 'profile_frame', 'common', 0, 'cosmetic-frame-default', '기본'),
   ('neon_frame', '네온 테두리', '은은하게 빛나는 네온 프로필 테두리', 'profile_frame', 'rare', 500, 'cosmetic-frame-neon', 'NEON'),

@@ -157,6 +157,41 @@ COMMENT_REWARD_DAILY_LIMIT=5
 2. `database/supabase.seed.sql`
 3. `database/supabase.rpc.sql`
 
+## MVP 1.6 칭호 개편
+
+칭호는 이제 단순 텍스트가 아니라 rarity/category/source_type 기반 badge로 표시됩니다.
+
+- rarity: `common`, `uncommon`, `rare`, `epic`, `legendary`, `event`, `admin`, `punishment`
+- category: `shop`, `achievement`, `season`, `casino`, `activity`, `event`, `admin`, `punishment`, `legacy`
+- source_type: `purchase`, `achievement`, `season_reward`, `admin_grant`, `event_reward`, `system_grant`, `legacy`
+
+추가된 DB 필드:
+
+- `titles.category`, `source_type`, `is_purchasable`, `is_reward_only`, `display_order`
+- `titles.flavor_text`, `unlock_hint`, `css_class`, `icon`, `is_limited`, `starts_at`, `ends_at`
+- `title_grants`: 관리자 지급/회수, 시즌 보상 지급, 이벤트 지급 로그
+
+주요 API:
+
+- `GET /api/shop/titles?rarity=&category=&sourceType=&purchasable=&owned=&q=`
+- `GET /api/me/titles`
+- `POST /api/me/title/equip`
+- `POST /api/shop/titles/:id/buy`
+- `POST /api/admin/users/:userId/titles/:titleId/grant`
+- `POST /api/admin/users/:userId/titles/:titleId/revoke`
+
+보상 전용 칭호는 `is_purchasable=false` 또는 `is_reward_only=true`로 관리하며 상점 구매가 차단됩니다. 관리자 지급은 포인트를 차감하지 않습니다. 회수한 칭호가 장착 중이면 남아 있는 첫 칭호 또는 기본 칭호 문자열로 자동 교체됩니다.
+
+시즌 명예의 전당 생성/재생성 시 일부 1위 기록에는 `season_reward` sourceType으로 seed 보상 칭호를 지급합니다. 중복 지급은 성공 응답과 함께 `alreadyOwned=true`로 처리됩니다.
+
+공통 프런트 렌더러는 `public/js/titleBadge.js`의 `renderTitleBadge(title, options)`입니다. `css_class`는 서버와 클라이언트에서 안전한 class 문자만 통과시킵니다. 익명 게시글/댓글은 실제 작성자의 칭호를 노출하지 않습니다.
+
+운영 Supabase에 MVP 1.6을 반영할 때도 아래 순서로 SQL을 다시 적용해야 합니다.
+
+1. `database/supabase.schema.sql`
+2. `database/supabase.seed.sql`
+3. `database/supabase.rpc.sql`
+
 ## MVP 1.5 시즌 랭킹 / 명예의 전당
 
 `/seasons.html`에서 현재 시즌의 실시간 랭킹과 종료된 시즌의 명예의 전당을 확인할 수 있습니다.

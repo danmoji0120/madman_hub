@@ -16,7 +16,7 @@ function renderProfile(user) {
   card.className = `card ${cosmetics.profileFrameClass || ''} ${cosmetics.profileBackgroundClass || ''}`;
   card.innerHTML = `
     <h1 class="${API.escape(cosmetics.nicknameColorClass || '')}">${API.escape(user.nickname || user.display_name)}</h1>
-    <span class="badge">${API.escape(user.title || '수상한 거주민')}</span>
+    ${renderTitleBadge({ name: user.title || '수상한 거주민', rarity: 'common' })}
     <p>${API.escape(user.bio || '자기소개가 없습니다.')}</p>
     <p class="meta">위험도: ${'★'.repeat(user.danger_level || 1)}</p>
     <p class="meta">좋아하는 문장: ${API.escape(user.favorite_quote || '아직 없음')}</p>
@@ -48,9 +48,16 @@ function renderCosmetics(data) {
 function renderTitles(data) {
   document.querySelector('#owned-titles').innerHTML = data.titles.map((title) => `
     <article class="title-card rarity-${API.escape(title.rarity)}">
-      <span class="badge">${API.escape(title.rarity)}</span>
+      ${renderTitleBadge(title, { showRarityLabel: true })}
       <h3>${API.escape(title.name)}</h3>
       <p>${API.escape(title.description || '')}</p>
+      ${title.flavorText ? `<p class="meta">${API.escape(title.flavorText)}</p>` : ''}
+      <div class="title-meta-grid">
+        <span class="badge">${API.escape(title.category || 'shop')}</span>
+        <span class="badge">${API.escape(title.sourceType || title.source || 'purchase')}</span>
+        ${title.isRewardOnly ? '<span class="badge">reward only</span>' : ''}
+      </div>
+      ${title.unlockHint ? `<p class="meta">${API.escape(title.unlockHint)}</p>` : ''}
       <button class="button secondary" onclick="equipTitle(${title.id})" ${title.equipped ? 'disabled' : ''}>
         ${title.equipped ? '장착 중' : '장착하기'}
       </button>
