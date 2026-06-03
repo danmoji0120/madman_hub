@@ -3,6 +3,7 @@ const { getSeasonById, buildSeasonRankings } = require('../repositories/seasons.
 const { logActivity } = require('./activity.service');
 const { createNotification } = require('./notifications.service');
 const { getSeasonRankingCategory, SEASON_RANKING_CATEGORIES } = require('../config/seasons.config');
+const { getTrophyGroupKey, getTrophyGroupConfig } = require('../config/seasonTrophyGroups.config');
 const { formatRankingScore } = require('../utils/formatNumbers');
 const {
   getTitlesByNames,
@@ -159,6 +160,105 @@ function buildTrophyDescription(entry) {
   return `${label} ${entry.rank}위 기록이 프로필에 남았습니다.`;
 }
 
+function getGroupItemLabel(groupConfig, item) {
+  return groupConfig.itemLabels?.[item.category] || item.categoryLabel || getSeasonRankingCategory(item.category)?.label || item.category;
+}
+
+function normalizeTrophyLikeItem(item) {
+  const formattedScore = item.formattedScore || formatRankingScore(item.category, item.score || 0);
+  return {
+    ...item,
+    seasonId: Number(item.seasonId ?? item.season_id ?? 0),
+    userId: Number(item.userId ?? item.user_id ?? 0),
+    rank: Number(item.rank || 0),
+    score: Number(item.score || 0),
+    categoryLabel: item.categoryLabel || getSeasonRankingCategory(item.category)?.label || item.category,
+    formattedScore
+  };
+}
+
+function pickRepresentative(items, groupConfig) {
+  const priority = new Map((groupConfig.priority || []).map((category, index) => [category, index]));
+  return [...items].sort((a, b) => {
+    const priorityA = priority.has(a.category) ? priority.get(a.category) : 999;
+    const priorityB = priority.has(b.category) ? priority.get(b.category) : 999;
+    if (priorityA !== priorityB) return priorityA - priorityB;
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    return Math.abs(Number(b.score || 0)) - Math.abs(Number(a.score || 0));
+  })[0];
+}
+
+function buildTrophyGroupSummary(items, groupConfig) {
+  const parts = items.slice(0, 3).map((item) => (
+    `${getGroupItemLabel(groupConfig, item)} ${item.formattedScore || formatRankingScore(item.category, item.score || 0)}`
+  ));
+  if (items.length > 3) parts.push(`외 ${items.length - 3}개`);
+  return parts.join(' / ');
+}
+
+function groupSeasonTrophies(trophies = []) {
+  const buckets = new Map();
+  for (const rawItem of trophies) {
+    if (!rawItem?.category) continue;
+    const item = normalizeTrophyLikeItem(rawItem);
+    const groupKey = getTrophyGroupKey(item.category);
+    const key = `${item.seasonId}:${item.userId}:${groupKey}`;
+    if (!buckets.has(key)) {
+      const groupConfig = getTrophyGroupConfig(groupKey);
+      buckets.set(key, {
+        groupKey,
+        groupLabel: groupConfig.label,
+        seasonId: item.seasonId,
+        seasonName: item.seasonName || '',
+        userId: item.userId,
+        nickname: item.nickname,
+        displayName: item.displayName,
+        items: []
+      });
+    }
+    buckets.get(key).items.push(item);
+  }
+
+  return [...buckets.values()].map((group) => {
+    const groupConfig = getTrophyGroupConfig(group.groupKey);
+    const representative = pickRepresentative(group.items, groupConfig);
+    const priority = new Map((groupConfig.priority || []).map((category, index) => [category, index]));
+    const items = [...group.items].sort((a, b) => {
+      const priorityA = priority.has(a.category) ? priority.get(a.category) : 999;
+      const priorityB = priority.has(b.category) ? priority.get(b.category) : 999;
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return a.rank - b.rank;
+    });
+    const count = items.length;
+    return {
+      ...group,
+      count,
+      isMultiWinner: count >= 2,
+      headline: count >= 2 ? `${group.groupLabel} ${count}관왕` : group.groupLabel,
+      summary: buildTrophyGroupSummary(items, groupConfig),
+      representative,
+      items,
+      groupClass: `trophy-group-${group.groupKey.replace(/_/g, '-')}`
+    };
+  }).sort((a, b) => {
+    if (a.seasonId !== b.seasonId) return b.seasonId - a.seasonId;
+    if (b.count !== a.count) return b.count - a.count;
+    return a.groupLabel.localeCompare(b.groupLabel);
+  });
+}
+
+function splitRewardPreviewRows(items = []) {
+  const titleGrantRows = items.filter((item) => item.titleId || item.willGrantTitle || item.alreadyGranted);
+  const trophyOnlyRows = items.filter((item) => (
+    item.willCreateTrophy && !item.willGrantTitle && !item.alreadyGranted
+  ));
+  return {
+    titleGrantRows,
+    trophyOnlyRows,
+    groupedTrophyRows: groupSeasonTrophies(trophyOnlyRows)
+  };
+}
+
 async function buildRewardPreview({ season, categories = [] }) {
   const selectedCategories = normalizeCategories(categories);
   const [mappings, entries, existingGrants] = await Promise.all([
@@ -272,9 +372,12 @@ async function getSeasonRewardPreview(seasonId, options = {}) {
   const season = await getSeasonById(seasonId);
   if (!season) throw httpError(404, 'Season not found.');
   const preview = await buildRewardPreview({ season, categories: options.categories || [] });
+  const splitRows = splitRewardPreviewRows(preview);
   return {
     season,
     items: preview,
+    rows: preview,
+    ...splitRows,
     grants: await listRewardGrants(season.id),
     mappings: await getDefaultRewardMappings()
   };
@@ -365,7 +468,7 @@ async function grantSeasonRewards(actorUser, seasonId, options = {}) {
     throw httpError(400, 'Only ended seasons can receive confirmed rewards.');
   }
   const preview = await buildRewardPreview({ season, categories: options.categories || [] });
-  if (options.dryRun) return { season, dryRun: true, items: preview };
+  if (options.dryRun) return { season, dryRun: true, items: preview, rows: preview, ...splitRewardPreviewRows(preview) };
 
   const results = [];
   for (const item of preview) {
@@ -382,7 +485,7 @@ async function grantSeasonRewards(actorUser, seasonId, options = {}) {
       skipped: results.filter((item) => item.skipped).length
     }
   });
-  return { season, items: results, grants: await listRewardGrants(season.id) };
+  return { season, items: results, rows: results, ...splitRewardPreviewRows(results), grants: await listRewardGrants(season.id) };
 }
 
 async function grantSeasonRewardsFromEntries(actorUser, season, entries = []) {
@@ -427,7 +530,8 @@ async function listSeasonTrophiesForUser(userId, filters = {}) {
   const limit = Math.min(Math.max(Number(filters.limit) || 10, 1), 50);
   const seasonId = filters.seasonId ? Number(filters.seasonId) : null;
   const featuredOnly = filters.featuredOnly === true || filters.featuredOnly === 'true';
-  return { items: await listUserSeasonTrophies(userId, { seasonId, limit, featuredOnly }) };
+  const items = await listUserSeasonTrophies(userId, { seasonId, limit, featuredOnly });
+  return { items, groupedItems: groupSeasonTrophies(items) };
 }
 
 module.exports = {
@@ -438,5 +542,6 @@ module.exports = {
   grantSeasonRewardsFromEntries,
   revokeSeasonReward,
   listSeasonRewardMappings,
-  listSeasonTrophiesForUser
+  listSeasonTrophiesForUser,
+  groupSeasonTrophies
 };

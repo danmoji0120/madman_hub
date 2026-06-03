@@ -924,6 +924,100 @@ button {
   color: #ffd4c4;
 }
 
+.reward-preview-section {
+  margin-top: 1rem;
+}
+
+.reward-preview-section h4 {
+  margin: 0 0 0.25rem;
+}
+
+.season-trophy-group-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.season-trophy-group-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 0.95rem;
+  background: rgba(12, 16, 28, 0.78);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.season-trophy-group-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.season-trophy-group-headline {
+  flex: 1 1 140px;
+}
+
+.season-trophy-group-summary {
+  margin: 0.55rem 0;
+  line-height: 1.55;
+}
+
+.season-trophy-group-details {
+  margin-top: 0.6rem;
+}
+
+.season-trophy-group-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.season-trophy-group-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.season-trophy-group-count,
+.trophy-group-badge {
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.trophy-group-point {
+  border-color: rgba(116, 214, 255, 0.35);
+}
+
+.trophy-group-point-spent {
+  border-color: rgba(255, 198, 109, 0.38);
+}
+
+.trophy-group-casino-profit {
+  border-color: rgba(71, 255, 176, 0.36);
+}
+
+.trophy-group-casino-loss {
+  border-color: rgba(255, 92, 122, 0.38);
+}
+
+.trophy-group-drawdown {
+  border-color: rgba(180, 130, 255, 0.42);
+}
+
+.trophy-group-activity {
+  border-color: rgba(126, 231, 135, 0.35);
+}
+
+.trophy-group-casino-behavior,
+.trophy-group-content {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
 @media (max-width: 720px) {
   .nav {
     align-items: flex-start;

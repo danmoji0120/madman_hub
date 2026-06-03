@@ -28,6 +28,24 @@ function assertFormattedRankingScore(entry) {
   if (PERCENT_CATEGORIES.has(entry.category)) return assertFormattedPercentScore(entry.formattedScore);
 }
 
+function findGroupWithCategory(groups, groupKey, category) {
+  return (groups || []).find((group) => (
+    group.groupKey === groupKey &&
+    (group.items || []).some((item) => item.category === category)
+  ));
+}
+
+function assertGroupedCategory(rows, groups, category, groupKey) {
+  if (!rows.some((item) => item.category === category)) return;
+  const group = findGroupWithCategory(groups, groupKey, category);
+  assert.ok(group, `${category} should be grouped as ${groupKey}`);
+  assert.ok(group.representative);
+  assert.ok(group.headline);
+  assert.ok(group.summary);
+  assert.ok((group.items || []).some((item) => item.category === category));
+  if ((group.items || []).length >= 2) assert.ok(group.headline.includes('관왕'));
+}
+
 async function cleanupSeason(seasonId) {
   if (!seasonId) return;
   if (provider === 'supabase') {
@@ -155,9 +173,26 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: auth }, 403);
     const rewardPreview = await request(`/api/admin/seasons/${createdSeasonId}/reward-preview`, { headers: ownerAuth });
     assert.ok(rewardPreview.items.length > 0);
+    assert.ok(Array.isArray(rewardPreview.titleGrantRows));
+    assert.ok(Array.isArray(rewardPreview.trophyOnlyRows));
+    assert.ok(Array.isArray(rewardPreview.groupedTrophyRows));
+    assert.ok(rewardPreview.titleGrantRows.length > 0);
+    assert.ok(rewardPreview.groupedTrophyRows.length > 0);
+    assert.ok(rewardPreview.groupedTrophyRows.length <= rewardPreview.trophyOnlyRows.length);
     assert.ok(rewardPreview.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.rewardType === 'trophy' && item.willGrantTitle === false));
     assert.ok(rewardPreview.items.some((item) => item.category === 'activity_score' && item.rewardType === 'title' && item.titleData));
     assert.ok(rewardPreview.items.some((item) => item.status === 'trophyOnly'));
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'point_earned', 'point');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'balance_peak', 'point');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'net_points', 'point');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'casino_profit', 'casino_profit');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'blackjack_profit', 'casino_profit');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'biggest_casino_win', 'casino_profit');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'casino_loss', 'casino_loss');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'biggest_casino_loss', 'casino_loss');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'casino_net_loss', 'casino_loss');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'drawdown', 'drawdown');
+    assertGroupedCategory(rewardPreview.trophyOnlyRows, rewardPreview.groupedTrophyRows, 'drawdown_rate', 'drawdown');
     const previewTitleCounts = rewardPreview.items.reduce((counts, item) => {
       if (item.willGrantTitle) counts[item.userId] = (counts[item.userId] || 0) + 1;
       return counts;
@@ -175,12 +210,14 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
       body: JSON.stringify({ dryRun: true, categories: ['point_earned'] })
     });
     assert.strictEqual(rewardDryRun.dryRun, true);
+    assert.ok(Array.isArray(rewardDryRun.groupedTrophyRows));
     assert.ok(rewardDryRun.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.rewardType === 'trophy'));
     const grantedRewards = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
       method: 'POST',
       headers: ownerAuth,
       body: JSON.stringify({})
     });
+    assert.ok(Array.isArray(grantedRewards.groupedTrophyRows));
     assert.ok(grantedRewards.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.trophyOnly));
     assert.ok(grantedRewards.grants.every((grant) => grant.category !== 'point_earned'));
     const grantCounts = grantedRewards.grants.filter((grant) => grant.status === 'granted').reduce((counts, grant) => {
@@ -195,9 +232,12 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     });
     assert.ok(grantedAgain.items.some((item) => item.userId === userId && item.alreadyGranted));
     const myTrophies = await request('/api/me/season-trophies?limit=50', { headers: auth });
+    assert.ok(Array.isArray(myTrophies.groupedItems));
     assert.ok(myTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned' && !item.titleData));
+    assert.ok(myTrophies.groupedItems.some((group) => group.seasonId === createdSeasonId && group.groupKey === 'point' && group.items.some((item) => item.category === 'point_earned')));
     assert.ok(grantedRewards.grants.some((grant) => grant.status === 'granted'));
     const publicTrophies = await request(`/api/users/${userId}/season-trophies?limit=50`);
+    assert.ok(Array.isArray(publicTrophies.groupedItems));
     assert.ok(publicTrophies.items.some((item) => item.seasonId === createdSeasonId && item.category === 'point_earned'));
     const notifications = await request('/api/notifications?type=season_hall_of_fame&limit=20', { headers: auth });
     assert.ok(notifications.items.some((item) => item.metadata?.seasonId === createdSeasonId));

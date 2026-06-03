@@ -349,9 +349,11 @@ async function loadAdminSeasons() {
 
 function renderSeasonRewardPreview(data) {
   const root = document.querySelector('#season-reward-preview');
+  const groupRoot = document.querySelector('#season-reward-trophy-groups');
   if (!root) return;
   const grantMap = new Map((data.grants || []).map((grant) => [`${grant.userId}:${grant.titleId}:${grant.category}`, grant]));
-  const rows = (data.items || []).map((item) => {
+  const titleRows = data.titleGrantRows || (data.items || []).filter((item) => item.titleId || item.willGrantTitle || item.alreadyGranted);
+  const rows = titleRows.map((item) => {
     const grant = grantMap.get(`${item.userId}:${item.titleId}:${item.category}`);
     const status = item.statusLabel || grant?.status || (item.alreadyGranted ? '이미 지급 완료' : item.willGrantTitle ? '칭호 지급 예정' : '프로필 기록만');
     const rewardClass = item.status === 'readyTitleGrant' || item.status === 'alreadyOwned'
@@ -370,12 +372,42 @@ function renderSeasonRewardPreview(data) {
         <td><strong>${API.escape(item.nickname || item.displayName || `ID ${item.userId}`)}</strong><br /><span class="meta">ID ${API.escape(item.userId)}</span></td>
         <td>${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</td>
         <td>${rewardCell}</td>
-        <td><span class="reward-status-badge">${API.escape(status)}</span><br /><span class="meta">${API.escape(item.rewardType)} · ${API.escape(item.skipReason || 'ok')}</span></td>
+        <td><span class="reward-status-badge">${API.escape(status)}</span><br /><span class="meta">${API.escape(item.rewardType === 'title' ? '칭호' : '기록')}</span></td>
         <td>${grant ? `<button class="button secondary small-button danger-button" onclick="revokeSeasonReward(${item.seasonId}, ${grant.id})">기록 회수</button>` : '-'}</td>
       </tr>
     `;
   });
-  root.innerHTML = rows.join('') || '<tr><td colspan="6">지급 가능한 시즌 보상이 없습니다.</td></tr>';
+  root.innerHTML = rows.join('') || '<tr><td colspan="6">칭호 지급 예정 항목이 없습니다.</td></tr>';
+  if (groupRoot) {
+    groupRoot.innerHTML = renderTrophyGroupCards(data.groupedTrophyRows || []);
+  }
+}
+
+function renderTrophyGroupCards(groups) {
+  return groups.map((group) => {
+    const representative = group.representative || {};
+    return `
+      <article class="season-trophy-group-card ${API.escape(group.groupClass || '')}">
+        <div class="season-trophy-group-header">
+          <span class="trophy-group-badge">${API.escape(group.groupLabel || '시즌 기록')}</span>
+          <strong class="season-trophy-group-headline">${API.escape(group.headline || group.groupLabel || '시즌 기록')}</strong>
+          <span class="season-trophy-group-count">${API.escape(group.count || 0)}개 기록</span>
+        </div>
+        <p class="meta">${API.escape(group.seasonName || '')} · ${API.escape(group.nickname || group.displayName || `ID ${group.userId}`)}</p>
+        <p class="season-trophy-group-summary">${API.escape(group.summary || '')}</p>
+        <p class="season-trophy-score">${API.escape(representative.formattedScore || formatRankingScore(representative.category, representative.score || 0))}</p>
+        <details class="season-trophy-group-details">
+          <summary>상세 보기</summary>
+          ${(group.items || []).map((item) => `
+            <div class="season-trophy-group-detail-row">
+              <span>${API.escape(item.categoryLabel || item.category)} #${API.escape(item.rank || '-')}</span>
+              <strong>${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</strong>
+            </div>
+          `).join('')}
+        </details>
+      </article>
+    `;
+  }).join('') || '<p class="empty-state">프로필 트로피 기록만 생성되는 항목이 없습니다.</p>';
 }
 
 async function loadAdminCasinoStats() {

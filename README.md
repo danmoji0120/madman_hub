@@ -212,6 +212,22 @@ trophy-only 기본 category:
 
 시즌 보상 칭호는 일반 칭호와 구분되는 `title-season-reward` 배지 스타일을 사용합니다. 정책 변경 전 이미 지급된 시즌 보상 칭호는 자동 삭제/회수하지 않습니다. 필요하면 관리자 회수 도구로 수동 처리하세요.
 
+V1.8.5.2부터 시즌 트로피는 원본 `user_season_trophies` row를 그대로 보존하면서 UI/API에서 표시용 그룹을 추가로 제공합니다. 칭호 지급 정책은 바꾸지 않았고, trophy-only 기록만 비슷한 주제로 묶어 관리자 preview와 프로필 박제 기록을 더 짧게 보여줍니다.
+
+트로피 그룹:
+
+- `point`: 포인트 획득, 순증감, 최고 보유 포인트
+- `point_spent`: 포인트 소비, 꾸미기 소비, 포인트 회전율
+- `casino_profit`: 카지노 수익, 카지노 순수익, 블랙잭 수익, 단일 최대 승리
+- `casino_loss`: 카지노 대참사, 카지노 순손실, 단일 최대 손실
+- `drawdown`: 최고점 추락폭, 추락률
+- `activity`: 활동 종합, 게시글, 댓글, 일일 미션, 출석
+- `casino_behavior`: 카지노 플레이, 러시안 룰렛 2발 캐시아웃
+- `content`: 노래추천
+- `misc`: 알 수 없는 category fallback
+
+`GET /api/me/season-trophies`와 `GET /api/users/:id/season-trophies`는 기존 `items` raw trophy 목록을 유지하고 `groupedItems`를 추가합니다. 관리자 `GET /api/admin/seasons/:id/reward-preview`는 기존 `items`/`rows` 외에 `titleGrantRows`, `trophyOnlyRows`, `groupedTrophyRows`를 내려줍니다. 관리자 화면은 “칭호 지급 예정”과 “프로필 트로피 기록” 섹션을 분리하고, 프로필은 grouped trophy card를 우선 표시합니다.
+
 운영 Supabase에 V1.8.5를 반영할 때도 SQL Editor에서 다음 순서로 다시 실행하세요.
 
 1. `database/supabase.schema.sql`

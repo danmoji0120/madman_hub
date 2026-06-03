@@ -113,6 +113,7 @@ function renderSeasonTrophies(data) {
   const titleRoot = document.querySelector('#season-reward-titles');
   if (!root) return;
   const items = data.items || [];
+  const groupedItems = data.groupedItems || [];
   const rewardTitles = items.filter((item) => item.titleData);
   if (titleRoot) {
     titleRoot.innerHTML = rewardTitles.slice(0, 5).map((item) => `
@@ -125,17 +126,27 @@ function renderSeasonTrophies(data) {
       </article>
     `).join('') || '<p class="empty-state">아직 시즌 보상 칭호가 없습니다. 기록표는 기회를 기다리는 중입니다.</p>';
   }
-  root.innerHTML = items.map((item) => {
-    const score = item.formattedScore || formatRankingScore(item.category, item.score || 0);
+  root.innerHTML = groupedItems.slice(0, 6).map((group) => {
+    const representative = group.representative || {};
     return `
-      <article class="season-trophy-card ${item.isFeatured ? 'featured' : ''}">
-        <div class="season-trophy-title">
-          ${item.titleData ? renderTitleBadge(item.titleData, { showRarityLabel: true }) : '<span class="badge">season</span>'}
-          <strong>${API.escape(item.trophyLabel || `${item.seasonName || '시즌'} ${item.categoryLabel || item.category}`)}</strong>
+      <article class="season-trophy-group-card ${API.escape(group.groupClass || '')}">
+        <div class="season-trophy-group-header">
+          <span class="trophy-group-badge">${API.escape(group.groupLabel || '시즌 기록')}</span>
+          <strong class="season-trophy-group-headline">${API.escape(group.headline || group.groupLabel || '시즌 기록')}</strong>
+          <span class="season-trophy-group-count">${API.escape(group.count || 0)}개 기록</span>
         </div>
-        <p class="season-trophy-score">${API.escape(score)}</p>
-        <p>${API.escape(item.trophyDescription || '이 기록은 프로필에 남는 시즌 박제입니다.')}</p>
-        <p class="meta">${API.escape(item.seasonName || '')} · ${API.escape(item.categoryLabel || item.category)} · #${API.escape(item.rank || '-')}</p>
+        <p class="meta">${API.escape(group.seasonName || '')}</p>
+        <p class="season-trophy-group-summary">${API.escape(group.summary || '')}</p>
+        <p class="season-trophy-score">${API.escape(representative.formattedScore || formatRankingScore(representative.category, representative.score || 0))}</p>
+        <details class="season-trophy-group-details">
+          <summary>상세 보기</summary>
+          ${(group.items || []).map((item) => `
+            <div class="season-trophy-group-detail-row">
+              <span>${API.escape(item.categoryLabel || item.category)} #${API.escape(item.rank || '-')}</span>
+              <strong>${API.escape(item.formattedScore || formatRankingScore(item.category, item.score || 0))}</strong>
+            </div>
+          `).join('')}
+        </details>
       </article>
     `;
   }).join('') || '<p class="empty-state">아직 시즌 박제 기록이 없습니다. 오늘은 기록표가 조용하네요.</p>';
@@ -150,7 +161,7 @@ async function loadProfile() {
       API.request('/api/me/achievements'),
       API.request('/api/me/cosmetics'),
       API.request('/api/me/casino-summary'),
-      API.request('/api/me/season-trophies?limit=5')
+      API.request('/api/me/season-trophies?limit=50')
     ]);
 
     renderProfile(data.user);
