@@ -131,4 +131,100 @@ async function getRandomPublicPost({ category = '', tag = '' }, mapper) {
   return row ? mapper((await decorateAuthorRows([row]))[0]) : null;
 }
 
-module.exports = { parseTags, createPostRecord, listPublicPosts, getPublicPost, getRandomPublicPost };
+async function countCommentsByPostIds(postIds) {
+  const ids = [...new Set(postIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
+  if (!ids.length) return new Map();
+  if (provider === 'supabase') {
+    const rows = assertResult(await getSupabaseAdminClient()
+      .from('post_comments')
+      .select('post_id')
+      .eq('is_hidden', false)
+      .in('post_id', ids)) || [];
+    return rows.reduce((counts, row) => {
+      const postId = Number(row.post_id);
+      counts.set(postId, Number(counts.get(postId) || 0) + 1);
+      return counts;
+    }, new Map(ids.map((id) => [id, 0])));
+  }
+  const rows = await all(
+    `SELECT post_id, COUNT(*) AS comment_count
+     FROM post_comments
+     WHERE is_hidden = 0 AND post_id IN (${ids.map(() => '?').join(',')})
+     GROUP BY post_id`,
+    ids
+  );
+  return new Map(ids.map((id) => [
+    id,
+    Number(rows.find((row) => Number(row.post_id) === id)?.comment_count || 0)
+  ]));
+}
+
+async function listPublicPostCards({ limit = 3, sort = 'recent', days = 7 } = {}, mapper) {
+  const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 10) : 3;
+  if (provider === 'supabase') {
+    const candidateLimit = sort === 'popular' ? 50 : safeLimit;
+    let query = getSupabaseAdminClient().from('quotes').select('*').eq('is_hidden', false);
+    if (sort === 'popular') {
+      query = query.gte('created_at', new Date(Date.now() - Math.max(Number(days) || 7, 1) * 24 * 60 * 60 * 1000).toISOString());
+    }
+    const rows = assertResult(await query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(candidateLimit)) || [];
+    const counts = await countCommentsByPostIds(rows.map((row) => row.id));
+    const prepared = rows.map((row) => ({
+      ...row,
+      comment_count: counts.get(Number(row.id)) || 0,
+      score: (counts.get(Number(row.id)) || 0) * 5
+    }));
+    const sorted = sort === 'popular'
+      ? prepared.sort((a, b) => Number(b.comment_count || 0) - Number(a.comment_count || 0) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        Number(b.id || 0) - Number(a.id || 0))
+      : prepared;
+    return (await attachAuthor(sorted.slice(0, safeLimit), mapper));
+  }
+
+  if (sort === 'popular') {
+    const rows = await all(
+      `SELECT q.*, u.display_name AS author_name, p.title AS author_title,
+              (SELECT COUNT(*) FROM post_comments c WHERE c.post_id = q.id AND c.is_hidden = 0) AS comment_count
+       FROM quotes q
+       LEFT JOIN users u ON u.id = q.user_id
+       LEFT JOIN user_profiles p ON p.user_id = q.user_id
+       WHERE q.is_hidden = 0 AND DATETIME(q.created_at) >= DATETIME(?)
+       ORDER BY comment_count DESC, q.created_at DESC, q.id DESC
+       LIMIT ?`,
+      [new Date(Date.now() - Math.max(Number(days) || 7, 1) * 24 * 60 * 60 * 1000).toISOString(), safeLimit]
+    );
+    return (await decorateAuthorRows(rows.map((row) => ({
+      ...row,
+      score: Number(row.comment_count || 0) * 5
+    })))).map(mapper);
+  }
+
+  const rows = await all(
+    `SELECT q.*, u.display_name AS author_name, p.title AS author_title,
+            (SELECT COUNT(*) FROM post_comments c WHERE c.post_id = q.id AND c.is_hidden = 0) AS comment_count
+     FROM quotes q
+     LEFT JOIN users u ON u.id = q.user_id
+     LEFT JOIN user_profiles p ON p.user_id = q.user_id
+     WHERE q.is_hidden = 0
+     ORDER BY q.created_at DESC, q.id DESC
+     LIMIT ?`,
+    [safeLimit]
+  );
+  return (await decorateAuthorRows(rows.map((row) => ({
+    ...row,
+    score: Number(row.comment_count || 0) * 5
+  })))).map(mapper);
+}
+
+module.exports = {
+  parseTags,
+  createPostRecord,
+  listPublicPosts,
+  listPublicPostCards,
+  getPublicPost,
+  getRandomPublicPost
+};

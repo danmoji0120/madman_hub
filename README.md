@@ -254,6 +254,128 @@ community_activity = post_count * 3 + comment_count * 1 + song_count * 2
 
 시즌 전용 배지는 `title-season-reward`에 더해 `title-season-dominator`, `title-season-disaster`, `title-season-fortune`, `title-season-archivist` 클래스를 사용합니다. 향후 Battle/Deal Arena 시즌 칭호를 위해 `battle`, `upset` 스타일 값도 예약되어 있습니다.
 
+## V1.8.6-A 홈 경량화 준비
+
+이번 단계는 홈을 완전히 다시 만드는 작업이 아니라, 병목을 볼 수 있게 만들고 메뉴 구조를 정리하는 준비 작업입니다. 홈은 가벼운 입구로 두고, 무거운 목록과 통계는 각 탭에서 불러오는 방향으로 후속 작업을 이어갑니다.
+
+성능 진단 로그는 브라우저 콘솔에서 아래처럼 켤 수 있습니다.
+
+```js
+localStorage.DEBUG_DASHBOARD = 'true';
+location.reload();
+```
+
+끄려면 다음을 실행합니다.
+
+```js
+localStorage.removeItem('DEBUG_DASHBOARD');
+location.reload();
+```
+
+활성화하면 콘솔에 `dashboard` 범위 로그가 출력됩니다.
+
+- `[dashboard] init start`
+- `[dashboard] api GET /api/dashboard 312ms 200 ok`
+- `[dashboard] render home 94ms`
+- `[dashboard] init total 1412ms`
+- `[dashboard] initial api count 2`
+- `[dashboard] initial api list`
+
+로그는 URL, method, status, ok 여부, 소요 시간만 기록합니다. JWT, 비밀번호, Supabase key, API 응답 body 전체는 출력하지 않습니다.
+
+정리된 상위 탭 구조:
+
+- 홈
+- 커뮤니티
+- 카지노
+- 시즌
+- 내 정보
+- 더보기
+
+커뮤니티 세부탭:
+
+- 최신글
+- 인기글
+- 댓글
+- 노래추천
+- 랜덤글
+
+내 정보 세부탭:
+
+- 프로필
+- 칭호
+- 꾸미기
+- 상점
+- 업적
+
+더보기 세부항목:
+
+- 알림
+- 설정
+- 관리자
+- 로그아웃
+
+관리자 메뉴는 로그인 사용자 role이 `admin` 또는 `owner`일 때만 JS 렌더링 단계에서 추가됩니다. 일반 유저에게는 관리자 링크를 렌더링하지 않습니다.
+
+홈에 남기는 정보는 내 포인트, 대표 칭호, 출석, 최근 알림, 최근 글, 인기글, 시즌 칭호 요약처럼 빠르게 훑는 항목을 중심으로 둡니다. 전체 시즌 랭킹, 카지노 통계, 명예의 전당 전체, 세부 트로피, 전체 글/노래/알림/칭호 목록, 관리자 통계는 홈 초기 로딩 대상에서 점진적으로 제외할 계획입니다.
+
+후속 작업:
+
+- A-3: `/api/dashboard/summary` 또는 동등한 dashboard summary API 설계
+- A-4: 홈 UI를 summary 응답 중심으로 적용
+- A-5: 커뮤니티/카지노/시즌/내 정보 탭별 lazy load
+- A-6: 캐시, 스켈레톤, 빈 상태 정리
+
+용병단 출시 후 목표 탭 구조는 `홈 / 커뮤니티 / 카지노 / 용병단 / 시즌 / 더보기`입니다. 용병단 세부탭은 내 용병, 용병 사무소, 의뢰소, 편성, 훈련, 의무실, 전투 기록 방향으로 확장할 수 있습니다.
+
+### V1.8.6-A-3 Dashboard Summary API
+
+`GET /api/dashboard/summary`는 로그인 사용자의 홈 첫 화면을 위한 경량 요약 API입니다. 기존 `/api/dashboard`와 다른 API는 유지하며, A-4에서 홈 UI를 이 응답 중심으로 교체할 수 있도록 구조화된 데이터를 한 번에 내려줍니다.
+
+인증:
+
+- 로그인 사용자만 접근할 수 있습니다.
+- 비로그인 요청은 기존 auth middleware 기준으로 `401`을 반환합니다.
+
+포함 데이터:
+
+- `me`: id, nickname, role, avatar/profile theme, 대표 칭호 badge 렌더링에 필요한 title 데이터
+- `points`: balance, formattedBalance
+- `attendance`: checkedToday, canCheckIn, todayReward
+- `notifications`: unreadCount, 최근 알림 최대 3개
+- `community.recentPosts`: 최근 글 최대 3개
+- `community.popularPosts`: 인기글 최대 3개
+- `season.currentSeason`: 현재 active season 요약
+- `season.titleSummary`: 시즌 대표 칭호 4종 현재 1위 요약
+- `season.mySeasonRewardTitles`: 내가 받은 시즌 대표 칭호 요약
+- `dailyMissions`: 오늘 미션 요약
+
+포함하지 않는 무거운 데이터:
+
+- 전체 시즌 랭킹
+- 전체 카지노 통계
+- 전체 명예의 전당/트로피 기록
+- 전체 게시글/노래추천/알림 목록
+- 전체 칭호 목록
+- 관리자 통계
+
+인기글은 이번 단계에서 단순 기준을 사용합니다. 최근 7일 공개 글 중 숨김 글을 제외하고, 숨김 처리되지 않은 댓글 수를 기준으로 정렬합니다. `score`는 `commentCount * 5`로 내려주며, 조회수/좋아요가 도입되면 A-4 이후 점수식에 반영할 수 있습니다.
+
+시즌 칭호 요약은 4개 대표 category만 사용합니다.
+
+- `activity_score` → 시즌의 지배자
+- `casino_loss` → 시즌 대참사
+- `point_earned` → 포인트 위에 누운 자
+- `community_activity` → 격리소 서기관
+
+각 섹션은 독립적으로 조회되며, 알림/커뮤니티/시즌/일일 미션 같은 부가 섹션이 실패해도 summary 전체가 500이 되지 않도록 빈 fallback과 `error: true`를 반환합니다. 사용자 핵심 정보와 포인트 계정 조회가 실패하면 기존 방식대로 서버 오류로 처리합니다.
+
+후속 단계:
+
+- A-4: 홈 UI를 `/api/dashboard/summary` 기반으로 교체
+- A-5: 커뮤니티/카지노/시즌/내 정보 탭별 lazy load
+- A-6: 캐시, 스켈레톤, 빈 상태 정리
+
 ## MVP 1.6 칭호 개편
 
 칭호는 이제 단순 텍스트가 아니라 rarity/category/source_type 기반 badge로 표시됩니다.
@@ -615,3 +737,35 @@ Supabase 운영 DB 적용 순서:
 3. `database/supabase.rpc.sql`
 
 적용 후 `npm.cmd run test:smoke:supabase`로 provider-safe 동작과 cleanup을 확인하세요.
+
+## V1.8.6-A-4 Home Summary UI
+
+Home now uses `GET /api/dashboard/summary` as the first authenticated dashboard request. The first render is built from the summary payload instead of separately loading the legacy dashboard bundle, daily missions, notification preview, recent posts, popular posts, and season title preview.
+
+Home renders only lightweight entrance data:
+
+- my profile summary, equipped title, point balance, and attendance state
+- daily mission summary
+- unread notification count and recent notifications
+- recent posts up to 3
+- popular posts up to 3
+- current season title summary up to 4
+- my representative season reward titles
+
+Home intentionally does not load full season rankings, hall of fame lists, trophy details, casino statistics, full notification lists, full post/song/title/shop lists, or admin statistics. Those remain available through their existing pages and APIs, and the next pass should move tab details into lazy-loaded sections.
+
+Dashboard performance logging can confirm the lighter startup path:
+
+```js
+localStorage.DEBUG_DASHBOARD = 'true';
+location.reload();
+```
+
+Expected A-4 startup shape:
+
+- `[dashboard] api GET /api/dashboard/summary ...`
+- `[dashboard] render home summary ...`
+- `[dashboard] init total ...`
+- `[dashboard] initial api count 1`
+
+If the summary request fails, the home page shows a retry card instead of a blank page. Attendance and mission reward buttons still use the existing action APIs, then refresh the summary after success.

@@ -54,6 +54,8 @@ function mapPost(row) {
   const targetName = row.targetName ?? row.target_name ?? '';
   const createdAt = row.createdAt ?? row.created_at;
   const category = row.category || 'general';
+  const commentCount = Number(row.commentCount ?? row.comment_count ?? 0);
+  const score = Number(row.score ?? row.popular_score ?? commentCount);
   return {
     id: row.id,
     title: row.title,
@@ -71,6 +73,9 @@ function mapPost(row) {
     tags: parseTags(row.tags),
     created_at: createdAt,
     createdAt,
+    comment_count: commentCount,
+    commentCount,
+    score,
     isAnonymous,
     category,
     categoryLabel: getPostCategory(category)?.label || category,

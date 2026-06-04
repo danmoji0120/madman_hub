@@ -9,16 +9,12 @@
 <body>
   <header class="nav">
     <a class="logo" href="/">MADMEN HUB</a>
-    <nav class="nav-links">
-      <a href="/songs.html">노래추천</a>
-      <a href="/members.html">거주민</a>
-      <a href="/posts.html">게시판</a>
-      <a href="/guestbook.html">방명록</a>
-      <a href="/shop.html">칭호 상점</a>
-      <a href="/cosmetics.html">꾸미기 상점</a>
-      <a href="/seasons.html">시즌 랭킹</a>
+    <nav class="nav-links dashboard-nav" id="main-nav">
+      <a href="/">홈</a>
+      <a href="/posts.html">커뮤니티</a>
       <a href="/casino.html">카지노</a>
-      <a href="/profile.html">내 프로필</a>
+      <a href="/seasons.html">시즌</a>
+      <a href="/profile.html">내 정보</a>
       <span id="nav-auth"><a href="/login.html">로그인</a></span>
     </nav>
   </header>
@@ -28,8 +24,8 @@
       <span class="badge">정상인 출입 금지</span>
       <h1>미친놈들 모임</h1>
       <p>
-        친구들의 글, 잡담, 포인트, 흑역사를 보관하는 디지털 격리소입니다.
-        쓸모는 애매하지만 존재감은 확실한 인터넷 아지트입니다.
+        친구들의 글, 농담, 포인트, 시즌 칭호를 가볍게 훑어보는 격리소 입구입니다.
+        자세한 랭킹과 기록은 각 탭에서 천천히 확인하세요.
       </p>
       <div class="hero-actions" id="hero-actions">
         <a class="button inline" href="/login.html">로그인</a>
@@ -40,72 +36,55 @@
     <p class="message" id="dashboard-message"></p>
 
     <section class="dashboard-grid">
-      <article class="card wide-card" id="daily-missions-card">
-        <h2>오늘의 관찰 과제</h2>
-        <p class="meta">로그인하면 일일 미션을 확인할 수 있습니다.</p>
+      <article class="card wide-card" id="home-loading-card" hidden>
+        <h2>홈 요약을 불러오는 중</h2>
+        <p class="meta">필요한 카드만 먼저 가져오고 있습니다.</p>
       </article>
+
       <article class="card" id="my-status-card">
-        <h2>내 상태</h2>
+        <h2>내 정보 요약</h2>
         <p class="meta">불러오는 중...</p>
       </article>
 
-      <article class="card wide-card" id="season-summary-card">
-        <h2>현재 시즌 랭킹</h2>
-        <p class="meta">시즌 정보를 불러오는 중...</p>
+      <article class="card wide-card" id="daily-missions-card">
+        <h2>오늘 할 일</h2>
+        <p class="meta">일일 미션 요약을 불러오는 중...</p>
       </article>
 
       <article class="card wide-card" id="recent-notifications-card">
         <h2>최근 알림</h2>
-        <p class="meta">로그인하면 내 알림을 볼 수 있습니다.</p>
-      </article>
-
-      <article class="card" id="today-card">
-        <h2>오늘의 미친놈</h2>
-        <p class="meta">불러오는 중...</p>
-      </article>
-
-      <article class="card" id="random-post-card">
-        <h2>랜덤 게시글</h2>
-        <p class="meta">불러오는 중...</p>
+        <p class="meta">알림 요약을 불러오는 중...</p>
       </article>
 
       <article class="card wide-card">
-        <h2>최근 방명록</h2>
-        <div id="recent-guestbook-list" class="preview-list"></div>
-      </article>
-
-      <article class="card wide-card">
-        <h2>최근 게시글</h2>
+        <div class="section-heading">
+          <h2>최근 글</h2>
+          <a class="meta" href="/posts.html">전체 보기</a>
+        </div>
         <div id="recent-posts-list" class="preview-list"></div>
       </article>
 
-      <article class="card">
-        <h2>포인트 랭킹 TOP 5</h2>
-        <div id="leaderboard-list" class="rank-list"></div>
+      <article class="card wide-card">
+        <div class="section-heading">
+          <h2>인기글</h2>
+          <a class="meta" href="/posts.html?sort=popular">커뮤니티 보기</a>
+        </div>
+        <div id="popular-posts-list" class="preview-list"></div>
       </article>
 
-      <article class="card wide-card">
-        <h2>최근 활동</h2>
-        <div id="recent-feed-list" class="feed-list"></div>
+      <article class="card wide-card" id="season-summary-card">
+        <h2>시즌 칭호 요약</h2>
+        <p class="meta">현재 시즌 대표 칭호 경쟁을 불러오는 중...</p>
       </article>
 
-      <article class="card wide-card">
-        <h2>최근 업적</h2>
-        <div id="recent-achievements-list" class="achievement-grid"></div>
-      </article>
-
-      <article class="card wide-card">
-        <h2>최근 카지노</h2>
-        <div id="recent-casino-list" class="casino-history"></div>
-      </article>
-
-      <article class="card wide-card">
-        <h2>최근 카지노 사건</h2>
-        <div id="recent-casino-events-list" class="feed-list"></div>
+      <article class="card wide-card" id="my-season-titles-card">
+        <h2>내 시즌 칭호</h2>
+        <p class="meta">내 시즌 대표 칭호를 불러오는 중...</p>
       </article>
     </section>
   </main>
 
+  <script src="/js/perfLogger.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/notificationBadge.js"></script>
   <script src="/js/formatters.js"></script>

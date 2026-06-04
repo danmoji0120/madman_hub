@@ -1,5 +1,6 @@
 (async function initNotificationBadge() {
   if (!window.API || !API.token) return;
+  if (document.querySelector('#main-nav')) return;
   const nav = document.querySelector('.nav-links');
   if (!nav || document.querySelector('#nav-notification-link')) return;
   const link = document.createElement('a');

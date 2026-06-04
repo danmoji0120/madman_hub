@@ -199,6 +199,24 @@ async function main() {
     assert.ok(Object.hasOwn(randomPost.post, 'authorName'));
     assert.ok(randomPost.post.createdAt);
     const dashboard = await request('/api/dashboard', { headers: auth });
+    await request('/api/dashboard/summary', {}, 401);
+    const dashboardSummary = await request('/api/dashboard/summary', { headers: auth });
+    assert.strictEqual(dashboardSummary.ok, true);
+    assert.ok(dashboardSummary.summary.me);
+    assert.strictEqual(dashboardSummary.summary.me.id, registered.user.id);
+    assert.strictEqual(typeof dashboardSummary.summary.points.balance, 'number');
+    assert.strictEqual(typeof dashboardSummary.summary.notifications.unreadCount, 'number');
+    assert.ok(Array.isArray(dashboardSummary.summary.community.recentPosts));
+    assert.ok(Array.isArray(dashboardSummary.summary.community.popularPosts));
+    assert.ok(dashboardSummary.summary.community.recentPosts.length <= 3);
+    assert.ok(dashboardSummary.summary.community.popularPosts.length <= 3);
+    assert.ok(dashboardSummary.summary.season);
+    assert.ok((dashboardSummary.summary.season.titleSummary || []).length <= 4);
+    assert.ok(dashboardSummary.summary.dailyMissions === null || typeof dashboardSummary.summary.dailyMissions === 'object');
+    const dashboardSummaryText = JSON.stringify(dashboardSummary);
+    assert.strictEqual(dashboardSummaryText.includes('password_hash'), false);
+    assert.strictEqual(dashboardSummaryText.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
+    assert.strictEqual(dashboardSummaryText.includes(loggedIn.token), false);
     const expectedPostTitle = `${runPrefix}post`;
     if (
       !posts.posts.some((item) => item.title === expectedPostTitle) ||

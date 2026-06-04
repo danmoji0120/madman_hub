@@ -110,7 +110,9 @@ async function main() {
     assert.ok(css.includes('.dashboard-grid'));
     assert.ok(css.includes('.shop-grid'));
     assert.ok(apiJs.includes('escape(value)'));
-    assert.ok(mainJs.includes("API.request('/api/dashboard')"));
+    assert.ok(mainJs.includes("dashboardRequest('/api/dashboard/summary')"));
+    assert.ok(mainJs.includes('renderHomeFromSummary'));
+    assert.ok(!mainJs.includes("dashboardRequest('/api/dashboard')"));
     assert.ok(profileJs.includes("API.request('/api/me/profile'"));
     assert.ok(postsJs.includes("API.request('/api/posts'"));
     assert.ok(postJs.includes('API.escape(comment.body)'));
@@ -130,6 +132,7 @@ async function main() {
     assert.ok(Array.isArray(publicDashboard.recentAchievements));
     assert.ok(Array.isArray(publicDashboard.recentCasinoResults));
     assert.ok(Array.isArray(publicDashboard.leaderboard));
+    await request('/api/dashboard/summary', {}, 401);
 
     const badAuth = { Authorization: 'Bearer invalid-token' };
     const invalidTokenDashboard = await request('/api/dashboard', { headers: badAuth });
@@ -225,6 +228,23 @@ async function main() {
     const signedInDashboard = await request('/api/dashboard', { headers: auth });
     assert.strictEqual(signedInDashboard.me.points.balance, 0);
     assert.strictEqual(signedInDashboard.me.checkedInToday, false);
+    const dashboardSummary = await request('/api/dashboard/summary', { headers: auth });
+    assert.strictEqual(dashboardSummary.ok, true);
+    assert.ok(dashboardSummary.summary.me);
+    assert.strictEqual(dashboardSummary.summary.me.id, registered.user.id);
+    assert.strictEqual(typeof dashboardSummary.summary.points.balance, 'number');
+    assert.strictEqual(typeof dashboardSummary.summary.notifications.unreadCount, 'number');
+    assert.ok(Array.isArray(dashboardSummary.summary.community.recentPosts));
+    assert.ok(Array.isArray(dashboardSummary.summary.community.popularPosts));
+    assert.ok(dashboardSummary.summary.community.recentPosts.length <= 3);
+    assert.ok(dashboardSummary.summary.community.popularPosts.length <= 3);
+    assert.ok(dashboardSummary.summary.season);
+    assert.ok((dashboardSummary.summary.season.titleSummary || []).length <= 4);
+    assert.ok(dashboardSummary.summary.dailyMissions === null || typeof dashboardSummary.summary.dailyMissions === 'object');
+    const dashboardSummaryText = JSON.stringify(dashboardSummary);
+    assert.strictEqual(dashboardSummaryText.includes('password_hash'), false);
+    assert.strictEqual(dashboardSummaryText.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
+    assert.strictEqual(dashboardSummaryText.includes(loggedIn.token), false);
 
     const firstCheckin = await request('/api/checkin', { method: 'POST', headers: auth });
     assert.strictEqual(firstCheckin.checkedIn, true);

@@ -1,4 +1,5 @@
 const express = require('express');
+const authRequired = require('../middleware/auth');
 const optionalAuth = require('../middleware/optionalAuth');
 const { get, all } = require('../db');
 const { ensurePointAccount } = require('../services/points.service');
@@ -10,8 +11,23 @@ const { decoratePublicUsers, decorateAuthorRows, getEquippedCosmetics } = requir
 const { getPublicRankingSummary } = require('../services/seasons.service');
 const { listCasinoEvents } = require('../repositories/casinoStats.repo');
 const { listNotifications } = require('../services/notifications.service');
+const { getDashboardSummary } = require('../services/dashboardSummary.service');
 
 const router = express.Router();
+
+router.get('/summary', authRequired, async (req, res) => {
+  try {
+    const summary = await getDashboardSummary(req.user.id);
+    return res.json({ success: true, ok: true, summary });
+  } catch (error) {
+    console.error('Dashboard summary failed:', error);
+    return res.status(error.status || 500).json({
+      success: false,
+      ok: false,
+      message: error.status ? error.message : '대시보드 요약 조회 중 오류가 발생했습니다.'
+    });
+  }
+});
 
 router.get('/', optionalAuth, async (req, res) => {
   try {
