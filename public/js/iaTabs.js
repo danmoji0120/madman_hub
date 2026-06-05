@@ -19,6 +19,8 @@
 
   const IA_VIEW_KEYS = IA_TABS.map((tab) => tab.key);
   let iaActivityLoaded = false;
+  let iaNavRendering = false;
+  let iaNavUnreadCount = 0;
 
   function formatPointsSafe(value) {
     if (typeof window.formatPoints === 'function') return window.formatPoints(value || 0);
@@ -26,24 +28,42 @@
   }
 
   function progressText(item = {}) {
-    const current = Number(item.current ?? item.progress ?? item.count ?? 0);
+    const current = Number(item.progress ?? item.current ?? item.count ?? 0);
     const target = Number(item.target ?? item.required ?? item.goal ?? 0);
     if (!target) return item.completed ? '완료' : '진행 중';
-    return `${current}/${target}`;
+    return `${Math.min(current, target)}/${target}`;
   }
 
   function missionReward(item = {}) {
     return formatPointsSafe(item.rewardPoints ?? item.reward_points ?? item.reward ?? 0);
   }
 
-  function renderIaNav(unreadCount = 0) {
+  function normalizeMissionPayload(payload = {}) {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload.missions)) return payload.missions;
+    if (Array.isArray(payload.today)) return payload.today;
+    if (Array.isArray(payload.weekly)) return payload.weekly;
+    if (Array.isArray(payload.items)) return payload.items;
+    return [];
+  }
+
+  function renderIaNav(unreadCount = iaNavUnreadCount) {
     const nav = document.querySelector('#main-nav');
-    if (!nav) return;
-    const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount || '');
+    if (!nav || iaNavRendering) return;
+    const currentKeys = Array.from(nav.querySelectorAll('[data-top-tab]')).map((item) => item.dataset.topTab).join('|');
+    const desiredKeys = IA_VIEW_KEYS.join('|');
+    if (currentKeys === desiredKeys) {
+      updateIaActiveState();
+      return;
+    }
+    iaNavRendering = true;
+    iaNavUnreadCount = Number(unreadCount || 0);
+    const unreadLabel = iaNavUnreadCount > 99 ? '99+' : String(iaNavUnreadCount || '');
     nav.innerHTML = IA_TABS.map((tab) => {
-      const label = tab.key === 'account' && unreadCount > 0 ? `${tab.label} ${unreadLabel}` : tab.label;
+      const label = tab.key === 'account' && iaNavUnreadCount > 0 ? `${tab.label} ${unreadLabel}` : tab.label;
       return `<button type="button" class="nav-tab-button" data-top-tab="${escapeHtml(tab.key)}" onclick="${escapeHtml(tab.action)}">${escapeHtml(label)}</button>`;
     }).join('');
+    iaNavRendering = false;
     updateIaActiveState();
   }
 
@@ -64,10 +84,7 @@
       root.insertAdjacentHTML('beforeend', `
         <section class="card main-view home-tab-panel activity-panel" id="activity-panel" data-main-view="activity" hidden>
           <div class="section-heading">
-            <div>
-              <span class="badge">활동</span>
-              <h2>포인트 수급실</h2>
-            </div>
+            <div><span class="badge">활동</span><h2>포인트 수급실</h2></div>
             <button class="button secondary inline small-button" type="button" onclick="openHomeView()">홈으로 접기</button>
           </div>
           <div id="activity-shell" class="ia-panel-shell"></div>
@@ -78,10 +95,7 @@
       root.insertAdjacentHTML('beforeend', `
         <section class="card main-view home-tab-panel shop-panel" id="shop-panel" data-main-view="shop" hidden>
           <div class="section-heading">
-            <div>
-              <span class="badge">상점</span>
-              <h2>포인트 소비소</h2>
-            </div>
+            <div><span class="badge">상점</span><h2>포인트 소비소</h2></div>
             <button class="button secondary inline small-button" type="button" onclick="openHomeView()">홈으로 접기</button>
           </div>
           <div class="ia-card-grid">
@@ -96,10 +110,7 @@
       root.insertAdjacentHTML('beforeend', `
         <section class="card main-view home-tab-panel mercenary-panel" id="mercenary-panel" data-main-view="mercenary" hidden>
           <div class="section-heading">
-            <div>
-              <span class="badge">준비 중</span>
-              <h2>용병단</h2>
-            </div>
+            <div><span class="badge">준비 중</span><h2>용병단</h2></div>
             <button class="button secondary inline small-button" type="button" onclick="openHomeView()">홈으로 접기</button>
           </div>
           <div class="ia-card-grid mercenary-planner-grid">
@@ -118,6 +129,7 @@
 
   function switchIaView(tabKey = 'home', { scroll = true } = {}) {
     ensureIaPanels();
+    renderIaNav();
     const nextKey = IA_VIEW_KEYS.includes(tabKey) ? tabKey : 'home';
     document.querySelectorAll('[data-main-view]').forEach((view) => {
       view.hidden = view.dataset.mainView !== nextKey;
@@ -129,17 +141,13 @@
   function renderActivityShellLoading() {
     const shell = document.querySelector('#activity-shell');
     if (!shell) return;
-    shell.innerHTML = `
-      <div class="ia-card-grid">
-        <article class="ia-action-card"><span class="badge">확인 중</span><strong>활동 정보를 불러오는 중</strong><p class="meta">일일/주간미션과 광산 상태를 확인합니다.</p></article>
-      </div>
-    `;
+    shell.innerHTML = '<div class="ia-card-grid"><article class="ia-action-card"><span class="badge">확인 중</span><strong>활동 정보를 불러오는 중</strong><p class="meta">일일/주간미션과 광산 상태를 확인합니다.</p></article></div>';
   }
 
   function renderMissionList(items = [], scope = 'daily') {
     if (!items.length) return '<p class="empty-state">표시할 미션이 없습니다.</p>';
     return `<div class="mission-list ia-mission-list">
-      ${items.slice(0, 6).map((mission) => {
+      ${items.slice(0, 8).map((mission) => {
         const code = mission.code || mission.id;
         const claimed = Boolean(mission.claimed);
         const completed = Boolean(mission.completed);
@@ -162,11 +170,9 @@
   function renderActivityShell(data = {}) {
     const shell = document.querySelector('#activity-shell');
     if (!shell) return;
-    const daily = data.daily || {};
-    const weekly = data.weekly || {};
+    const dailyItems = normalizeMissionPayload(data.daily);
+    const weeklyItems = normalizeMissionPayload(data.weekly);
     const mine = data.mine || {};
-    const dailyItems = Array.isArray(daily.today) ? daily.today : (Array.isArray(daily.missions) ? daily.missions : []);
-    const weeklyItems = Array.isArray(weekly.weekly) ? weekly.weekly : (Array.isArray(weekly.missions) ? weekly.missions : []);
     const mineEarned = mine.todayEarned ?? mine.today_earned ?? mine.earnedToday ?? 0;
     const mineState = mine.mineState || mine.mine_state || mine.stateLabel || mine.state || '광맥 확인 중';
 
@@ -204,27 +210,23 @@
 
   async function loadActivityPanel() {
     ensureIaPanels();
+    renderIaNav();
     if (!window.API?.request) {
       renderActivityShell({});
       return;
     }
     renderActivityShellLoading();
-    try {
-      const [daily, weekly, mine] = await Promise.allSettled([
-        API.request('/api/missions/daily'),
-        API.request('/api/missions/weekly'),
-        API.request('/api/mine/status')
-      ]);
-      renderActivityShell({
-        daily: daily.status === 'fulfilled' ? daily.value : {},
-        weekly: weekly.status === 'fulfilled' ? weekly.value : {},
-        mine: mine.status === 'fulfilled' ? mine.value.status || mine.value.result || mine.value : {}
-      });
-      iaActivityLoaded = true;
-    } catch (error) {
-      const shell = document.querySelector('#activity-shell');
-      if (shell) shell.innerHTML = '<p class="error-state">활동 정보를 불러오지 못했습니다.</p>';
-    }
+    const [daily, weekly, mine] = await Promise.allSettled([
+      API.request('/api/missions/daily'),
+      API.request('/api/missions/weekly'),
+      API.request('/api/mine/status')
+    ]);
+    renderActivityShell({
+      daily: daily.status === 'fulfilled' ? daily.value : {},
+      weekly: weekly.status === 'fulfilled' ? weekly.value : {},
+      mine: mine.status === 'fulfilled' ? mine.value.status || mine.value.result || mine.value : {}
+    });
+    iaActivityLoaded = true;
   }
 
   window.claimIaMission = async function claimIaMission(scope, code) {
@@ -234,7 +236,7 @@
       if (message) message.textContent = `미션 보상 ${formatPointsSafe(data.rewardPoints)}를 받았습니다.`;
       iaActivityLoaded = false;
       await loadActivityPanel();
-      if (typeof window.loadDashboard === 'function') window.loadDashboard();
+      window.loadDashboard?.();
     } catch (error) {
       if (message) message.textContent = error.message || '미션 보상을 받을 수 없습니다.';
     }
@@ -257,64 +259,45 @@
   window.openHomeView = function openHomeViewPatched(options = {}) {
     if (typeof originalOpenHome === 'function') originalOpenHome(options);
     else switchIaView('home', options);
-    updateIaActiveState('home');
+    setTimeout(() => {
+      renderIaNav();
+      updateIaActiveState('home');
+      patchHomeSummaryCards();
+    }, 0);
   };
 
   const originalRenderNav = window.renderMainNavigation;
   window.renderMainNavigation = function renderMainNavigationPatched(me, unreadCount = 0) {
-    renderIaNav(unreadCount);
+    iaNavUnreadCount = Number(unreadCount || 0);
+    if (typeof originalRenderNav === 'function') originalRenderNav(me, unreadCount);
+    setTimeout(() => renderIaNav(iaNavUnreadCount), 0);
   };
 
-  const originalCasinoGate = window.renderHomeCasinoGate;
-  window.renderHomeCasinoGate = function renderHomeCasinoGatePatched(summary = {}) {
-    const card = document.querySelector('#home-casino-gate-card');
-    if (!card) {
-      if (typeof originalCasinoGate === 'function') originalCasinoGate(summary);
-      return;
-    }
-    const daily = summary?.dailyMissions || {};
-    const weekly = summary?.weeklyMissions || {};
-    const dailyDone = Number(daily.completedCount || 0);
-    const dailyTotal = Number(daily.totalCount || daily.today?.length || 0);
-    const weeklyDone = Number(weekly.completedCount || 0);
-    const weeklyTotal = Number(weekly.totalCount || weekly.weekly?.length || 0);
-    card.className = 'card home-card home-activity-summary-card';
-    card.innerHTML = `
-      <div class="section-heading">
-        <div>
-          <span class="badge">간편 확인</span>
-          <h2>오늘 수급 요약</h2>
+  function patchHomeSummaryCards() {
+    const casinoCard = document.querySelector('#home-casino-gate-card');
+    if (casinoCard && !casinoCard.dataset.iaPatched) {
+      casinoCard.dataset.iaPatched = 'true';
+      casinoCard.className = 'card home-card home-activity-summary-card';
+      casinoCard.innerHTML = `
+        <div class="section-heading">
+          <div><span class="badge">간편 확인</span><h2>오늘 수급 요약</h2></div>
+          <button class="button secondary inline small-button" type="button" data-home-action="activity">활동 탭</button>
         </div>
-        <button class="button secondary inline small-button" type="button" data-home-action="activity">활동 탭</button>
-      </div>
-      <div class="home-status-grid">
-        <div class="home-mini-card"><span class="meta">일일미션</span><strong>${escapeHtml(dailyDone)}/${escapeHtml(dailyTotal || '-')}</strong></div>
-        <div class="home-mini-card"><span class="meta">주간미션</span><strong>${escapeHtml(weeklyDone)}/${escapeHtml(weeklyTotal || '-')}</strong></div>
-      </div>
-      <p class="meta">홈은 확인만 합니다. 포인트 수급은 활동 탭에서 진행하세요.</p>
-    `;
-  };
-
-  const originalTeaser = window.renderHomeTeaserZone;
-  window.renderHomeTeaserZone = function renderHomeTeaserZonePatched() {
-    const card = document.querySelector('#home-teaser-card');
-    if (!card) {
-      if (typeof originalTeaser === 'function') originalTeaser();
-      return;
+        <p class="meta">홈은 확인만 합니다. 포인트 수급은 활동 탭에서 진행하세요.</p>
+      `;
     }
-    card.innerHTML = `
-      <div class="section-heading">
-        <div>
-          <span class="badge">다음 성장축</span>
-          <h2>상점 · 용병단 준비</h2>
+    const teaserCard = document.querySelector('#home-teaser-card');
+    if (teaserCard && !teaserCard.dataset.iaPatched) {
+      teaserCard.dataset.iaPatched = 'true';
+      teaserCard.innerHTML = `
+        <div class="section-heading"><div><span class="badge">다음 성장축</span><h2>상점 · 용병단 준비</h2></div></div>
+        <div class="home-teaser-grid">
+          <button class="home-mini-card ia-mini-button" type="button" data-home-action="shop"><strong>상점</strong><p class="meta">칭호, 꾸미기, 보급품을 쓰는 포인트 소비처.</p></button>
+          <button class="home-mini-card ia-mini-button" type="button" data-home-action="mercenary"><strong>용병단</strong><p class="meta">고용, 훈련, 의무실, 임무가 들어올 장기 콘텐츠 탭.</p></button>
         </div>
-      </div>
-      <div class="home-teaser-grid">
-        <button class="home-mini-card ia-mini-button" type="button" data-home-action="shop"><strong>상점</strong><p class="meta">칭호, 꾸미기, 보급품을 쓰는 포인트 소비처.</p></button>
-        <button class="home-mini-card ia-mini-button" type="button" data-home-action="mercenary"><strong>용병단</strong><p class="meta">고용, 훈련, 의무실, 임무가 들어올 장기 콘텐츠 탭.</p></button>
-      </div>
-    `;
-  };
+      `;
+    }
+  }
 
   document.addEventListener('click', (event) => {
     const target = event.target.closest('[data-home-action]');
@@ -344,7 +327,20 @@
 
   window.addEventListener('hashchange', openIaHash);
 
-  ensureIaPanels();
-  renderIaNav(0);
-  openIaHash();
+  const navObserver = new MutationObserver(() => renderIaNav(iaNavUnreadCount));
+  const homeObserver = new MutationObserver(() => patchHomeSummaryCards());
+
+  function bootIaTabs() {
+    ensureIaPanels();
+    renderIaNav(iaNavUnreadCount);
+    patchHomeSummaryCards();
+    const nav = document.querySelector('#main-nav');
+    if (nav) navObserver.observe(nav, { childList: true });
+    const home = document.querySelector('#home-view');
+    if (home) homeObserver.observe(home, { childList: true, subtree: true });
+    openIaHash();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootIaTabs);
+  else bootIaTabs();
 })();
