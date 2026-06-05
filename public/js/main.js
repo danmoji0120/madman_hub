@@ -69,6 +69,11 @@ let activeTopTab = 'home';
 let deferredPwaPrompt = null;
 let pwaWaitingRegistration = null;
 let pwaUpdateReloading = false;
+const PWA_INSTALL_DISMISS_KEY = 'madmenPwaInstallDismissUntil';
+const PWA_INSTALL_INSTALLED_KEY = 'madmenPwaInstalled';
+const PWA_INSTALL_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
+const PWA_INSTALL_SHORT_DISMISS_MS = 24 * 60 * 60 * 1000;
+let pwaInstallToastTimer = null;
 
 function dashboardRequest(path, options = {}) {
   return API.request(path, { ...options, perfScope: 'dashboard' });
@@ -1134,21 +1139,183 @@ function refreshPwaInstallCard() {
 async function promptPwaInstall() {
   if (!deferredPwaPrompt) {
     refreshPwaInstallCard();
+    showPwaInstallToast({ force: true });
     return;
   }
 
   const promptEvent = deferredPwaPrompt;
   deferredPwaPrompt = null;
+  removePwaInstallToast();
+
   try {
     promptEvent.prompt();
     const choice = await promptEvent.userChoice;
-    logPwa(`install prompt ${choice?.outcome || 'closed'}`);
+    const outcome = choice?.outcome || 'closed';
+    logPwa(`install prompt ${outcome}`);
+
+    if (outcome === 'accepted') {
+      markPwaInstalled();
+    } else {
+      dismissPwaInstallToast(PWA_INSTALL_SHORT_DISMISS_MS);
+    }
   } catch (error) {
     logPwa('install prompt failed', error?.message || error);
+    showPwaInstallToast({ force: true });
   } finally {
     refreshPwaInstallCard();
   }
 }
+
+function pwaStorageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    return null;
+  }
+}
+
+function pwaStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    // localStorage가 막힌 환경에서는 조용히 무시합니다.
+  }
+}
+
+function isPwaInstallDismissed() {
+  const until = Number(pwaStorageGet(PWA_INSTALL_DISMISS_KEY) || 0);
+  return Number.isFinite(until) && until > Date.now();
+}
+
+function isPwaInstalledByUser() {
+  return pwaStorageGet(PWA_INSTALL_INSTALLED_KEY) === 'true';
+}
+
+function isLikelyMobileBrowser() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || window.innerWidth <= 768;
+}
+
+function isLikelyIosBrowser() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent || '')
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function shouldShowPwaInstallToast({ force = false } = {}) {
+  if (isStandalonePwa()) return false;
+  if (isPwaInstalledByUser()) return false;
+  if (!force && isPwaInstallDismissed()) return false;
+
+  return supportsPwaInstallPrompt() || isLikelyMobileBrowser() || force;
+}
+
+function getPwaInstallGuideText() {
+  if (supportsPwaInstallPrompt()) {
+    return '버튼을 누르면 브라우저 설치창이 열립니다.';
+  }
+
+  if (isLikelyIosBrowser()) {
+    return 'Safari 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택해 주세요.';
+  }
+
+  if (isLikelyMobileBrowser()) {
+    return '브라우저 메뉴에서 “앱 설치” 또는 “홈 화면에 추가”를 선택해 주세요.';
+  }
+
+  return '주소창 또는 브라우저 메뉴에 설치 아이콘이 보이면 앱처럼 고정할 수 있습니다.';
+}
+
+function removePwaInstallToast() {
+  if (pwaInstallToastTimer) {
+    clearTimeout(pwaInstallToastTimer);
+    pwaInstallToastTimer = null;
+  }
+
+  document.querySelector('#pwa-install-toast')?.remove();
+}
+
+function dismissPwaInstallToast(ms = PWA_INSTALL_DISMISS_MS) {
+  pwaStorageSet(PWA_INSTALL_DISMISS_KEY, String(Date.now() + ms));
+  removePwaInstallToast();
+}
+
+function markPwaInstalled() {
+  pwaStorageSet(PWA_INSTALL_INSTALLED_KEY, 'true');
+  removePwaInstallToast();
+}
+
+function showPwaInstallToast({ force = false, delay = 0 } = {}) {
+  if (!shouldShowPwaInstallToast({ force })) return;
+
+  if (pwaInstallToastTimer) {
+    clearTimeout(pwaInstallToastTimer);
+    pwaInstallToastTimer = null;
+  }
+
+  const render = () => {
+    if (!shouldShowPwaInstallToast({ force })) return;
+    if (document.querySelector('#pwa-install-toast')) return;
+
+    const canPrompt = supportsPwaInstallPrompt();
+    const toast = document.createElement('aside');
+    toast.className = 'pwa-install-toast';
+    toast.id = 'pwa-install-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.innerHTML = `
+      <div class="pwa-install-toast-copy">
+        <span class="badge">APP</span>
+        <strong>격리소 앱 설치 가능</strong>
+        <p>${escapeHtml(getPwaInstallGuideText())}</p>
+      </div>
+      <div class="pwa-install-toast-actions">
+        <button class="button inline small-button" type="button" data-pwa-install-toast-action="install">
+          ${canPrompt ? '앱으로 받기' : '설치 방법 보기'}
+        </button>
+        <button class="button secondary inline small-button" type="button" data-pwa-install-toast-action="later">나중에</button>
+        <button class="pwa-install-toast-close" type="button" data-pwa-install-toast-action="close" aria-label="앱 설치 안내 닫기">×</button>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+  };
+
+  if (delay > 0) {
+    pwaInstallToastTimer = setTimeout(render, delay);
+  } else {
+    render();
+  }
+}
+
+function schedulePwaInstallToast() {
+  showPwaInstallToast({ delay: 1200 });
+}
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-pwa-install-toast-action]');
+  if (!button) return;
+
+  const action = button.dataset.pwaInstallToastAction;
+  event.preventDefault();
+
+  if (action === 'install') {
+    if (supportsPwaInstallPrompt()) {
+      promptPwaInstall();
+      return;
+    }
+
+    showPwaInstallToast({ force: true });
+    return;
+  }
+
+  if (action === 'later') {
+    dismissPwaInstallToast();
+    return;
+  }
+
+  if (action === 'close') {
+    dismissPwaInstallToast(PWA_INSTALL_SHORT_DISMISS_MS);
+  }
+});
 
 function accountTabLabel(tabKey) {
   return ACCOUNT_TABS.find((tab) => tab.key === tabKey)?.label || tabKey;
@@ -2643,13 +2810,16 @@ window.addEventListener('beforeinstallprompt', (event) => {
   deferredPwaPrompt = event;
   logPwa('beforeinstallprompt ready');
   refreshPwaInstallCard();
+  schedulePwaInstallToast();
 });
 
 window.addEventListener('appinstalled', () => {
   deferredPwaPrompt = null;
   logPwa('app installed');
+  markPwaInstalled();
   refreshPwaInstallCard();
 });
 
 registerPwa();
+window.addEventListener('load', schedulePwaInstallToast);
 loadDashboard();
