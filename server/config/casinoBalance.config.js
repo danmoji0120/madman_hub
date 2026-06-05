@@ -23,6 +23,36 @@ const casinoBalanceConfig = {
   },
   crash: {
     targetReturnRate: { min: 0.9, max: 0.96 }
+  },
+  slotMachine: {
+    symbols: [
+      { key: 'cherry', label: '🍒', weight: 30 },
+      { key: 'bell', label: '🔔', weight: 22 },
+      { key: 'star', label: '⭐', weight: 16 },
+      { key: 'diamond', label: '💎', weight: 8 },
+      { key: 'seven', label: '7️⃣', weight: 4 },
+      { key: 'bb', label: 'BB', weight: 1 },
+      { key: 'skull', label: '💀', weight: 10 }
+    ],
+    pairPayouts: {
+      cherry: 1,
+      bell: 1.5,
+      star: 2,
+      diamond: 3,
+      seven: 5,
+      bb: 10,
+      skull: 0
+    },
+    triplePayouts: {
+      cherry: 3.5,
+      bell: 6,
+      star: 10,
+      diamond: 20,
+      seven: 45,
+      bb: 120,
+      skull: 0
+    },
+    targetReturnRate: { min: 0.92, max: 0.96 }
   }
 };
 
@@ -31,6 +61,7 @@ function targetForGame(gameKey) {
   if (gameKey === 'dice_blackjack') return casinoBalanceConfig.diceBlackjack.targetReturnRate;
   if (gameKey === 'roulette') return casinoBalanceConfig.roulette.targetReturnRate;
   if (gameKey === 'crash') return casinoBalanceConfig.crash.targetReturnRate;
+  if (gameKey === 'slot_machine') return casinoBalanceConfig.slotMachine.targetReturnRate;
   return { min: 0.9, max: 0.96 };
 }
 

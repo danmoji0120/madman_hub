@@ -64,6 +64,32 @@ const games = {
       { label: '20.00x ~ 50.00x', weight: 1 }
     ]
   },
+  slot_machine: {
+    code: 'slot_machine',
+    name: '격리소 머신',
+    type: 'instant',
+    minBet: 10,
+    maxBet: 300,
+    dailyLimit: nonNegativeInteger('CASINO_SLOT_MACHINE_DAILY_LIMIT', 50),
+    rules: '3개의 릴을 돌려 같은 심볼 2개 또는 3개가 나오면 지급됩니다. BB 3개는 전설급 잭팟입니다.',
+    symbols: casinoBalanceConfig.slotMachine.symbols,
+    payoutTable: [
+      ...casinoBalanceConfig.slotMachine.symbols.map((symbol) => ({
+        label: `${symbol.label} 2개`,
+        symbol: symbol.key,
+        matchCount: 2,
+        multiplier: casinoBalanceConfig.slotMachine.pairPayouts[symbol.key],
+        weight: symbol.weight
+      })),
+      ...casinoBalanceConfig.slotMachine.symbols.map((symbol) => ({
+        label: `${symbol.label} 3개`,
+        symbol: symbol.key,
+        matchCount: 3,
+        multiplier: casinoBalanceConfig.slotMachine.triplePayouts[symbol.key],
+        weight: symbol.weight
+      }))
+    ]
+  },
   russian_roulette: {
     code: 'russian_roulette',
     name: '러시안 룰렛',
@@ -84,6 +110,7 @@ function maxBetRule(game) {
   if (game.fixedBet) return `${formatPoints(game.fixedBet)} fixed`;
   const rules = [];
   if (MAX_BET > 0) rules.push(formatPoints(MAX_BET));
+  if (game.maxBet > 0) rules.push(formatPoints(game.maxBet));
   if (MAX_BET_BALANCE_RATIO > 0) rules.push(`balance * ${MAX_BET_BALANCE_RATIO}`);
   return rules.length ? `min(${rules.join(', ')})` : 'balance only';
 }

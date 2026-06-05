@@ -34,7 +34,7 @@ router.post('/', authRequired, async (req, res) => {
 
   await addPointTransaction({
     userId: req.user.id,
-    amount: 2,
+    amount: 5,
     type: 'guestbook_posted',
     reason: '방명록 작성 보상',
     sourcePlatform: 'hub',

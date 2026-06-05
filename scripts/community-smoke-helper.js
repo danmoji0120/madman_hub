@@ -40,7 +40,7 @@ async function runCommunitySmoke({ request, auth, ownerAuth, runPrefix }) {
     headers: auth,
     body: JSON.stringify({ body: '<img src=x onerror=alert(1)>', isAnonymous: false })
   });
-  assert.strictEqual(comment.rewardAmount, 2);
+  assert.strictEqual(comment.rewardAmount, 5);
   assert.strictEqual(comment.comment.body, '<img src=x onerror=alert(1)>');
   assert.ok(comment.unlockedAchievements.some((item) => item.code === 'COMMENT_FIRST'));
   assertPublicComment(comment.comment);

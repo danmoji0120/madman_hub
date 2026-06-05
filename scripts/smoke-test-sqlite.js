@@ -13,9 +13,9 @@ process.env.CASINO_MAX_BET = '0';
 process.env.CASINO_MAX_BET_BALANCE_RATIO = '0';
 process.env.ANONYMOUS_POST_COST = '5';
 process.env.ANONYMOUS_COMMENT_COST = '2';
-process.env.COMMENT_REWARD_POINTS = '2';
+process.env.COMMENT_REWARD_POINTS = '5';
 process.env.COMMENT_REWARD_DAILY_LIMIT = '5';
-process.env.SONG_REWARD_POINTS = '5';
+process.env.SONG_REWARD_POINTS = '10';
 process.env.ANONYMOUS_SONG_COST = '3';
 process.env.SONG_REWARD_DAILY_LIMIT = '3';
 process.env.RANDOM_SONG_REWARD_POINTS = '1';
@@ -37,6 +37,7 @@ const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 const { runSeasonsSmoke } = require('./seasons-smoke-helper');
 const { runTitlesSmoke } = require('./titles-smoke-helper');
 const { runNotificationsSmoke } = require('./notifications-smoke-helper');
+const { runMineSmoke } = require('./mine-smoke-helper');
 
 const baseUrl = 'http://127.0.0.1:3101';
 
@@ -84,6 +85,7 @@ async function main() {
     const shopHtml = await requestText('/shop.html');
     const adminHtml = await requestText('/admin.html');
     const casinoHtml = await requestText('/casino.html');
+    const mineHtml = await requestText('/mine.html');
     const seasonsHtml = await requestText('/seasons.html');
     const notificationsHtml = await requestText('/notifications.html');
     const css = await requestText('/css/app.css');
@@ -95,6 +97,7 @@ async function main() {
     const shopJs = await requestText('/js/shop.js');
     const adminJs = await requestText('/js/admin.js');
     const casinoJs = await requestText('/js/casino.js');
+    const mineJs = await requestText('/js/mine.js');
     const seasonsJs = await requestText('/js/seasons.js');
     const notificationBadgeJs = await requestText('/js/notificationBadge.js');
     const notificationsJs = await requestText('/js/notifications.js');
@@ -105,6 +108,7 @@ async function main() {
     assert.ok(shopHtml.includes('<title>칭호 상점 | MADMEN HUB</title>'));
     assert.ok(adminHtml.includes('<title>관리자 | MADMEN HUB</title>'));
     assert.ok(casinoHtml.includes('<title>포인트 카지노 | MADMEN HUB</title>'));
+    assert.ok(mineHtml.includes('<title>격리소 광산 | MADMEN HUB</title>'));
     assert.ok(seasonsHtml.includes('<title>시즌 랭킹 | MADMEN HUB</title>'));
     assert.ok(notificationsHtml.includes('<title>알림 센터 | MADMEN HUB</title>'));
     assert.ok(css.includes('.dashboard-grid'));
@@ -119,6 +123,7 @@ async function main() {
     assert.ok(shopJs.includes('API.request(`/api/shop/titles'));
     assert.ok(adminJs.includes("API.request('/api/admin/overview'"));
     assert.ok(casinoJs.includes("API.request('/api/casino/games'"));
+    assert.ok(mineJs.includes("API.request('/api/mine/status'"));
     assert.ok(seasonsJs.includes("API.request('/api/seasons'"));
     assert.ok(notificationBadgeJs.includes('/api/notifications/unread-count'));
     assert.ok(notificationsJs.includes('/api/notifications'));
@@ -241,6 +246,7 @@ async function main() {
     assert.ok(dashboardSummary.summary.season);
     assert.ok((dashboardSummary.summary.season.titleSummary || []).length <= 4);
     assert.ok(dashboardSummary.summary.dailyMissions === null || typeof dashboardSummary.summary.dailyMissions === 'object');
+    assert.ok(dashboardSummary.summary.weeklyMissions === null || typeof dashboardSummary.summary.weeklyMissions === 'object');
     const dashboardSummaryText = JSON.stringify(dashboardSummary);
     assert.strictEqual(dashboardSummaryText.includes('password_hash'), false);
     assert.strictEqual(dashboardSummaryText.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
@@ -249,8 +255,8 @@ async function main() {
     const firstCheckin = await request('/api/checkin', { method: 'POST', headers: auth });
     assert.strictEqual(firstCheckin.checkedIn, true);
     assert.strictEqual(firstCheckin.alreadyCheckedIn, false);
-    assert.strictEqual(firstCheckin.rewardAmount, 10);
-    assert.strictEqual(firstCheckin.account.balance, 15);
+    assert.strictEqual(firstCheckin.rewardAmount, 30);
+    assert.strictEqual(firstCheckin.account.balance, 35);
     assert.ok(firstCheckin.unlockedAchievements.some((item) => item.code === 'FIRST_CHECKIN'));
 
     const dailyTransaction = await get(
@@ -258,7 +264,7 @@ async function main() {
       [registered.user.id, 'daily_checkin']
     );
     assert.deepStrictEqual(dailyTransaction, {
-      amount: 10,
+      amount: 30,
       type: 'daily_checkin',
       reason: '일일 출석 보상'
     });
@@ -272,7 +278,7 @@ async function main() {
     const secondCheckin = await request('/api/checkin', { method: 'POST', headers: auth });
     assert.strictEqual(secondCheckin.checkedIn, false);
     assert.strictEqual(secondCheckin.alreadyCheckedIn, true);
-    assert.strictEqual(secondCheckin.account.balance, 15);
+    assert.strictEqual(secondCheckin.account.balance, 35);
 
     const checkinStatus = await request('/api/checkin/me', { headers: auth });
     assert.strictEqual(checkinStatus.checkedInToday, true);
@@ -284,7 +290,7 @@ async function main() {
       headers: auth,
       body: JSON.stringify({ body: guestbookBody })
     });
-    assert.strictEqual(guestbookResponse.account.balance, 22);
+    assert.strictEqual(guestbookResponse.account.balance, 45);
     assert.ok(guestbookResponse.unlockedAchievements.some((item) => item.code === 'FIRST_GUESTBOOK'));
 
     const quoteBody = '<script>alert(1)</script>';
@@ -293,17 +299,17 @@ async function main() {
       headers: auth,
       body: JSON.stringify({ title: 'unsafe post', body: quoteBody, targetName: 'tester' })
     });
-    assert.strictEqual(postResponse.account.balance, 32);
+    assert.strictEqual(postResponse.account.balance, 60);
     assert.ok(postResponse.unlockedAchievements.some((item) => item.code === 'FIRST_POST'));
     const legacyQuote = await request('/api/quotes', {
       method: 'POST',
       headers: auth,
       body: JSON.stringify({ title: 'legacy compatibility', body: 'legacy body', targetName: 'tester' })
     });
-    assert.strictEqual(legacyQuote.account.balance, 37);
+    assert.strictEqual(legacyQuote.account.balance, 70);
 
     const account = await request('/api/points/me', { headers: auth });
-    assert.strictEqual(account.account.balance, 37);
+    assert.strictEqual(account.account.balance, 70);
     const posts = await request('/api/posts');
     assert.ok(posts.posts.some((post) => post.title === 'unsafe post'));
     const randomPost = await request('/api/posts/random');
@@ -318,10 +324,10 @@ async function main() {
 
     const populatedDashboard = await request('/api/dashboard', { headers: auth });
     assert.strictEqual(populatedDashboard.me.checkedInToday, true);
-    assert.strictEqual(populatedDashboard.me.points.balance, 37);
+    assert.strictEqual(populatedDashboard.me.points.balance, 70);
     assert.strictEqual(populatedDashboard.recentGuestbook[0].body, guestbookBody);
     assert.ok(populatedDashboard.recentPosts.some((post) => post.body === quoteBody));
-    assert.strictEqual(populatedDashboard.leaderboard[0].balance, 37);
+    assert.strictEqual(populatedDashboard.leaderboard[0].balance, 70);
     assert.ok(populatedDashboard.randomPost);
     assert.ok(populatedDashboard.recentFeed.some((item) => item.action === 'post_created'));
     assert.ok(populatedDashboard.recentAchievements.some((item) => item.code === 'FIRST_POST'));
@@ -339,7 +345,7 @@ async function main() {
       headers: auth
     });
     assert.strictEqual(purchase.purchased, true);
-    assert.strictEqual(purchase.account.balance, 32);
+    assert.strictEqual(purchase.account.balance, 90);
     assert.ok(purchase.unlockedAchievements.some((item) => item.code === 'FIRST_TITLE_PURCHASE'));
 
     const purchaseTransaction = await get(
@@ -384,7 +390,7 @@ async function main() {
     });
     assert.strictEqual(repurchase.purchased, false);
     assert.strictEqual(repurchase.alreadyOwned, true);
-    assert.strictEqual(repurchase.account.balance, 32);
+    assert.strictEqual(repurchase.account.balance, 90);
 
     const myAchievements = await request('/api/me/achievements', { headers: auth });
     assert.ok(myAchievements.unlocked.some((item) => item.code === 'FIRST_CHECKIN'));
@@ -612,6 +618,7 @@ async function main() {
       userId: registered.user.id,
       runPrefix: `sqlite-${Date.now()}-`
     });
+    await runMineSmoke({ request, auth });
     await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix: 'sqlite-smoke-' });
     await runSeasonsSmoke({
       request, auth, ownerAuth, userId: registered.user.id,

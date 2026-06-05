@@ -21,7 +21,7 @@ async function runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix }) {
       reason: '<b>song reason</b>', tags: ['smoke', 'night']
     })
   });
-  assert.strictEqual(standard.rewardPoints, 5);
+  assert.strictEqual(standard.rewardPoints, 10);
   assertPublicSong(standard.song);
   assert.ok(standard.unlockedAchievements.some((item) => item.code === 'SONG_FIRST_RECOMMEND'));
 
@@ -68,19 +68,23 @@ async function runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix }) {
     assert.strictEqual(daily.missions.find((mission) => mission.code === code).completed, true, code);
   }
   const missionClaim = await request('/api/missions/daily/recommend_song/claim', { method: 'POST', headers: auth });
-  assert.strictEqual(missionClaim.rewardPoints, 5);
+  assert.strictEqual(missionClaim.rewardPoints, 15);
   assert.ok(missionClaim.unlockedAchievements.some((item) => item.code === 'DAILY_MISSION_FIRST'));
   await request('/api/missions/daily/recommend_song/claim', { method: 'POST', headers: auth }, 409);
 
-  const bonus = await request('/api/missions/daily/bonus/complete_all/claim', { method: 'POST', headers: auth });
-  assert.strictEqual(bonus.rewardPoints, 25);
-  assert.ok(bonus.unlockedAchievements.some((item) => item.code === 'DAILY_MISSION_ALL'));
-  await request('/api/missions/daily/bonus/complete_all/claim', { method: 'POST', headers: auth }, 409);
+  const bonus = await request('/api/missions/daily/bonus/complete_3/claim', { method: 'POST', headers: auth });
+  assert.strictEqual(bonus.rewardPoints, 15);
+  await request('/api/missions/daily/bonus/complete_3/claim', { method: 'POST', headers: auth }, 409);
 
   const transactions = await request('/api/me/transactions?limit=100', { headers: auth });
   for (const type of ['song_recommend', 'anonymous_song_fee', 'random_song_view', 'daily_mission_reward', 'daily_mission_bonus']) {
     assert.ok(transactions.transactions.some((item) => item.type === type), type);
   }
+
+  const weekly = await request('/api/missions/weekly', { headers: auth });
+  assert.ok(weekly.missions.some((mission) => mission.code === 'weekly_mine_50'));
+  assert.ok(weekly.missions.some((mission) => mission.code === 'weekly_content_3'));
+  assert.strictEqual(typeof weekly.completedCount, 'number');
 }
 
 module.exports = { runSongsMissionsSmoke };

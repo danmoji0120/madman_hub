@@ -3,6 +3,18 @@ let blackjackSessionId = null;
 let crashSessionId = null;
 let crashInterval = null;
 let russianSessionId = null;
+let slotSpinInProgress = false;
+
+const SLOT_SYMBOLS = {
+  cherry: '🍒',
+  bell: '🔔',
+  star: '⭐',
+  diamond: '💎',
+  seven: '7️⃣',
+  bb: 'BB',
+  skull: '💀'
+};
+const SLOT_SYMBOL_KEYS = Object.keys(SLOT_SYMBOLS);
 
 function casinoMessage(text) {
   document.querySelector('#casino-message').textContent = text;
@@ -112,6 +124,127 @@ async function playRoulette(button) {
     document.querySelector('.roulette-wheel').textContent = data.result.label;
     document.querySelector('#roulette-result').textContent = `${data.result.label} · 지급 ${formatPoints(data.result.payoutAmount)} · 순변동 ${formatPoints(data.result.netAmount)}`;
   });
+}
+
+function slotLabel(symbol) {
+  return SLOT_SYMBOLS[symbol] || '?';
+}
+
+function randomSlotLabel() {
+  return slotLabel(SLOT_SYMBOL_KEYS[Math.floor(Math.random() * SLOT_SYMBOL_KEYS.length)]);
+}
+
+function setSlotResultClass(kind) {
+  const result = document.querySelector('#slot-result');
+  result.classList.remove('jackpot', 'win', 'loss');
+  if (kind) result.classList.add(kind);
+}
+
+function slotResultKind(result) {
+  if (!result || result.payoutAmount <= 0) return 'loss';
+  if (result.result === 'bb_triple' || result.result === 'seven_triple' || Number(result.multiplier) >= 45) return 'jackpot';
+  return 'win';
+}
+
+function slotResultMessage(result) {
+  const payout = formatPoints(result.payoutAmount || 0);
+  const net = formatSignedPoints(result.netAmount || 0);
+  const matchedLabel = slotLabel(result.matchedSymbol);
+
+  if (result.result === 'bb_triple') return `BB JACKPOT! 지급 ${payout} · 순변동 ${net}`;
+  if (result.result === 'seven_triple') return `777 잭팟! 지급 ${payout} · 순변동 ${net}`;
+  if (result.result === 'skull_triple') return `해골 3개 · 포인트가 격리소 바닥으로 사라졌습니다. 순변동 ${net}`;
+  if (result.matchCount === 3) return `${matchedLabel} 3개 적중 · 지급 ${payout} · 순변동 ${net}`;
+  if (result.matchCount === 2 && result.matchedSymbol === 'skull') return `해골 2개 · 지급 ${payout} · 순변동 ${net}`;
+  if (result.matchCount === 2) return `${matchedLabel} 2개 적중 · 지급 ${payout} · 순변동 ${net}`;
+  return `꽝 · 지급 ${payout} · 순변동 ${net}`;
+}
+
+function animateSlotMachineResult(data) {
+  const result = data.result || {};
+  const finalReels = Array.isArray(result.reels) ? result.reels : data.state?.reels || [];
+  const reels = Array.from(document.querySelectorAll('[data-slot-reel]'));
+  const status = document.querySelector('#slot-spin-status');
+  const output = document.querySelector('#slot-result');
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const stopTimes = reducedMotion ? [90, 150, 210] : [700, 1050, 1400];
+  const intervals = [];
+
+  setSlotResultClass(null);
+  output.textContent = '릴 회전 중...';
+  status.textContent = '도로록...';
+  reels.forEach((reel) => {
+    reel.classList.remove('stopped');
+    reel.classList.add('spinning');
+    reel.textContent = randomSlotLabel();
+  });
+
+  if (reducedMotion) {
+    finalReels.forEach((symbol, index) => {
+      const reel = reels[index];
+      if (!reel) return;
+      reel.textContent = slotLabel(symbol);
+      reel.classList.remove('spinning');
+      reel.classList.add('stopped');
+    });
+    status.textContent = '결과 공개';
+    output.textContent = slotResultMessage(result);
+    setSlotResultClass(slotResultKind(result));
+    return Promise.resolve();
+  }
+
+  reels.forEach((reel, index) => {
+    intervals[index] = setInterval(() => {
+      reel.textContent = randomSlotLabel();
+    }, 70 + index * 15);
+  });
+
+  return new Promise((resolve) => {
+    stopTimes.forEach((time, index) => {
+      setTimeout(() => {
+        const reel = reels[index];
+        clearInterval(intervals[index]);
+        if (reel) {
+          reel.textContent = slotLabel(finalReels[index]);
+          reel.classList.remove('spinning');
+          reel.classList.add('stopped');
+        }
+        status.textContent = index < 2 ? '딴' : '딴 · 결과 공개';
+      }, time);
+    });
+
+    setTimeout(() => {
+      status.textContent = '결과 공개';
+      output.textContent = slotResultMessage(result);
+      setSlotResultClass(slotResultKind(result));
+      resolve();
+    }, stopTimes[2] + 240);
+  });
+}
+
+async function playSlotMachine(button) {
+  if (!requireLogin() || slotSpinInProgress) return;
+  slotSpinInProgress = true;
+  button.disabled = true;
+
+  try {
+    const data = await API.request('/api/casino/slot-machine/play', {
+      method: 'POST',
+      body: JSON.stringify({ betAmount: inputAmount('#slot-bet') })
+    });
+    await animateSlotMachineResult(data);
+    await loadCasinoAccount();
+    await loadCasinoHistory();
+    await loadCasinoSummary();
+  } catch (error) {
+    setSlotResultClass('loss');
+    document.querySelector('#slot-spin-status').textContent = '릴 정지';
+    document.querySelector('#slot-result').textContent = error.message;
+    casinoMessage(error.message);
+  } finally {
+    slotSpinInProgress = false;
+    button.disabled = false;
+  }
 }
 
 function renderBlackjack(session) {

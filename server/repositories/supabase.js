@@ -609,6 +609,7 @@ async function cleanupSmokeUsers(prefix) {
   await deleteRows('daily_checkins', (query) => query.in('user_id', userIds));
   await deleteRows('daily_mission_bonus_claims', (query) => query.in('user_id', userIds));
   await deleteRows('daily_mission_progress', (query) => query.in('user_id', userIds));
+  await deleteRows('mine_logs', (query) => query.in('user_id', userIds));
   await deleteRows('song_recommendations', (query) => query.in('user_id', userIds));
   await deleteRows('post_comments', (query) => query.in('user_id', userIds));
   await deleteRows('quotes', (query) => query.in('user_id', userIds));
@@ -619,7 +620,7 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, rewardMappings, rewardGrants, seasonTrophies, casinoStats, pointPeaks, casinoEvents, notifications] = await Promise.all([
+  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, mineLogs, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, rewardMappings, rewardGrants, seasonTrophies, casinoStats, pointPeaks, casinoEvents, notifications] = await Promise.all([
     client().from('titles').select('id,category,source_type,is_purchasable,is_reward_only,css_class', { count: 'exact', head: true }),
     client().from('title_grants').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
@@ -629,6 +630,7 @@ async function initDatabase() {
     client().from('song_recommendations').select('id').limit(1),
     client().from('daily_mission_progress').select('id').limit(1),
     client().from('daily_mission_bonus_claims').select('id').limit(1),
+    client().from('mine_logs').select('id').limit(1),
     client().from('cosmetic_items').select('id').limit(1),
     client().from('user_cosmetics').select('id').limit(1),
     client().from('user_cosmetic_equips').select('user_id').limit(1),
@@ -642,7 +644,7 @@ async function initDatabase() {
     client().from('casino_events').select('id').limit(1),
     client().from('notifications').select('id').limit(1)
   ]);
-  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || rewardMappings.error || rewardGrants.error || seasonTrophies.error || casinoStats.error || pointPeaks.error || casinoEvents.error || notifications.error;
+  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || mineLogs.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || rewardMappings.error || rewardGrants.error || seasonTrophies.error || casinoStats.error || pointPeaks.error || casinoEvents.error || notifications.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }

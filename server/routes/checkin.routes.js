@@ -8,7 +8,7 @@ const { checkAndUnlockAchievements } = require('../services/achievement.service'
 const { incrementMission } = require('../services/dailyMissions.service');
 
 const router = express.Router();
-const rewardAmount = 10;
+const rewardAmount = 30;
 
 router.use(authRequired);
 

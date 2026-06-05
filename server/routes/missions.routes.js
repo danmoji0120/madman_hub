@@ -1,6 +1,6 @@
 const express = require('express');
 const authRequired = require('../middleware/auth');
-const { getDailyMissions, claimMission, claimBonus } = require('../services/dailyMissions.service');
+const { getDailyMissions, getWeeklyMissions, claimMission, claimBonus } = require('../services/dailyMissions.service');
 
 const router = express.Router();
 router.use(authRequired);
@@ -17,7 +17,10 @@ function handle(task) {
 }
 
 router.get('/daily', handle(async (req) => getDailyMissions(req.user.id)));
+router.get('/weekly', handle(async (req) => getWeeklyMissions(req.user.id)));
 router.post('/daily/bonus/:bonusCode/claim', handle(async (req) => claimBonus(req.user.id, req.params.bonusCode)));
 router.post('/daily/:missionCode/claim', handle(async (req) => claimMission(req.user.id, req.params.missionCode)));
+router.post('/weekly/bonus/:bonusCode/claim', handle(async (req) => claimBonus(req.user.id, req.params.bonusCode, 'weekly')));
+router.post('/weekly/:missionCode/claim', handle(async (req) => claimMission(req.user.id, req.params.missionCode, 'weekly')));
 
 module.exports = router;

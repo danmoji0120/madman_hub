@@ -148,7 +148,7 @@ async function createPost({ userId, userRole = 'member', title, body, targetName
   }
 
   await addPointTransaction({
-    userId, amount: 5, type: 'post_created', reason: '게시글 작성 보상',
+    userId, amount: 10, type: 'post_created', reason: '게시글 작성 보상',
     sourcePlatform: 'hub', sourceId: String(created.id), createdBy: userId
   });
   await logActivity({

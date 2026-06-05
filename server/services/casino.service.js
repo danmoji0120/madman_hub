@@ -64,6 +64,7 @@ function maxBetFor(account, game) {
   if (game.fixedBet) return game.fixedBet;
   const limits = [account.balance];
   if (MAX_BET > 0) limits.push(MAX_BET);
+  if (game.maxBet > 0) limits.push(game.maxBet);
   if (MAX_BET_BALANCE_RATIO > 0) limits.push(Math.floor(account.balance * MAX_BET_BALANCE_RATIO));
   return Math.min(...limits);
 }
@@ -196,7 +197,10 @@ async function logCasinoFeedIfNeeded(gameResult) {
     payoutAmount: gameResult.payoutAmount,
     netAmount: gameResult.netAmount,
     multiplier: gameResult.state.multiplier ?? gameResult.state.cashoutMultiplier,
-    survivedCount: gameResult.state.survivedCount
+    survivedCount: gameResult.state.survivedCount,
+    reels: gameResult.state.reels,
+    matchedSymbol: gameResult.state.matchedSymbol,
+    matchCount: gameResult.state.matchCount
   };
   let action = null;
 
@@ -211,6 +215,11 @@ async function logCasinoFeedIfNeeded(gameResult) {
     if (gameResult.state.cashoutMultiplier >= 20) action = 'game_jackpot';
     else if (gameResult.state.cashoutMultiplier >= 5) action = 'game_cashout';
     else if (gameResult.result === 'bust' && gameResult.betAmount >= 100) action = 'game_big_loss';
+  } else if (gameResult.gameCode === 'slot_machine') {
+    const multiplier = Number(gameResult.state.multiplier || 0);
+    if (gameResult.result === 'bb_triple' || multiplier >= 45) action = 'game_jackpot';
+    else if (multiplier >= 10) action = 'game_big_win';
+    else if (gameResult.result === 'skull_triple' && gameResult.betAmount >= 100) action = 'game_big_loss';
   } else if (gameResult.gameCode === 'russian_roulette') {
     if (gameResult.state.survivedCount >= 5) action = 'game_jackpot';
     else if (gameResult.state.survivedCount >= 4) action = 'game_big_win';
@@ -439,6 +448,120 @@ async function playRoulette(userId, betAmount) {
       netAmount: payoutAmount - betAmount,
       label: slot.label
     },
+    account: await ensurePointAccount(userId),
+    unlockedAchievements: recorded.unlockedAchievements
+  };
+}
+
+function buildSlotMachineOutcome(betAmount) {
+  const config = casinoBalanceConfig.slotMachine;
+  const reels = Array.from({ length: 3 }, () => weightedPick(config.symbols));
+  const symbolCounts = reels.reduce((counts, symbol) => {
+    counts.set(symbol.key, (counts.get(symbol.key) || 0) + 1);
+    return counts;
+  }, new Map());
+  const tripleEntry = [...symbolCounts.entries()].find(([, count]) => count === 3);
+  const pairEntry = [...symbolCounts.entries()].find(([, count]) => count === 2);
+  const matchedSymbol = tripleEntry?.[0] || pairEntry?.[0] || null;
+  const matchCount = tripleEntry ? 3 : pairEntry ? 2 : 0;
+  const multiplier = matchCount === 3
+    ? config.triplePayouts[matchedSymbol]
+    : matchCount === 2
+      ? config.pairPayouts[matchedSymbol]
+      : 0;
+  const payoutAmount = Math.floor(betAmount * multiplier);
+  let result = 'loss';
+
+  if (matchCount === 3) result = matchedSymbol === 'skull' ? 'skull_triple' : `${matchedSymbol}_triple`;
+  else if (matchCount === 2) result = matchedSymbol === 'skull' ? 'skull_pair' : `${matchedSymbol}_pair`;
+
+  const labelsByKey = new Map(config.symbols.map((symbol) => [symbol.key, symbol.label]));
+  const state = {
+    reels: reels.map((symbol) => symbol.key),
+    labels: reels.map((symbol) => symbol.label),
+    multiplier,
+    matchedSymbol,
+    matchedLabel: matchedSymbol ? labelsByKey.get(matchedSymbol) : null,
+    matchCount,
+    rollTableVersion: 'slot-machine-v1'
+  };
+
+  return {
+    result,
+    payoutAmount,
+    state
+  };
+}
+
+async function playSlotMachine(userId, betAmount) {
+  await validateBet({ userId, gameCode: 'slot_machine', betAmount });
+  const outcome = buildSlotMachineOutcome(betAmount);
+  const payoutType = outcome.result === 'bb_triple' || outcome.state.multiplier >= 45
+    ? 'game_jackpot'
+    : outcome.state.multiplier === 1
+      ? 'game_refund'
+      : 'game_payout';
+
+  if (provider === 'supabase') {
+    const saved = await createAtomicInstantGameResult({
+      userId,
+      gameCode: 'slot_machine',
+      betAmount,
+      payoutAmount: outcome.payoutAmount,
+      payoutType,
+      result: outcome.result,
+      state: outcome.state
+    });
+    await recordCasinoResultStats(saved.result, saved.account).catch((error) => console.error('Casino V1.7 record failed:', error));
+    await logCasinoFeedIfNeeded(saved.result);
+    await incrementMission(userId, 'play_casino');
+    const [casinoAchievements, coreAchievements] = await Promise.all([
+      checkCasinoAchievements(userId),
+      checkAndUnlockAchievements(userId)
+    ]);
+    return {
+      game: 'slot_machine',
+      result: {
+        ...outcome.state,
+        result: outcome.result,
+        betAmount,
+        payoutAmount: outcome.payoutAmount,
+        netAmount: outcome.payoutAmount - betAmount
+      },
+      state: outcome.state,
+      account: saved.account,
+      unlockedAchievements: [...casinoAchievements, ...coreAchievements]
+    };
+  }
+
+  await chargeBet({ userId, gameCode: 'slot_machine', betAmount });
+  if (outcome.payoutAmount > 0) {
+    await payOut({
+      userId,
+      gameCode: 'slot_machine',
+      amount: outcome.payoutAmount,
+      type: payoutType,
+      reason: `격리소 머신 ${outcome.result} 지급`
+    });
+  }
+  const recorded = await recordGameResult({
+    userId,
+    gameCode: 'slot_machine',
+    betAmount,
+    payoutAmount: outcome.payoutAmount,
+    result: outcome.result,
+    state: outcome.state
+  });
+  return {
+    game: 'slot_machine',
+    result: {
+      ...outcome.state,
+      result: outcome.result,
+      betAmount,
+      payoutAmount: outcome.payoutAmount,
+      netAmount: outcome.payoutAmount - betAmount
+    },
+    state: outcome.state,
     account: await ensurePointAccount(userId),
     unlockedAchievements: recorded.unlockedAchievements
   };
@@ -674,6 +797,7 @@ module.exports = {
   listMyGameResults,
   validateBet,
   playRoulette,
+  playSlotMachine,
   startDiceBlackjack,
   hitDiceBlackjack,
   standDiceBlackjack,

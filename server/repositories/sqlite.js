@@ -191,11 +191,20 @@ async function runMigrations() {
        UNIQUE(user_id, mission_date, bonus_code)
      )`
   );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mine_logs (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, reward_amount INTEGER NOT NULL DEFAULT 0,
+       result_code TEXT NOT NULL, result_label TEXT NOT NULL, mine_state TEXT NOT NULL,
+       metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`
+  );
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date)');
   await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mine_logs_user_created ON mine_logs(user_id, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mine_logs_created ON mine_logs(created_at)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
        id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,

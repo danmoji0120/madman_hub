@@ -82,6 +82,7 @@ function assertSummaryShape(summary) {
     assert.ok(summary.season.titleSummary.length <= 4);
   }
   assert.ok(summary.dailyMissions === null || typeof summary.dailyMissions === 'object');
+  assert.ok(summary.weeklyMissions === null || typeof summary.weeklyMissions === 'object');
 }
 
 async function main() {
@@ -118,6 +119,8 @@ async function main() {
     const offline = await requestText('/offline.html');
     assert.ok(offline.includes('오프라인') || offline.includes('OFFLINE'));
     assert.ok(offline.includes('다시 시도'));
+    const mineHtml = await requestText('/mine.html');
+    assert.ok(mineHtml.includes('<title>격리소 광산 | MADMEN HUB</title>'));
 
     await request('/api/dashboard/summary', {}, 401);
 

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>격리소 광산 | MADMEN HUB</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#111827" />
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="nav app-header">
+    <a class="logo app-brand" href="/">MADMEN HUB</a>
+    <nav class="nav-links dashboard-nav top-nav" aria-label="주요 메뉴">
+      <a data-global-nav="home" href="/">홈</a>
+      <a data-global-nav="community" href="/index.html#community">커뮤니티</a>
+      <a data-global-nav="casino" href="/casino.html">카지노</a>
+      <a data-global-nav="season" href="/index.html#season">시즌</a>
+      <a data-global-nav="account" href="/index.html#account">내 정보</a>
+      <a data-global-nav="more" href="/index.html#more" class="active" aria-current="page">더보기</a>
+    </nav>
+  </header>
+
+  <main class="container mine-page">
+    <section class="hero mine-hero">
+      <span class="badge">노동형 포인트 수급처</span>
+      <h1>격리소 광산</h1>
+      <p>카지노 밖에서 포인트를 벌 수 있는 반복 채굴 구역입니다. 광맥 상태를 보고, 버튼을 누르고, 결과 로그를 확인하세요.</p>
+    </section>
+
+    <section class="mine-grid">
+      <article class="card mine-status-card">
+        <div class="section-heading">
+          <h2>오늘 채굴 상황</h2>
+          <span class="badge" id="mine-state">광맥 확인 중</span>
+        </div>
+        <p class="point" id="mine-earned">-</p>
+        <p class="meta" id="mine-hint">BB쨩이 채굴 장비를 점검하고 있습니다.</p>
+        <p class="message" id="mine-message" aria-live="polite"></p>
+        <button class="button mine-dig-button" id="mine-dig-button" type="button">채굴하기</button>
+      </article>
+
+      <article class="card mine-result-card">
+        <h2>최근 채굴 결과</h2>
+        <div class="mine-result" id="mine-result">아직 곡괭이가 울지 않았습니다.</div>
+      </article>
+    </section>
+
+    <section class="card mine-log-card">
+      <div class="section-heading">
+        <h2>채굴 로그</h2>
+        <button class="button secondary inline small-button" type="button" id="mine-refresh-button">새로고침</button>
+      </div>
+      <div class="mine-log-list" id="mine-history"></div>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/notificationBadge.js"></script>
+  <script src="/js/formatters.js"></script>
+  <script src="/js/mine.js"></script>
+</body>
+</html>

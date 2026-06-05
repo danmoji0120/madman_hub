@@ -35,10 +35,18 @@ async function debugCasinoState(label, request, auth) {
 async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
   try {
     const publicGames = await request('/api/casino/games');
-    assert.strictEqual(publicGames.games.length, 4);
+    assert.strictEqual(publicGames.games.length, 5);
     assert.ok(publicGames.games.some((game) => game.code === 'roulette'));
+    const slotGame = publicGames.games.find((game) => game.code === 'slot_machine');
     const russianGame = publicGames.games.find((game) => game.code === 'russian_roulette');
     const blackjackGame = publicGames.games.find((game) => game.code === 'dice_blackjack');
+    assert.ok(slotGame);
+    assert.strictEqual(slotGame.name, '격리소 머신');
+    assert.strictEqual(slotGame.minBet, 10);
+    assert.strictEqual(slotGame.maxBet, 300);
+    assert.strictEqual(slotGame.dailyLimit, 50);
+    assert.strictEqual(slotGame.payoutTable.find((item) => item.symbol === 'bb' && item.matchCount === 3).multiplier, 120);
+    assert.strictEqual(slotGame.payoutTable.find((item) => item.symbol === 'skull' && item.matchCount === 3).multiplier, 0);
     assert.strictEqual(russianGame.fixedBet, casinoBalanceConfig.russianRoulette.baseBet);
     assert.strictEqual(russianGame.rewardTable['1'], casinoBalanceConfig.russianRoulette.cashoutPayouts[1]);
     assert.strictEqual(russianGame.rewardTable['2'], casinoBalanceConfig.russianRoulette.cashoutPayouts[2]);
@@ -103,6 +111,20 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
         body: JSON.stringify({ betAmount: 10 })
       });
     }
+
+    const slot = await request('/api/casino/slot-machine/play', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ betAmount: 10, reels: ['bb', 'bb', 'bb'], payoutAmount: 999999 })
+    });
+    assert.strictEqual(slot.game, 'slot_machine');
+    assert.ok(Array.isArray(slot.result.reels));
+    assert.strictEqual(slot.result.reels.length, 3);
+    assert.ok(slot.result.reels.every((symbol) => casinoBalanceConfig.slotMachine.symbols.some((item) => item.key === symbol)));
+    assert.ok(Number.isFinite(slot.result.multiplier));
+    assert.strictEqual(slot.result.payoutAmount, Math.floor(10 * slot.result.multiplier));
+    assert.strictEqual(slot.result.netAmount, slot.result.payoutAmount - 10);
+    assert.strictEqual(slot.state.rollTableVersion, 'slot-machine-v1');
 
     const blackjack = await request('/api/casino/dice-blackjack/start', {
       method: 'POST',
@@ -211,14 +233,16 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
       request('/api/seasons/current/rankings/drawdown?limit=20'),
       request('/api/me/season-summary', { headers: auth })
     ]);
-    assert.ok(history.results.length >= 35);
-    assert.ok(limits.totalPlayed >= 35);
+    assert.ok(history.results.length >= 36);
+    assert.ok(history.results.some((item) => item.gameCode === 'slot_machine'));
+    assert.ok(limits.totalPlayed >= 36);
     assert.strictEqual(limits.totalDailyLimit, 0);
     assert.strictEqual(limits.totalRemaining, null);
     assert.strictEqual(limits.activeSessions.length, 0);
     assert.ok(transactions.transactions.some((item) => item.type === 'game_bet'));
     assert.ok(achievements.unlocked.some((item) => item.code === 'CASINO_FIRST_BET'));
     assert.ok(stats.games.length > 0);
+    assert.ok(stats.games.some((item) => item.gameKey === 'slot_machine'));
     assert.ok(stats.peakBalance >= 50000);
     assert.ok(stats.drawdown >= 20000);
     assert.ok(stats.biggestWin >= 0);

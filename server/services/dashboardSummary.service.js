@@ -1,6 +1,6 @@
 const { get } = require('../db');
 const { ensurePointAccount } = require('./points.service');
-const { getDailyMissions } = require('./dailyMissions.service');
+const { getDailyMissions, getWeeklyMissions } = require('./dailyMissions.service');
 const { listNotifications } = require('./notifications.service');
 const { getPublicRankingSummary } = require('./seasons.service');
 const { listSeasonTrophiesForUser, DEFAULT_REWARD_MAPPINGS } = require('./seasonRewards.service');
@@ -114,7 +114,7 @@ async function getAttendanceSummary(userId) {
   return {
     checkedToday,
     canCheckIn: !checkedToday,
-    todayReward: 10
+    todayReward: 30
   };
 }
 
@@ -241,17 +241,37 @@ async function getDailyMissionsSummary(userId) {
   };
 }
 
+async function getWeeklyMissionsSummary(userId) {
+  const data = await getWeeklyMissions(userId);
+  return {
+    weekStart: data.date,
+    missions: (data.missions || []).map((mission) => ({
+      id: mission.code,
+      code: mission.code,
+      title: mission.title,
+      completed: Boolean(mission.completed),
+      claimed: Boolean(mission.claimed),
+      progress: Number(mission.progress || 0),
+      target: Number(mission.target || 0),
+      rewardPoints: Number(mission.rewardPoints || 0)
+    })),
+    completedCount: Number(data.completedCount || 0),
+    totalCount: Number(data.totalCount || 0)
+  };
+}
+
 async function getDashboardSummary(userId) {
   const [me, points] = await Promise.all([
     getMeSummary(userId),
     getPointsSummary(userId)
   ]);
-  const [attendance, notifications, community, season, dailyMissions] = await Promise.all([
-    safeSection('attendance', { checkedToday: false, canCheckIn: true, todayReward: 10 }, () => getAttendanceSummary(userId)),
+  const [attendance, notifications, community, season, dailyMissions, weeklyMissions] = await Promise.all([
+    safeSection('attendance', { checkedToday: false, canCheckIn: true, todayReward: 30 }, () => getAttendanceSummary(userId)),
     safeSection('notifications', { unreadCount: 0, recent: [] }, () => getNotificationsSummary(userId)),
     safeSection('community', { recentPosts: [], popularPosts: [] }, () => getCommunitySummary()),
     safeSection('season', { currentSeason: null, titleSummary: [], mySeasonRewardTitles: [] }, () => getSeasonSummary(userId)),
-    safeSection('dailyMissions', { today: [], completedCount: 0, totalCount: 0 }, () => getDailyMissionsSummary(userId))
+    safeSection('dailyMissions', { today: [], completedCount: 0, totalCount: 0 }, () => getDailyMissionsSummary(userId)),
+    safeSection('weeklyMissions', { weekStart: null, missions: [], completedCount: 0, totalCount: 0 }, () => getWeeklyMissionsSummary(userId))
   ]);
 
   return {
@@ -261,7 +281,8 @@ async function getDashboardSummary(userId) {
     notifications,
     community,
     season,
-    dailyMissions
+    dailyMissions,
+    weeklyMissions
   };
 }
 

@@ -1,9 +1,9 @@
 const assert = require('assert');
 process.env.ANONYMOUS_POST_COST = '5';
 process.env.ANONYMOUS_COMMENT_COST = '2';
-process.env.COMMENT_REWARD_POINTS = '2';
+process.env.COMMENT_REWARD_POINTS = '5';
 process.env.COMMENT_REWARD_DAILY_LIMIT = '5';
-process.env.SONG_REWARD_POINTS = '5';
+process.env.SONG_REWARD_POINTS = '10';
 process.env.ANONYMOUS_SONG_COST = '3';
 process.env.SONG_REWARD_DAILY_LIMIT = '3';
 process.env.RANDOM_SONG_REWARD_POINTS = '1';
@@ -35,6 +35,7 @@ const { runCosmeticsSmoke } = require('./cosmetics-smoke-helper');
 const { runSeasonsSmoke } = require('./seasons-smoke-helper');
 const { runTitlesSmoke } = require('./titles-smoke-helper');
 const { runNotificationsSmoke } = require('./notifications-smoke-helper');
+const { runMineSmoke } = require('./mine-smoke-helper');
 const baseUrl = `http://127.0.0.1:${process.env.PORT}`;
 
 async function request(route, options = {}, expectedStatus = 200) {
@@ -139,31 +140,31 @@ async function main() {
 
     const firstCheckin = await request('/api/checkin', { method: 'POST', headers: auth });
     assert.strictEqual(firstCheckin.checkedIn, true);
-    assert.strictEqual(firstCheckin.account.balance, 15);
+    assert.strictEqual(firstCheckin.account.balance, 35);
     const secondCheckin = await request('/api/checkin', { method: 'POST', headers: auth });
     assert.strictEqual(secondCheckin.alreadyCheckedIn, true);
-    assert.strictEqual(secondCheckin.account.balance, 15);
+    assert.strictEqual(secondCheckin.account.balance, 35);
 
     const guestbook = await request('/api/guestbook', {
       method: 'POST',
       headers: auth,
       body: JSON.stringify({ body: `${runPrefix}guestbook` })
     });
-    assert.strictEqual(guestbook.account.balance, 22);
+    assert.strictEqual(guestbook.account.balance, 45);
 
     const post = await request('/api/posts', {
       method: 'POST',
       headers: auth,
       body: JSON.stringify({ title: `${runPrefix}post`, body: 'supabase smoke post', targetName: 'smoke' })
     });
-    assert.strictEqual(post.account.balance, 32);
+    assert.strictEqual(post.account.balance, 60);
 
     const legacyPost = await request('/api/quotes', {
       method: 'POST',
       headers: auth,
       body: JSON.stringify({ title: `${runPrefix}legacy`, body: 'legacy compatibility', targetName: 'smoke' })
     });
-    assert.strictEqual(legacyPost.account.balance, 37);
+    assert.strictEqual(legacyPost.account.balance, 70);
 
     for (let index = 0; index < 3; index += 1) {
       await request('/api/posts', {
@@ -175,7 +176,7 @@ async function main() {
 
     const purchase = await request(`/api/shop/titles/${officialTitle.id}/buy`, { method: 'POST', headers: auth });
     assert.strictEqual(purchase.purchased, true);
-    assert.strictEqual(purchase.account.balance, 32);
+    assert.strictEqual(purchase.account.balance, 90);
 
     const equip = await request('/api/me/title/equip', {
       method: 'POST',
@@ -213,6 +214,7 @@ async function main() {
     assert.ok(dashboardSummary.summary.season);
     assert.ok((dashboardSummary.summary.season.titleSummary || []).length <= 4);
     assert.ok(dashboardSummary.summary.dailyMissions === null || typeof dashboardSummary.summary.dailyMissions === 'object');
+    assert.ok(dashboardSummary.summary.weeklyMissions === null || typeof dashboardSummary.summary.weeklyMissions === 'object');
     const dashboardSummaryText = JSON.stringify(dashboardSummary);
     assert.strictEqual(dashboardSummaryText.includes('password_hash'), false);
     assert.strictEqual(dashboardSummaryText.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
@@ -225,7 +227,7 @@ async function main() {
     ) {
       logPostVisibilityDebug(posts, dashboard);
     }
-    assert.strictEqual(dashboard.me.points.balance, 32);
+    assert.strictEqual(dashboard.me.points.balance, 90);
     const apiPost = posts.posts.find((item) => item.title === expectedPostTitle);
     const dashboardPost = dashboard.recentPosts.find((item) => item.title === expectedPostTitle);
     assert.ok(apiPost);
@@ -313,6 +315,8 @@ async function main() {
     await runTitlesSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
     console.log('Supabase smoke stage: notifications');
     await runNotificationsSmoke({ request, auth, ownerAuth, userId: registered.user.id, runPrefix });
+    console.log('Supabase smoke stage: mine');
+    await runMineSmoke({ request, auth });
     console.log('Supabase smoke stage: songs-missions');
     await runSongsMissionsSmoke({ request, auth, ownerAuth, runPrefix });
     console.log('Supabase smoke stage: seasons');

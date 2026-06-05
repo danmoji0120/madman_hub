@@ -355,22 +355,25 @@ function renderHomeProfile(summary) {
     </div>
     <p class="meta">${attendance.checkedToday ? '오늘 출석 완료' : '오늘 출석 보상을 받을 수 있습니다.'}</p>
     <button class="button" onclick="checkIn()" ${attendance.canCheckIn === false || attendance.checkedToday ? 'disabled' : ''}>
-      ${attendance.checkedToday ? '오늘 출석 완료' : `출석하고 ${formatPoints(attendance.todayReward || 10)} 받기`}
+      ${attendance.checkedToday ? '오늘 출석 완료' : `출석하고 ${formatPoints(attendance.todayReward || 30)} 받기`}
     </button>
   `;
 }
 
-function renderHomeDailyMissions(data = {}) {
+function renderHomeDailyMissions(data = {}, weekly = {}) {
   const card = document.querySelector('#daily-missions-card');
   const missions = Array.isArray(data.today) ? data.today : [];
   const completedCount = Number(data.completedCount || 0);
   const totalCount = Number(data.totalCount || missions.length || 0);
+  const weeklyCompleted = Number(weekly.completedCount || 0);
+  const weeklyTotal = Number(weekly.totalCount || 0);
 
   card.innerHTML = `
     <div class="section-heading">
       <h2>오늘 할 일</h2>
       <span class="badge">${completedCount}/${totalCount}</span>
     </div>
+    ${weeklyTotal ? `<p class="meta">주간 처방전 ${weeklyCompleted}/${weeklyTotal} · 이번 주 목표 보상은 주간미션에서 확인하세요.</p>` : ''}
     <div class="mission-list">
       ${missions.slice(0, 5).map((mission) => {
         const code = mission.code || mission.id;
@@ -2224,7 +2227,7 @@ function renderHomeProfile(summary = {}) {
       </div>
     </div>
     <button class="button" type="button" data-home-action="checkin" ${attendance.canCheckIn === false || attendance.checkedToday ? 'disabled' : ''}>
-      ${attendance.checkedToday ? '오늘도 격리 완료' : `출석하고 ${formatPoints(attendance.todayReward || 10)} 받기`}
+      ${attendance.checkedToday ? '오늘도 격리 완료' : `출석하고 ${formatPoints(attendance.todayReward || 30)} 받기`}
     </button>
   `;
 }
@@ -2440,6 +2443,11 @@ function renderHomeCasinoGate() {
       <button class="button secondary inline small-button" type="button" data-home-action="casino">카지노 탭</button>
     </div>
     <p class="meta">오늘도 포인트가 증발할 준비를 마쳤습니다. 대참사 기록과 내 카지노 통계는 카지노 탭에서 확인하세요.</p>
+    <div class="home-mini-card home-mine-gate">
+      <strong>격리소 광산</strong>
+      <p class="meta">포인트는 여기서 캐고, 카지노에서는 잔고를 예능으로 가공하세요.</p>
+      <a class="button secondary inline small-button" href="/mine.html">광산으로 이동</a>
+    </div>
     <div class="home-action-row">
       <button class="button inline" type="button" data-home-action="casino">카지노 입장</button>
       <a class="button secondary inline" href="/casino.html">게임 화면 열기</a>
@@ -2478,7 +2486,7 @@ function renderHomeFromSummary(summary = {}) {
   renderMainNavigation(summary.me, summary.notifications?.unreadCount || 0);
   setHomeLoading(false);
   renderHomeProfile(summary);
-  renderHomeDailyMissions(summary.dailyMissions);
+  renderHomeDailyMissions(summary.dailyMissions, summary.weeklyMissions);
   renderHomeNotifications(summary.notifications);
   renderHomePosts(summary.community);
   renderHomeSeason(summary.season);

@@ -226,6 +226,17 @@ CREATE TABLE IF NOT EXISTS daily_mission_bonus_claims (
   UNIQUE(user_id, mission_date, bonus_code)
 );
 
+CREATE TABLE IF NOT EXISTS mine_logs (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reward_amount INTEGER NOT NULL DEFAULT 0,
+  result_code TEXT NOT NULL,
+  result_label TEXT NOT NULL,
+  mine_state TEXT NOT NULL,
+  metadata_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS guestbook_entries (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -453,6 +464,8 @@ CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recom
 CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission_progress(user_id, mission_date);
 CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code);
+CREATE INDEX IF NOT EXISTS idx_mine_logs_user_created ON mine_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mine_logs_created ON mine_logs(created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);

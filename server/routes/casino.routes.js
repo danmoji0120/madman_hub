@@ -78,6 +78,10 @@ router.post('/roulette/play', authRequired, handle(async (req) => (
   casino.playRoulette(req.user.id, req.body.betAmount)
 )));
 
+router.post('/slot-machine/play', authRequired, handle(async (req) => (
+  casino.playSlotMachine(req.user.id, req.body.betAmount)
+)));
+
 router.post('/dice-blackjack/start', authRequired, handle(async (req) => (
   casino.startDiceBlackjack(req.user.id, req.body.betAmount)
 )));
