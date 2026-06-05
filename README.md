@@ -75,6 +75,14 @@ npm.cmd run dev
 npm.cmd run test:smoke:sqlite
 ```
 
+홈 경량화와 dashboard summary 경로만 빠르게 확인하려면 부분 smoke를 사용할 수 있습니다.
+
+```powershell
+npm.cmd run test:smoke:dashboard:sqlite
+```
+
+이 스크립트는 별도 SQLite smoke DB를 띄워 `/health`, `/`, `/api/dashboard/summary`, 홈 lazy shell, 민감 정보 미노출을 확인합니다. 카지노, 시즌 보상, 상점 구매, 댓글 작성 같은 전체 기능 회귀는 기존 `test:smoke:sqlite`가 담당합니다.
+
 ## Supabase 설정
 
 이번 단계에서는 Supabase Auth를 사용하지 않습니다. Supabase는 PostgreSQL 저장소로만 사용하며 기존 JWT 인증을 유지합니다.
@@ -101,6 +109,54 @@ npm.cmd run test:smoke:supabase
 ```
 
 Supabase 테스트는 `smoke_` 접두사의 임시 사용자를 만들고 FK 순서에 맞춰 관련 데이터를 정리합니다. 운영 프로젝트 대신 별도 테스트 프로젝트 사용을 권장합니다.
+
+### Smoke 실행 기준
+
+프론트 레이아웃/CSS 또는 lazy shell만 바꾸는 작업은 보통 아래 조합으로 충분합니다.
+
+```powershell
+node --check public/js/main.js
+npm.cmd run test:smoke:dashboard:sqlite
+git diff --check
+```
+
+사용 가능한 주요 smoke 명령:
+
+- `npm.cmd run test:smoke:dashboard`
+- `npm.cmd run test:smoke:dashboard:sqlite`
+- `npm.cmd run test:smoke:sqlite`
+- `npm.cmd run test:smoke:supabase`
+
+프론트 JS lazy load가 기존 API 호출을 새로 연결한 경우에는 필요에 따라 전체 SQLite smoke도 함께 실행합니다.
+
+```powershell
+npm.cmd run test:smoke:sqlite
+```
+
+Supabase smoke가 필수인 경우:
+
+- server 코드, repository 코드, API 응답 구조 변경
+- DB schema, seed, Supabase schema/seed/rpc 변경
+- 인증, 권한, 포인트 트랜잭션 변경
+- 시즌 보상 grant/preview/revoke 로직 변경
+- 카지노 정산, 포인트 지급, payout/odds/limit 변경
+- provider별 SQL/RPC 차이가 생길 수 있는 변경
+
+Supabase smoke를 생략할 수 있는 경우:
+
+- public HTML/CSS만 변경
+- public JS 표시/레이아웃 또는 lazy shell만 변경하고 기존 API만 호출
+- README/docs만 변경
+- 테스트 문서 또는 assertion만 SQLite 범위에서 수정
+- server/API/DB/Supabase 파일을 전혀 건드리지 않은 경우
+
+생략 보고 예시는 다음처럼 남깁니다.
+
+```text
+Supabase smoke 생략: server/API/DB/Supabase 변경 없음, 프론트 표시 또는 문서 변경만 있음.
+```
+
+기존 전체 smoke가 실패 중이라면 Supabase smoke 생략 여부와 별개로 먼저 실패 원인을 정리해야 합니다.
 
 ## 카지노 API
 
@@ -254,9 +310,79 @@ community_activity = post_count * 3 + comment_count * 1 + song_count * 2
 
 시즌 전용 배지는 `title-season-reward`에 더해 `title-season-dominator`, `title-season-disaster`, `title-season-fortune`, `title-season-archivist` 클래스를 사용합니다. 향후 Battle/Deal Arena 시즌 칭호를 위해 `battle`, `upset` 스타일 값도 예약되어 있습니다.
 
-## V1.8.6-A 홈 경량화 준비
+## V1.8.6-A 홈/대시보드 최적화
 
-이번 단계는 홈을 완전히 다시 만드는 작업이 아니라, 병목을 볼 수 있게 만들고 메뉴 구조를 정리하는 준비 작업입니다. 홈은 가벼운 입구로 두고, 무거운 목록과 통계는 각 탭에서 불러오는 방향으로 후속 작업을 이어갑니다.
+V1.8.6-A는 홈 초기 로드를 가볍게 만들고, 커뮤니티/시즌/카지노/내 정보/더보기 상세 영역을 탭 진입 시점에 불러오도록 분리한 홈/대시보드 최적화 단계입니다.
+
+완료된 범위:
+
+- 성능 진단 로그와 상위 탭 구조 정리
+- `GET /api/dashboard/summary` 추가
+- 홈 UI를 summary API 중심으로 전환
+- 홈 레이아웃 압축과 PC 2열 대시보드 정리
+- 커뮤니티, 시즌, 카지노, 내 정보, 더보기 lazy load 적용
+- dashboard/home 전용 부분 smoke 추가
+- loading, empty, error, retry 상태 UI를 공통 `state-card`/helper 기반으로 통일
+
+홈은 이제 모든 기능을 한 번에 펼치는 전시장이 아니라 빠른 입구입니다. 초기 홈 주요 API는 `GET /api/dashboard/summary`이며, 홈에는 다음 요약만 즉시 표시합니다.
+
+- 내 정보 요약, 대표 칭호, 포인트
+- 출석 상태
+- 최근 알림 일부
+- 최근 글 3개
+- 인기글 3개
+- 시즌 칭호 4종 요약
+- 일일 미션 요약
+
+홈 초기 로드에서 제외하는 무거운 데이터:
+
+- 전체 게시글/댓글/노래추천 목록
+- 시즌 전체 랭킹, 명예의 전당 전체, 내 시즌 트로피 상세
+- 카지노 상세 기록, 카지노 이벤트 전체
+- 전체 칭호/꾸미기/상점/업적 목록
+- 전체 알림 목록
+- 관리자 통계
+
+상위 탭 lazy load 구조:
+
+- 홈: `/api/dashboard/summary` 기반
+- 커뮤니티
+  - 최신글: `/api/posts?limit=12`
+  - 노래추천: `/api/songs?limit=12`
+  - 랜덤글: `/api/posts/random`
+  - 인기글/댓글: 상세 API가 없으면 compact fallback
+- 시즌
+  - 시즌 현황: summary의 season 데이터 재사용
+  - 랭킹: `/api/seasons/current/rankings/:category`
+  - 명예의 전당: `/api/seasons/hall-of-fame`
+  - 내 시즌 기록: `/api/me/season-summary`, `/api/me/season-trophies`
+- 카지노
+  - 게임: 정적 카드와 `/casino.html` 연결
+  - 내 기록: `/api/casino/stats/me`
+  - 대참사: `/api/casino/events?limit=8`
+  - 밸런스 안내: 정적 안내
+- 내 정보
+  - 프로필: summary의 `me`, `points`, `equippedTitle` 재사용
+  - 칭호/꾸미기/상점/업적: 기존 페이지 링크 또는 fallback
+- 더보기
+  - 알림: `/api/notifications?limit=10`
+  - 설정: 기존 링크 또는 fallback
+  - 관리자: `admin`/`owner`만 렌더링
+  - 로그아웃: 기존 `API.logout()` 동작
+
+프론트 메모리 캐시:
+
+- 새로고침하면 캐시는 초기화됩니다.
+- 주요 lazy panel TTL은 약 45~50초입니다.
+- 세부탭별 cache key는 `community:*`, `season:*`, `casino:*`, `account:*`, `more:*` 형식을 사용합니다.
+- 구매/장착/관리자 작업 이후 자동 캐시 무효화는 아직 제한적이며 후속 개선 여지가 있습니다.
+
+상태 UI:
+
+- 공통 helper: `renderPanelState()`, `renderLoadingState()`, `renderEmptyState()`, `renderErrorState()`, `renderRetryButton()`
+- 공통 상태: loading, empty, error, retry
+- API 실패 시 전체 홈을 새로고침하지 않고 해당 패널만 재시도합니다.
+- API가 없어서 보여주는 안내는 error가 아니라 empty/info 성격으로 표시합니다.
 
 성능 진단 로그는 브라우저 콘솔에서 아래처럼 켤 수 있습니다.
 
@@ -272,59 +398,12 @@ localStorage.removeItem('DEBUG_DASHBOARD');
 location.reload();
 ```
 
-활성화하면 콘솔에 `dashboard` 범위 로그가 출력됩니다.
+기대 흐름:
 
-- `[dashboard] init start`
-- `[dashboard] api GET /api/dashboard 312ms 200 ok`
-- `[dashboard] render home 94ms`
-- `[dashboard] init total 1412ms`
-- `[dashboard] initial api count 2`
-- `[dashboard] initial api list`
-
-로그는 URL, method, status, ok 여부, 소요 시간만 기록합니다. JWT, 비밀번호, Supabase key, API 응답 body 전체는 출력하지 않습니다.
-
-정리된 상위 탭 구조:
-
-- 홈
-- 커뮤니티
-- 카지노
-- 시즌
-- 내 정보
-- 더보기
-
-커뮤니티 세부탭:
-
-- 최신글
-- 인기글
-- 댓글
-- 노래추천
-- 랜덤글
-
-내 정보 세부탭:
-
-- 프로필
-- 칭호
-- 꾸미기
-- 상점
-- 업적
-
-더보기 세부항목:
-
-- 알림
-- 설정
-- 관리자
-- 로그아웃
-
-관리자 메뉴는 로그인 사용자 role이 `admin` 또는 `owner`일 때만 JS 렌더링 단계에서 추가됩니다. 일반 유저에게는 관리자 링크를 렌더링하지 않습니다.
-
-홈에 남기는 정보는 내 포인트, 대표 칭호, 출석, 최근 알림, 최근 글, 인기글, 시즌 칭호 요약처럼 빠르게 훑는 항목을 중심으로 둡니다. 전체 시즌 랭킹, 카지노 통계, 명예의 전당 전체, 세부 트로피, 전체 글/노래/알림/칭호 목록, 관리자 통계는 홈 초기 로딩 대상에서 점진적으로 제외할 계획입니다.
-
-후속 작업:
-
-- A-3: `/api/dashboard/summary` 또는 동등한 dashboard summary API 설계
-- A-4: 홈 UI를 summary 응답 중심으로 적용
-- A-5: 커뮤니티/카지노/시즌/내 정보 탭별 lazy load
-- A-6: 캐시, 스켈레톤, 빈 상태 정리
+- 홈 초기 주요 API는 `/api/dashboard/summary`
+- 커뮤니티/시즌/카지노/내 정보/더보기 상세 API는 탭 클릭 후 호출
+- 탭 단위 `cache hit`, `load`, `load failed` 로그 출력
+- 응답 body, JWT, `password_hash`, Supabase service role key는 로그에 출력하지 않음
 
 용병단 출시 후 목표 탭 구조는 `홈 / 커뮤니티 / 카지노 / 용병단 / 시즌 / 더보기`입니다. 용병단 세부탭은 내 용병, 용병 사무소, 의뢰소, 편성, 훈련, 의무실, 전투 기록 방향으로 확장할 수 있습니다.
 
@@ -738,34 +817,74 @@ Supabase 운영 DB 적용 순서:
 
 적용 후 `npm.cmd run test:smoke:supabase`로 provider-safe 동작과 cleanup을 확인하세요.
 
-## V1.8.6-A-4 Home Summary UI
+## V1.8.6-A 종료 메모
 
-Home now uses `GET /api/dashboard/summary` as the first authenticated dashboard request. The first render is built from the summary payload instead of separately loading the legacy dashboard bundle, daily missions, notification preview, recent posts, popular posts, and season title preview.
+V1.8.6-A는 홈/탭 성능 구조 정리 단계로 종료합니다. PWA 작업 전까지 홈 초기 로드는 `/api/dashboard/summary` 중심으로 유지하고, 상세 데이터는 커뮤니티/시즌/카지노/내 정보/더보기 탭 진입 시 lazy load하는 구조를 유지합니다.
 
-Home renders only lightweight entrance data:
+다음 단계:
 
-- my profile summary, equipped title, point balance, and attendance state
-- daily mission summary
-- unread notification count and recent notifications
-- recent posts up to 3
-- popular posts up to 3
-- current season title summary up to 4
-- my representative season reward titles
+- V1.8.6-B: PWA 기본 설치, manifest, service worker
+- V1.8.6-C: Web Push 기반
+- V1.8.6-D: Push 이벤트 연동
+- V1.8.7: 의뢰소
+- V1.9: 용병단 기초
 
-Home intentionally does not load full season rankings, hall of fame lists, trophy details, casino statistics, full notification lists, full post/song/title/shop lists, or admin statistics. Those remain available through their existing pages and APIs, and the next pass should move tab details into lazy-loaded sections.
+Web Push, 의뢰소, 용병단 기능은 아직 완료된 기능이 아니며, V1.8.6-A에서 정리한 홈 summary와 lazy load 구조 위에 후속으로 붙입니다.
 
-Dashboard performance logging can confirm the lighter startup path:
+## V1.8.6-B PWA 기본 기반
+
+V1.8.6-B는 Madmen Hub를 설치 가능한 기본 PWA로 만들기 위한 기반 단계입니다. Web Push, 알림 권한 요청, Push subscription은 아직 구현하지 않았고 V1.8.6-C 이후로 분리합니다.
+
+추가된 PWA 파일:
+
+- `public/manifest.webmanifest`: 앱 이름, 시작 URL, standalone 표시 방식, 테마 색상, 아이콘 정보를 정의합니다.
+- `public/sw.js`: 정적 앱 셸 캐시, navigation 오프라인 fallback, 서비스 워커 업데이트 감지를 담당합니다.
+- `public/offline.html`: 네트워크가 끊긴 상태에서 navigation 요청이 실패했을 때 보여주는 안내 페이지입니다.
+- `public/icons/icon.svg`, `public/icons/maskable-icon.svg`: manifest용 기본 SVG 아이콘입니다. 운영 품질을 더 높이려면 후속에서 192/512 PNG 아이콘을 추가할 수 있습니다.
+
+캐시 정책:
+
+- 정적 앱 셸 중심으로만 캐시합니다.
+- `/`, `/index.html`, `/offline.html`, 핵심 CSS/JS, manifest, 아이콘을 precache합니다.
+- navigation 요청은 network-first이며 실패 시 `/offline.html`을 보여줍니다.
+- CSS/JS/SVG 같은 정적 자산은 cache-first에 가까운 stale-while-revalidate 방식으로 처리합니다.
+- `/api/`, `/api/admin`, `/health`, 관리자 페이지, Authorization 헤더가 있는 요청, POST/PUT/PATCH/DELETE 요청은 캐시하지 않습니다.
+- 로그인 토큰, JWT, Supabase service role key, 개인 API 응답은 Cache Storage에 저장하지 않습니다.
+
+설치 UX:
+
+- 더보기 > 설정 영역에 앱 설치 카드가 표시됩니다.
+- `beforeinstallprompt`를 지원하는 브라우저에서는 앱 설치 버튼을 표시합니다.
+- 지원하지 않는 브라우저에서는 브라우저 메뉴의 홈 화면에 추가/앱 설치 안내를 보여줍니다.
+- 이미 standalone 앱 모드로 실행 중이면 설치 완료 상태로 표시합니다.
+
+업데이트 UX:
+
+- 새 service worker가 설치되어 대기 상태가 되면 하단에 “새 버전이 준비되었습니다” 배너를 표시합니다.
+- 자동 새로고침하지 않으며, 사용자가 새로고침 버튼을 눌렀을 때만 `SKIP_WAITING` 메시지를 보내고 새 버전으로 전환합니다.
+- 카지노 플레이나 작성 중인 작업을 강제로 끊지 않는 것을 우선합니다.
+
+개발 확인:
 
 ```js
-localStorage.DEBUG_DASHBOARD = 'true';
+localStorage.DEBUG_PWA = 'true';
 location.reload();
 ```
 
-Expected A-4 startup shape:
+확인할 내용:
 
-- `[dashboard] api GET /api/dashboard/summary ...`
-- `[dashboard] render home summary ...`
-- `[dashboard] init total ...`
-- `[dashboard] initial api count 1`
+- service worker 등록 로그
+- updatefound / appinstalled / beforeinstallprompt 로그
+- `/api/dashboard/summary`와 카지노/포인트 API가 Cache Storage에 저장되지 않는지
+- DevTools > Application > Manifest / Service Workers / Cache Storage 상태
+- 오프라인 모드에서 `/` navigation 실패 시 offline fallback 표시
 
-If the summary request fails, the home page shows a retry card instead of a blank page. Attendance and mission reward buttons still use the existing action APIs, then refresh the summary after success.
+자동 테스트:
+
+```powershell
+node --check public/js/main.js
+node --check public/sw.js
+npm.cmd run test:smoke:dashboard:sqlite
+npm.cmd run test:smoke:sqlite
+git diff --check
+```

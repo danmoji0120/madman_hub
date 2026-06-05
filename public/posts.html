@@ -7,58 +7,82 @@
   <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
-  <header class="nav">
-    <a class="logo" href="/">MADMEN HUB</a>
-    <nav class="nav-links">
-      <a href="/songs.html">노래추천</a>
-      <a href="/members.html">거주민</a>
-      <a href="/guestbook.html">방명록</a>
-      <a href="/shop.html">칭호 상점</a>
-      <a href="/cosmetics.html">꾸미기 상점</a>
-      <a href="/seasons.html">시즌 랭킹</a>
-      <a href="/casino.html">카지노</a>
-      <a href="/profile.html">내 프로필</a>
+  <header class="nav app-header">
+    <a class="logo app-brand" href="/">MADMEN HUB</a>
+    <nav class="nav-links dashboard-nav top-nav" aria-label="주요 메뉴">
+      <a data-global-nav="home" href="/">홈</a>
+      <a data-global-nav="community" href="/index.html#community" class="active" aria-current="page">커뮤니티</a>
+      <a data-global-nav="casino" href="/casino.html">카지노</a>
+      <a data-global-nav="season" href="/index.html#season">시즌</a>
+      <a data-global-nav="account" href="/index.html#account">내 정보</a>
+      <a data-global-nav="more" href="/index.html#more">더보기</a>
     </nav>
   </header>
 
   <main class="container">
     <section class="hero">
       <h1>게시판</h1>
-      <p>잡담부터 기록문까지, 카테고리와 태그로 원하는 글을 찾아보세요.</p>
+      <p>농담부터 기록문까지, 카테고리와 태그로 원하는 글을 찾아보세요.</p>
     </section>
 
-    <section class="card">
-      <h2>게시글 찾기</h2>
-      <div class="form-grid">
-        <input class="input" id="post-search" placeholder="제목, 본문, 대상 검색" />
-        <select class="input" id="post-category-filter"></select>
-        <input class="input" id="post-tag-filter" placeholder="태그 검색" />
-        <select class="input" id="post-sort">
-          <option value="latest">최신순</option>
-          <option value="oldest">오래된순</option>
-        </select>
+    <section class="posts-board">
+      <div class="community-tabs posts-tabs" role="tablist" aria-label="게시판 탭">
+        <button class="community-tab-button posts-tab-button active" id="posts-list-tab-button" type="button" onclick="openPostsListTab()">게시글 목록</button>
+        <button class="community-tab-button posts-tab-button" id="posts-write-tab-button" type="button" onclick="openPostsWriteTab()">글쓰기</button>
       </div>
-      <div class="hero-actions">
-        <button class="button inline" type="button" onclick="searchPosts()">검색</button>
-        <button class="button secondary inline" type="button" onclick="resetPostFilters()">초기화</button>
-        <button class="button secondary inline" type="button" onclick="loadRandomPost(this)">선택 조건에서 랜덤 글</button>
-      </div>
-      <p id="random-post-result" class="message"></p>
+
+      <section class="posts-tab-panel" id="posts-list-panel">
+        <section class="card posts-toolbar-card">
+          <div class="section-heading">
+            <h2>게시글 찾기</h2>
+            <button class="button inline small-button" type="button" onclick="openPostsWriteTab()">글쓰기</button>
+          </div>
+          <div class="form-grid posts-filter-grid">
+            <input class="input" id="post-search" placeholder="제목, 본문, 대상 검색" />
+            <select class="input" id="post-category-filter"></select>
+            <input class="input" id="post-tag-filter" placeholder="태그 검색" />
+            <select class="input" id="post-sort">
+              <option value="latest">최신순</option>
+              <option value="oldest">오래된순</option>
+            </select>
+          </div>
+          <div class="hero-actions posts-toolbar-actions">
+            <button class="button inline" type="button" onclick="searchPosts()">검색</button>
+            <button class="button secondary inline" type="button" onclick="resetPostFilters()">초기화</button>
+            <button class="button secondary inline" type="button" onclick="loadRandomPost(this)">선택 조건에서 랜덤 글</button>
+          </div>
+          <p id="random-post-result" class="message"></p>
+          <p id="posts-list-message" class="message"></p>
+        </section>
+
+        <section class="grid posts-list-grid" id="posts-list"></section>
+      </section>
+
+      <section class="posts-tab-panel card posts-write-card" id="posts-write-panel" hidden>
+        <div class="section-heading">
+          <h2>게시글 작성</h2>
+          <button class="button secondary inline small-button" type="button" onclick="openPostsListTab()">목록으로</button>
+        </div>
+        <div class="community-empty" id="post-write-login" hidden>
+          <strong>로그인이 필요합니다</strong>
+          <p class="meta">게시글을 작성하려면 먼저 로그인해 주세요.</p>
+          <a class="button inline small-button" href="/login.html">로그인</a>
+        </div>
+        <form class="posts-write-form" id="post-form" onsubmit="postArticle(event)">
+          <select class="input" id="post-category"></select>
+          <input class="input" id="post-title" placeholder="제목" maxlength="100" />
+          <input class="input" id="post-target" placeholder="관련 대상" maxlength="40" />
+          <input class="input" id="post-tags" placeholder="태그, 쉼표로 구분" maxlength="200" />
+          <textarea class="textarea" id="post-body" placeholder="게시글 내용" maxlength="2000"></textarea>
+          <label class="checkbox-label"><input type="checkbox" id="post-anonymous" /> 익명으로 작성 <span class="meta" id="anonymous-post-cost">비용 5 P</span></label>
+          <div class="posts-write-actions">
+            <button class="button" type="submit">게시글 작성</button>
+            <button class="button secondary" type="button" onclick="cancelPostWrite()">취소</button>
+          </div>
+          <p id="message" class="message"></p>
+        </form>
+      </section>
     </section>
-
-    <form class="card" style="margin-top: 18px;" onsubmit="postArticle(event)">
-      <h2>게시글 작성</h2>
-      <select class="input" id="post-category"></select>
-      <input class="input" id="post-title" placeholder="제목" maxlength="100" />
-      <input class="input" id="post-target" placeholder="관련 대상" maxlength="40" />
-      <input class="input" id="post-tags" placeholder="태그, 쉼표로 구분" maxlength="200" />
-      <textarea class="textarea" id="post-body" placeholder="게시글 내용" maxlength="2000"></textarea>
-      <label class="checkbox-label"><input type="checkbox" id="post-anonymous" /> 익명으로 작성 <span class="meta" id="anonymous-post-cost">비용 5 P</span></label>
-      <button class="button" type="submit">게시글 작성</button>
-      <p id="message" class="message"></p>
-    </form>
-
-    <section class="grid" id="posts-list" style="margin-top: 18px;"></section>
   </main>
 
   <script src="/js/api.js"></script>

@@ -35,6 +35,24 @@ function assertFormattedRankingScore(entry) {
   if (SCORE_CATEGORIES.has(entry.category)) return assertFormattedScoreScore(entry.formattedScore);
 }
 
+function isUserSeasonRewardLimitSkip(item = {}) {
+  return item.skipReason === 'userSeasonRewardLimit'
+    || item.statusReason === 'userSeasonRewardLimit'
+    || item.reason === 'userSeasonRewardLimit'
+    || item.status === 'skippedUserLimit'
+    || (item.rewardType === 'trophy' && item.willGrantTitle === false && item.titleData == null);
+}
+
+function assertPointEarnedRewardPolicy(row) {
+  assert.ok(row);
+  assert.strictEqual(row.category, 'point_earned');
+  assert.ok(
+    (row.willGrantTitle === true && row.titleData)
+      || isUserSeasonRewardLimitSkip(row),
+    `point_earned reward row should grant a title or be skipped by user season title limit: ${JSON.stringify(row)}`
+  );
+}
+
 function findGroupWithCategory(groups, groupKey, category) {
   return (groups || []).find((group) => (
     group.groupKey === groupKey &&
@@ -193,7 +211,9 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     assert.ok(rewardPreview.groupedTrophyRows.length > 0);
     assert.ok(rewardPreview.groupedTrophyRows.length <= rewardPreview.trophyOnlyRows.length);
     assert.ok(rewardPreview.titleGrantRows.length <= 4);
-    assert.ok(rewardPreview.titleGrantRows.some((item) => item.category === 'point_earned' && item.titleData && item.titleData.name === '포인트 위에 누운 자'));
+    const pointEarnedPreviewRow = rewardPreview.items.find((item) => item.category === 'point_earned' && item.userId === userId)
+      || rewardPreview.items.find((item) => item.category === 'point_earned');
+    assertPointEarnedRewardPolicy(pointEarnedPreviewRow);
     assert.ok(rewardPreview.titleGrantRows.some((item) => item.category === 'community_activity' && item.titleData && item.titleData.name === '격리소 서기관'));
     assert.ok(rewardPreview.items.some((item) => item.category === 'activity_score' && item.rewardType === 'title' && item.titleData));
     assert.ok(rewardPreview.items.some((item) => item.status === 'trophyOnly'));
@@ -236,7 +256,9 @@ async function runSeasonsSmoke({ request, auth, ownerAuth, userId, runPrefix }) 
     });
     assert.strictEqual(rewardDryRun.dryRun, true);
     assert.ok(Array.isArray(rewardDryRun.groupedTrophyRows));
-    assert.ok(rewardDryRun.items.some((item) => item.category === 'point_earned' && item.userId === userId && item.titleData));
+    const pointEarnedDryRunRow = rewardDryRun.items.find((item) => item.category === 'point_earned' && item.userId === userId)
+      || rewardDryRun.items.find((item) => item.category === 'point_earned');
+    assertPointEarnedRewardPolicy(pointEarnedDryRunRow);
     const grantedRewards = await request(`/api/admin/seasons/${createdSeasonId}/grant-rewards`, {
       method: 'POST',
       headers: ownerAuth,

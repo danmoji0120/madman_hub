@@ -11,6 +11,8 @@
     "test:smoke": "node scripts/smoke-test.js",
     "test:smoke:sqlite": "cross-env DB_PROVIDER=sqlite node scripts/smoke-test.js",
     "test:smoke:supabase": "cross-env DB_PROVIDER=supabase node scripts/smoke-test.js",
+    "test:smoke:dashboard": "node scripts/smoke-test-dashboard.js",
+    "test:smoke:dashboard:sqlite": "cross-env DB_PROVIDER=sqlite node scripts/smoke-test-dashboard.js",
     "test:smoke:casino:sqlite": "cross-env DB_PROVIDER=sqlite node scripts/smoke-test.js",
     "test:smoke:casino:supabase": "cross-env DB_PROVIDER=supabase node scripts/smoke-test.js"
   },

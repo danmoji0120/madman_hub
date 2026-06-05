@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Madmen Hub icon">
+  <defs>
+    <linearGradient id="bg" x1="64" y1="48" x2="448" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20114a"/>
+      <stop offset="0.55" stop-color="#101428"/>
+      <stop offset="1" stop-color="#080812"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="132" y1="126" x2="380" y2="386" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff4fd8"/>
+      <stop offset="0.45" stop-color="#53f5ff"/>
+      <stop offset="1" stop-color="#f8d56b"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M116 366V146h66l74 112 74-112h66v220h-68V254l-54 82h-36l-54-82v112h-68Z" fill="url(#mark)"/>
+  <path d="M128 394h256" stroke="#f8d56b" stroke-width="18" stroke-linecap="round" opacity="0.86"/>
+  <circle cx="388" cy="124" r="28" fill="#ff4fd8" opacity="0.9"/>
+</svg>
