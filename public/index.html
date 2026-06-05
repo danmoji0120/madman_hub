@@ -10,17 +10,20 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/iaTabs.css" />
 </head>
 <body>
   <header class="nav">
     <a class="logo" href="/">MADMEN HUB</a>
     <nav class="nav-links dashboard-nav" id="main-nav">
       <button type="button" class="nav-tab-button active" data-top-tab="home" onclick="openHomeView()">홈</button>
+      <button type="button" class="nav-tab-button" data-top-tab="activity" onclick="openActivityPanel()">활동</button>
       <button type="button" class="nav-tab-button" data-top-tab="community" onclick="openCommunityPanel()">커뮤니티</button>
       <button type="button" class="nav-tab-button" data-top-tab="casino" onclick="openCasinoPanel()">카지노</button>
+      <button type="button" class="nav-tab-button" data-top-tab="shop" onclick="openShopPanel()">상점</button>
+      <button type="button" class="nav-tab-button" data-top-tab="mercenary" onclick="openMercenaryPanel()">용병단</button>
       <button type="button" class="nav-tab-button" data-top-tab="season" onclick="openSeasonPanel()">시즌</button>
       <button type="button" class="nav-tab-button" data-top-tab="account" onclick="openAccountPanel()">내 정보</button>
-      <button type="button" class="nav-tab-button" data-top-tab="more" onclick="openMorePanel()">더보기</button>
     </nav>
   </header>
 
@@ -30,7 +33,7 @@
         <div class="home-hero-copy" id="home-hero-copy">
           <span class="badge">격리소 관제 중</span>
           <h1>격리소 상황판</h1>
-          <p>출석하고, 소동을 확인하고, 포인트를 잃거나 벌 시간입니다. 오늘도 정상은 아닙니다.</p>
+          <p>출석하고, 오늘 상태를 확인합니다. 실제 활동은 각 큰 탭에서 진행하세요.</p>
         </div>
         <div class="hero-actions home-action-row" id="hero-actions">
           <a class="button inline" href="/login.html">로그인</a>
@@ -88,13 +91,13 @@
       </article>
 
       <article class="card home-card home-casino-gate" id="home-casino-gate-card">
-        <h2>불법 도박장 입구</h2>
-        <p class="meta">카지노 상세 기록은 카지노 탭에서 확인합니다.</p>
+        <h2>오늘 수급 요약</h2>
+        <p class="meta">활동 탭의 일일/주간미션과 광산 상태를 요약합니다.</p>
       </article>
 
       <article class="card home-card home-teaser-zone" id="home-teaser-card">
-        <h2>다음 개방 예정 구역</h2>
-        <p class="meta">의뢰소와 용병단은 아직 문이 잠겨 있습니다.</p>
+        <h2>상점 · 용병단</h2>
+        <p class="meta">소비와 성장 탭의 간단한 상태만 확인합니다.</p>
       </article>
     </section>
 
@@ -143,17 +146,6 @@
       </div>
       <div id="account-shell"></div>
     </section>
-
-    <section class="card main-view home-tab-panel more-panel" id="more-panel" data-main-view="more" hidden>
-      <div class="section-heading">
-        <div>
-          <span class="badge">더보기</span>
-          <h2>더보기</h2>
-        </div>
-        <button class="button secondary inline small-button" type="button" onclick="closeMorePanel()">홈으로 접기</button>
-      </div>
-      <div id="more-shell"></div>
-    </section>
   </main>
 
   <script src="/js/perfLogger.js"></script>
@@ -162,5 +154,6 @@
   <script src="/js/formatters.js"></script>
   <script src="/js/titleBadge.js"></script>
   <script src="/js/main.js"></script>
+  <script src="/js/iaTabs.js"></script>
 </body>
 </html>
