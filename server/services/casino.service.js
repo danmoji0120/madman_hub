@@ -143,6 +143,34 @@ async function refundBet({ userId, gameCode, betAmount }) {
   });
 }
 
+async function listMyActiveSessions(userId) {
+  const sessions = await listActiveSessions(userId);
+
+  return {
+    sessions: sessions.map((session) => {
+      if (session.gameCode === 'dice_blackjack') {
+        return sanitizeBlackjackSession(session);
+      }
+
+      if (session.gameCode === 'russian_roulette') {
+        return sanitizeRussianSession(session);
+      }
+
+      if (session.gameCode === 'crash') {
+        return sanitizeCrashSession(session);
+      }
+
+      return {
+        id: session.id,
+        gameCode: session.gameCode,
+        betAmount: session.betAmount,
+        status: session.status,
+        state: session.state
+      };
+    })
+  };
+}
+
 async function checkCasinoAchievements(userId) {
   const results = await listMyGameResults(userId, 500, 0);
   const codes = new Set();
@@ -653,5 +681,6 @@ module.exports = {
   cashoutCrash,
   startRussianRoulette,
   pullRussianRoulette,
-  cashoutRussianRoulette
+  cashoutRussianRoulette,
+  listMyActiveSessions
 };

@@ -176,6 +176,29 @@ async function startCrash(button) {
   });
 }
 
+async function restoreActiveCasinoSessions() {
+  if (!API.token) return;
+
+  const data = await API.request('/api/casino/sessions/active');
+  const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+
+  const blackjack = sessions.find((session) => session.gameCode === 'dice_blackjack');
+  if (blackjack) {
+    blackjackSessionId = blackjack.id;
+    renderBlackjack(blackjack);
+    syncBlackjackControls();
+    document.querySelector('#blackjack-result').textContent = '진행 중인 게임을 복구했습니다.';
+  }
+
+  const russian = sessions.find((session) => session.gameCode === 'russian_roulette');
+  if (russian) {
+    russianSessionId = russian.id;
+    renderRussian(russian);
+    syncRussianControls(russian);
+    document.querySelector('#russian-result').textContent = '진행 중인 게임을 복구했습니다.';
+  }
+}
+
 async function cashoutCrash(button) {
   if (!crashSessionId) return casinoMessage('먼저 크래시를 시작하세요.');
   await withButton(button, async () => {
@@ -237,6 +260,7 @@ async function initCasino() {
     await loadCasinoAccount();
     await loadCasinoHistory();
     await loadCasinoSummary();
+    await restoreActiveCasinoSessions();
   } catch (error) {
     casinoMessage(error.message);
   }

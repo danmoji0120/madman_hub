@@ -57,6 +57,10 @@ router.get('/stats/leaderboard', handle(async (req) => {
   });
 }));
 
+router.get('/sessions/active', authRequired, handle(async (req) => (
+  casino.listMyActiveSessions(req.user.id)
+)));
+
 router.get('/events', handle(async (req) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
