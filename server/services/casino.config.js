@@ -12,7 +12,7 @@ function nonNegativeInteger(name, fallback) {
   return Math.floor(nonNegativeNumber(name, fallback));
 }
 
-const TOTAL_DAILY_LIMIT = nonNegativeInteger('CASINO_DAILY_LIMIT', 30);
+const TOTAL_DAILY_LIMIT = nonNegativeInteger('CASINO_DAILY_LIMIT', 0);
 const MAX_BET = nonNegativeInteger('CASINO_MAX_BET', 500);
 const MAX_BET_BALANCE_RATIO = nonNegativeNumber('CASINO_MAX_BET_BALANCE_RATIO', 0.5);
 
@@ -22,7 +22,7 @@ const games = {
     name: '룰렛',
     type: 'instant',
     minBet: 10,
-    dailyLimit: nonNegativeInteger('CASINO_ROULETTE_DAILY_LIMIT', 20),
+    dailyLimit: nonNegativeInteger('CASINO_ROULETTE_DAILY_LIMIT', 0),
     rules: '베팅 후 서버가 0x부터 20x까지의 배율을 추첨합니다.',
     payoutTable: [
       { label: '0x', multiplier: 0, weight: 45 },
@@ -39,7 +39,7 @@ const games = {
     name: '주사위 블랙잭',
     type: 'session',
     minBet: 20,
-    dailyLimit: nonNegativeInteger('CASINO_BLACKJACK_DAILY_LIMIT', 10),
+    dailyLimit: nonNegativeInteger('CASINO_BLACKJACK_DAILY_LIMIT', 0),
     rules: '21 이하에서 딜러보다 높은 합계를 만드세요. 딜러는 16 이하에서 굴리고 17 이상에서 멈춥니다. 동점은 베팅액 반환입니다.',
     payoutTable: [
       { label: '일반 승리', multiplier: casinoBalanceConfig.diceBlackjack.winPayoutMultiplier },
@@ -52,7 +52,7 @@ const games = {
     name: '크래시',
     type: 'session',
     minBet: 10,
-    dailyLimit: nonNegativeInteger('CASINO_CRASH_DAILY_LIMIT', 10),
+    dailyLimit: nonNegativeInteger('CASINO_CRASH_DAILY_LIMIT', 0),
     rules: '서버가 정한 크래시 배율에 도달하기 전에 탈출하세요.',
     speedPerSecond: 0.35,
     maxMultiplier: 50,
@@ -70,7 +70,7 @@ const games = {
     type: 'instant',
     minBet: 10,
     maxBet: 300,
-    dailyLimit: nonNegativeInteger('CASINO_SLOT_MACHINE_DAILY_LIMIT', 50),
+    dailyLimit: nonNegativeInteger('CASINO_SLOT_MACHINE_DAILY_LIMIT', 0),
     rules: '3개의 릴을 돌려 같은 심볼 2개 또는 3개가 나오면 지급됩니다. BB 3개는 전설급 잭팟입니다.',
     symbols: casinoBalanceConfig.slotMachine.symbols,
     payoutTable: [
@@ -96,7 +96,7 @@ const games = {
     type: 'session',
     minBet: casinoBalanceConfig.russianRoulette.baseBet,
     fixedBet: casinoBalanceConfig.russianRoulette.baseBet,
-    dailyLimit: nonNegativeInteger('CASINO_RUSSIAN_DAILY_LIMIT', 10),
+    dailyLimit: nonNegativeInteger('CASINO_RUSSIAN_DAILY_LIMIT', 0),
     rules: '초반 캐시아웃은 안전하지만 수익이 작습니다. 깊게 들어갈수록 보상은 커지지만, BB쨩은 책임지지 않아요.',
     rewardTable: casinoBalanceConfig.russianRoulette.cashoutPayouts
   }

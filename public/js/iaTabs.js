@@ -38,6 +38,10 @@
     return formatPointsSafe(item.rewardPoints ?? item.reward_points ?? item.reward ?? 0);
   }
 
+  function safeArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
   function normalizeMissionPayload(payload = {}) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload.missions)) return payload.missions;
@@ -45,6 +49,22 @@
     if (Array.isArray(payload.weekly)) return payload.weekly;
     if (Array.isArray(payload.items)) return payload.items;
     return [];
+  }
+
+  function normalizeBonusPayload(payload = {}) {
+    if (Array.isArray(payload?.bonuses)) return payload.bonuses;
+    if (Array.isArray(payload?.bonusMissions)) return payload.bonusMissions;
+    if (Array.isArray(payload?.bonus_missions)) return payload.bonus_missions;
+    return [];
+  }
+
+  function renderActivityLoadError(label) {
+    return `
+      <div class="ia-panel-error">
+        <strong>${escapeHtml(label)} 정보를 불러오지 못했습니다.</strong>
+        <p class="meta">잠시 후 다시 열어 주세요. 다른 활동 탭은 계속 사용할 수 있습니다.</p>
+      </div>
+    `;
   }
 
   function renderIaNav(unreadCount = iaNavUnreadCount) {
@@ -151,12 +171,13 @@
         const code = mission.code || mission.id;
         const claimed = Boolean(mission.claimed);
         const completed = Boolean(mission.completed);
-        const status = claimed ? '수령 완료' : completed ? '수령 가능' : progressText(mission);
+        const status = claimed ? '수령 완료' : completed ? '수령 가능' : '진행 중';
+        const progress = progressText(mission);
         return `
           <div class="mission-item ia-mission-item">
             <div>
               <strong>${escapeHtml(mission.title || mission.name || code || '미션')}</strong><br />
-              <span class="meta">${escapeHtml(status)} · ${escapeHtml(missionReward(mission))}</span>
+              <span class="meta">${escapeHtml(progress)} · ${escapeHtml(status)} · ${escapeHtml(missionReward(mission))}</span>
             </div>
             ${completed && !claimed && code
               ? `<button class="button secondary inline small-button" type="button" onclick="claimIaMission('${escapeHtml(scope)}','${escapeHtml(code)}')">보상 받기</button>`
@@ -167,14 +188,58 @@
     </div>`;
   }
 
+  function renderBonusList(items = [], scope = 'daily') {
+    if (!items.length) return '';
+    return `<div class="ia-bonus-list">
+      ${items.map((bonus) => {
+        const code = bonus.code || bonus.id;
+        const claimed = Boolean(bonus.claimed);
+        const claimable = Boolean(bonus.claimable);
+        const completedCount = Number(bonus.completedCount ?? bonus.completed_count ?? bonus.progress ?? 0);
+        const required = bonus.requiredCompleted ?? bonus.required_completed ?? bonus.target ?? 0;
+        const progress = required === 'all' ? `${completedCount}/전체` : `${completedCount}/${Number(required || 0)}`;
+        const status = claimed ? '수령 완료' : claimable ? '수령 가능' : '진행 중';
+        return `
+          <div class="ia-bonus-item">
+            <div>
+              <strong>${escapeHtml(bonus.title || bonus.name || code || '보너스')}</strong><br />
+              <span class="meta">${escapeHtml(progress)} · ${escapeHtml(status)} · ${escapeHtml(missionReward(bonus))}</span>
+            </div>
+            ${claimable && !claimed && code
+              ? `<button class="button secondary inline small-button" type="button" onclick="claimIaMissionBonus('${escapeHtml(scope)}','${escapeHtml(code)}')">보너스 받기</button>`
+              : `<span class="badge">${escapeHtml(status)}</span>`}
+          </div>
+        `;
+      }).join('')}
+    </div>`;
+  }
+
+  function renderMineRecentLogs(mine = {}) {
+    const logs = safeArray(mine.recentLogs || mine.recent_logs || mine.logs || mine.history).slice(0, 3);
+    if (!logs.length) return '<p class="meta">최근 채굴 기록은 아직 없습니다.</p>';
+    return `<div class="ia-mine-log-list">
+      ${logs.map((log) => {
+        const label = log.resultLabel || log.result_label || log.label || log.resultCode || log.result_code || '채굴 결과';
+        const reward = log.formattedRewardAmount || log.formatted_reward_amount || formatPointsSafe(log.rewardAmount ?? log.reward_amount ?? 0);
+        return `<div class="ia-mine-log-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(reward)}</strong></div>`;
+      }).join('')}
+    </div>`;
+  }
+
   function renderActivityShell(data = {}) {
     const shell = document.querySelector('#activity-shell');
     if (!shell) return;
     const dailyItems = normalizeMissionPayload(data.daily);
     const weeklyItems = normalizeMissionPayload(data.weekly);
+    const dailyBonuses = normalizeBonusPayload(data.daily);
+    const weeklyBonuses = normalizeBonusPayload(data.weekly);
     const mine = data.mine || {};
+    const dailyError = Boolean(data.daily?.error);
+    const weeklyError = Boolean(data.weekly?.error);
+    const mineError = Boolean(data.mine?.error);
     const mineEarned = mine.todayEarned ?? mine.today_earned ?? mine.earnedToday ?? 0;
     const mineState = mine.mineState || mine.mine_state || mine.stateLabel || mine.state || '광맥 확인 중';
+    const mineEarnedLabel = mine.formattedTodayEarned || mine.formatted_today_earned || formatPointsSafe(mineEarned);
 
     shell.innerHTML = `
       <section class="ia-activity-overview">
@@ -187,18 +252,21 @@
         <a class="ia-action-card" href="/mine.html">
           <span class="badge">광산</span>
           <strong>격리소 광산</strong>
-          <p class="meta">오늘 채굴 수익 ${escapeHtml(formatPointsSafe(mineEarned))} · 광맥 상태 ${escapeHtml(mineState)}</p>
+          <p class="meta">오늘 채굴 수익 ${escapeHtml(mineEarnedLabel)} · 광맥 상태 ${escapeHtml(mineState)}</p>
+          ${mineError ? renderActivityLoadError('광산') : renderMineRecentLogs(mine)}
           <span class="button secondary inline small-button">광산 열기</span>
         </a>
       </section>
       <section class="ia-card-grid ia-mission-grid">
         <article class="card ia-mission-card">
           <div class="section-heading"><div><span class="badge">일일</span><h3>일일미션</h3></div></div>
-          ${renderMissionList(dailyItems, 'daily')}
+          ${dailyError ? renderActivityLoadError('일일미션') : renderMissionList(dailyItems, 'daily')}
+          ${dailyError ? '' : renderBonusList(dailyBonuses, 'daily')}
         </article>
         <article class="card ia-mission-card">
           <div class="section-heading"><div><span class="badge">주간</span><h3>주간미션</h3></div></div>
-          ${renderMissionList(weeklyItems, 'weekly')}
+          ${weeklyError ? renderActivityLoadError('주간미션') : renderMissionList(weeklyItems, 'weekly')}
+          ${weeklyError ? '' : renderBonusList(weeklyBonuses, 'weekly')}
         </article>
       </section>
       <section class="ia-card-grid">
@@ -222,9 +290,9 @@
       API.request('/api/mine/status')
     ]);
     renderActivityShell({
-      daily: daily.status === 'fulfilled' ? daily.value : {},
-      weekly: weekly.status === 'fulfilled' ? weekly.value : {},
-      mine: mine.status === 'fulfilled' ? mine.value.status || mine.value.result || mine.value : {}
+      daily: daily.status === 'fulfilled' ? daily.value : { error: true },
+      weekly: weekly.status === 'fulfilled' ? weekly.value : { error: true },
+      mine: mine.status === 'fulfilled' ? mine.value.status || mine.value.result || mine.value : { error: true }
     });
     iaActivityLoaded = true;
   }
@@ -239,6 +307,19 @@
       window.loadDashboard?.();
     } catch (error) {
       if (message) message.textContent = error.message || '미션 보상을 받을 수 없습니다.';
+    }
+  };
+
+  window.claimIaMissionBonus = async function claimIaMissionBonus(scope, code) {
+    const message = document.querySelector('#dashboard-message');
+    try {
+      const data = await API.request(`/api/missions/${encodeURIComponent(scope)}/bonus/${encodeURIComponent(code)}/claim`, { method: 'POST' });
+      if (message) message.textContent = `보너스 보상 ${formatPointsSafe(data.rewardPoints)}를 받았습니다.`;
+      iaActivityLoaded = false;
+      await loadActivityPanel();
+      window.loadDashboard?.();
+    } catch (error) {
+      if (message) message.textContent = error.message || '보너스 보상을 받을 수 없습니다.';
     }
   };
 

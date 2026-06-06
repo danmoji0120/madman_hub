@@ -85,6 +85,31 @@ function assertSummaryShape(summary) {
   assert.ok(summary.weeklyMissions === null || typeof summary.weeklyMissions === 'object');
 }
 
+function assertMissionResponseShape(response, scope) {
+  assert.ok(response.success, `${scope} missions response should be successful`);
+  assert.ok(Array.isArray(response.missions), `${scope} missions should include missions array`);
+  assert.ok(Array.isArray(response.bonuses), `${scope} missions should include bonuses array`);
+  response.missions.forEach((mission) => {
+    assert.ok(mission.code, `${scope} mission should include code`);
+    assert.strictEqual(typeof mission.progress, 'number', `${scope} mission progress should be number`);
+    assert.strictEqual(typeof mission.target, 'number', `${scope} mission target should be number`);
+    assert.strictEqual(typeof mission.completed, 'boolean', `${scope} mission completed should be boolean`);
+    assert.strictEqual(typeof mission.claimed, 'boolean', `${scope} mission claimed should be boolean`);
+    assert.strictEqual(typeof mission.rewardPoints, 'number', `${scope} mission rewardPoints should be number`);
+  });
+}
+
+function assertMineStatusShape(response) {
+  assert.ok(response.success, 'Mine status response should be successful');
+  assert.ok(response.mineState, 'Mine status should include public mineState');
+  assert.strictEqual(typeof response.todayEarned, 'number');
+  assert.ok(Array.isArray(response.recentLogs));
+  const text = JSON.stringify(response);
+  ['fatigue', 'efficiency', 'remainingCount', 'softcap', 'todayMineCount'].forEach((marker) => {
+    assert.ok(!text.includes(marker), `Mine status leaked internal marker: ${marker}`);
+  });
+}
+
 async function main() {
   const server = await start();
 
@@ -99,7 +124,8 @@ async function main() {
     assert.ok(home.includes('season-panel'));
     assert.ok(home.includes('casino-panel'));
     assert.ok(home.includes('account-panel'));
-    assert.ok(home.includes('more-panel'));
+    assert.ok(home.includes('main-view-root'));
+    assert.ok(home.includes('/js/iaTabs.js'));
     assert.ok(home.includes('rel="manifest"'));
     assert.ok(home.includes('name="theme-color"'));
 
@@ -157,6 +183,23 @@ async function main() {
     assert.ok(mainJs.includes('beforeinstallprompt'));
     assert.ok(mainJs.includes('DEBUG_PWA'));
     assert.ok(!mainJs.includes("dashboardRequest('/api/dashboard')"));
+
+    const iaTabsJs = await requestText('/js/iaTabs.js');
+    assert.ok(iaTabsJs.includes('/api/missions/daily'));
+    assert.ok(iaTabsJs.includes('/api/missions/weekly'));
+    assert.ok(iaTabsJs.includes('/api/mine/status'));
+    assert.ok(iaTabsJs.includes('claimIaMissionBonus'));
+    assert.ok(iaTabsJs.includes('/bonus/'));
+
+    const dailyMissions = await request('/api/missions/daily', { headers: auth });
+    assertMissionResponseShape(dailyMissions, 'daily');
+    const weeklyMissions = await request('/api/missions/weekly', { headers: auth });
+    assertMissionResponseShape(weeklyMissions, 'weekly');
+    const mineStatus = await request('/api/mine/status', { headers: auth });
+    assertMineStatusShape(mineStatus);
+    assertNoSensitiveData(dailyMissions);
+    assertNoSensitiveData(weeklyMissions);
+    assertNoSensitiveData(mineStatus);
 
     console.log('Dashboard smoke test passed.');
   } finally {

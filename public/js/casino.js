@@ -63,7 +63,7 @@ function syncRussianControls(session = null) {
 }
 
 function formatLimit(limit, remaining) {
-  return limit > 0 ? `${remaining}회 남음` : '무제한';
+  return limit > 0 ? `${remaining}회 가능` : '자유 플레이';
 }
 
 function renderGames(games) {

@@ -61,6 +61,41 @@
   background: rgba(255, 255, 255, 0.035);
 }
 
+.ia-bonus-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ia-bonus-item,
+.ia-mine-log-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(83, 245, 255, 0.045);
+}
+
+.ia-mine-log-list {
+  display: grid;
+  gap: 7px;
+}
+
+.ia-mine-log-item {
+  min-height: auto;
+  font-size: 0.92rem;
+}
+
+.ia-panel-error {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 120, 160, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 120, 160, 0.07);
+}
+
 .ia-mini-button {
   width: 100%;
   text-align: left;
@@ -87,5 +122,11 @@
   .ia-mission-grid,
   .mercenary-planner-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ia-bonus-item,
+  .ia-mine-log-item {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

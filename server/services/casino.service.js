@@ -95,10 +95,10 @@ async function validateBet({ userId, gameCode, betAmount, fixedBet = null }) {
     countTodayGameResults(userId, gameCode)
   ]);
   if (TOTAL_DAILY_LIMIT > 0 && allPlayed >= TOTAL_DAILY_LIMIT) {
-    throw casinoError('오늘의 전체 카지노 플레이 제한을 초과했습니다.', 429);
+    throw casinoError('운영 설정상 오늘 전체 카지노 이용이 잠시 닫혔습니다.', 429);
   }
   if (game.dailyLimit > 0 && gamePlayed >= game.dailyLimit) {
-    throw casinoError(`오늘의 ${game.name} 플레이 제한을 초과했습니다.`, 429);
+    throw casinoError(`운영 설정상 오늘 ${game.name} 이용이 잠시 닫혔습니다.`, 429);
   }
 
   return {

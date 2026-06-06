@@ -44,7 +44,7 @@ async function runCasinoSmoke({ request, auth, userId, runPrefix }) {
     assert.strictEqual(slotGame.name, '격리소 머신');
     assert.strictEqual(slotGame.minBet, 10);
     assert.strictEqual(slotGame.maxBet, 300);
-    assert.strictEqual(slotGame.dailyLimit, 50);
+    assert.strictEqual(slotGame.dailyLimit, 0);
     assert.strictEqual(slotGame.payoutTable.find((item) => item.symbol === 'bb' && item.matchCount === 3).multiplier, 120);
     assert.strictEqual(slotGame.payoutTable.find((item) => item.symbol === 'skull' && item.matchCount === 3).multiplier, 0);
     assert.strictEqual(russianGame.fixedBet, casinoBalanceConfig.russianRoulette.baseBet);
