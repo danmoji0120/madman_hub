@@ -2768,21 +2768,8 @@ function renderShopPanel() {
   `;
 }
 
-function renderMercenaryPanel() {
-  const shell = document.querySelector('#mercenary-shell');
-  if (!shell) return;
-  const slots = ['내 용병', '고용소', '훈련소', '의무실', '임무', '전투 기록', '랭킹'];
-  shell.innerHTML = `
-    <div class="ia-card-grid mercenary-planner-grid">
-      ${slots.map((title) => `
-        <article class="ia-action-card is-locked">
-          <span class="badge">예정</span>
-          <strong>${escapeHtml(title)}</strong>
-          <p class="meta">고용, 성장, 치료비, 임무 파견을 위한 용병단 콘텐츠 슬롯입니다.</p>
-        </article>
-      `).join('')}
-    </div>
-  `;
+function renderMercenaryPanel(options = {}) {
+  loadMercenaryPanel(options);
 }
 
 function mercenaryDebug(...args) {
