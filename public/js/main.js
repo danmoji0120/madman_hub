@@ -2902,6 +2902,59 @@ function renderMercenaryCandidates(items = []) {
   `;
 }
 
+function formatRemainingTime(targetAt) {
+  if (!targetAt) return '알 수 없음';
+
+  const target = new Date(targetAt).getTime();
+  const now = Date.now();
+  const diffMs = target - now;
+
+  if (!Number.isFinite(target) || diffMs <= 0) {
+    return '완료됨';
+  }
+
+  const totalSeconds = Math.ceil(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}일 ${hours}시간`;
+  }
+
+  if (hours > 0) {
+    return `${hours}시간 ${String(minutes).padStart(2, '0')}분`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}분 ${String(seconds).padStart(2, '0')}초`;
+  }
+
+  return `${seconds}초`;
+}
+
+function formatShortDueTime(targetAt) {
+  if (!targetAt) return '알 수 없음';
+
+  const target = new Date(targetAt);
+  if (Number.isNaN(target.getTime())) return '알 수 없음';
+
+  const now = new Date();
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTarget = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+
+  const dayDiff = Math.round((startOfTarget - startOfToday) / 86400000);
+  const hh = String(target.getHours()).padStart(2, '0');
+  const mm = String(target.getMinutes()).padStart(2, '0');
+
+  if (dayDiff === 0) return `오늘 ${hh}:${mm}`;
+  if (dayDiff === 1) return `내일 ${hh}:${mm}`;
+
+  return `${String(target.getMonth() + 1).padStart(2, '0')}.${String(target.getDate()).padStart(2, '0')} ${hh}:${mm}`;
+}
+
 function renderMercenaryRoster(items = []) {
   return `
     <section class="mercenary-section">
@@ -2977,22 +3030,109 @@ function renderMercenaryMissions(missions = [], mercenaries = []) {
   `;
 }
 
+function formatRemainingTime(targetAt) {
+  if (!targetAt) return '알 수 없음';
+
+  const targetTime = new Date(targetAt).getTime();
+  if (!Number.isFinite(targetTime)) return '알 수 없음';
+
+  const diffMs = targetTime - Date.now();
+
+  if (diffMs <= 0) {
+    return '완료됨';
+  }
+
+  const totalSeconds = Math.ceil(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return `${days}일 ${hours}시간`;
+  }
+
+  if (hours > 0) {
+    return `${hours}시간 ${String(minutes).padStart(2, '0')}분`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes}분 ${String(seconds).padStart(2, '0')}초`;
+  }
+
+  return `${seconds}초`;
+}
+
+function formatShortDueTime(targetAt) {
+  if (!targetAt) return '알 수 없음';
+
+  const target = new Date(targetAt);
+  if (Number.isNaN(target.getTime())) return '알 수 없음';
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  const dayDiff = Math.round((targetDay - today) / 86400000);
+
+  const hh = String(target.getHours()).padStart(2, '0');
+  const mm = String(target.getMinutes()).padStart(2, '0');
+
+  if (dayDiff === 0) return `오늘 ${hh}:${mm}`;
+  if (dayDiff === 1) return `내일 ${hh}:${mm}`;
+
+  return `${String(target.getMonth() + 1).padStart(2, '0')}.${String(target.getDate()).padStart(2, '0')} ${hh}:${mm}`;
+}
+
 function renderMercenaryRuns(runs = []) {
   return `
     <section class="mercenary-section">
-      <div class="section-heading"><div><span class="badge">진행 중</span><h2>진행 중 임무</h2></div></div>
+      <div class="section-heading">
+        <div>
+          <span class="badge">진행 중</span>
+          <h2>진행 중 임무</h2>
+        </div>
+      </div>
       <div class="mercenary-list">
-        ${runs.length ? runs.map((run) => `
-          <article class="mercenary-row">
-            <strong>${escapeHtml(run.mission?.title || run.missionCode)}</strong>
-            <span class="meta">${escapeHtml((run.mercenaries || []).map((item) => item.name).join(', '))}</span>
-            <span class="meta">완료 예정 ${escapeHtml(formatHomeDate(run.completesAt))} · 성공률 ${escapeHtml(run.successRate)}%</span>
-            <button class="button inline small-button" type="button" data-mercenary-action="claim-run" data-run-id="${escapeHtml(run.id)}" ${run.readyToClaim ? '' : 'disabled'}>결과 받기</button>
-          </article>
-        `).join('') : renderEmptyState({ title: '진행 중인 임무가 없습니다', description: '임무 카드에서 용병을 선택해 파견하세요.', compact: true })}
+        ${runs.length ? runs.map((run) => {
+          const completesAt = getRunCompletesAt(run);
+          const remainingText = formatRemainingTime(completesAt);
+          const dueText = formatShortDueTime(completesAt);
+          const isReady = run.readyToClaim || run.ready_to_claim || remainingText === '완료됨';
+
+          return `
+            <article class="mercenary-row">
+              <strong>${escapeHtml(run.mission?.title || run.missionTitle || run.mission_title || run.missionCode || run.mission_code || '임무')}</strong>
+              <span class="meta">${escapeHtml((run.mercenaries || []).map((item) => item.name).join(', '))}</span>
+              <span class="meta">
+                ${isReady ? '완료됨 · 결과 수령 가능' : `남은 시간 ${escapeHtml(remainingText)}`}
+                · 완료 예정 ${escapeHtml(dueText)}
+                · 성공률 ${escapeHtml(run.successRate ?? run.success_rate ?? 0)}%
+              </span>
+              <button
+                class="button inline small-button"
+                type="button"
+                data-mercenary-action="claim-run"
+                data-run-id="${escapeHtml(run.id)}"
+                ${isReady ? '' : 'disabled'}
+              >
+                ${isReady ? '결과 받기' : '수행 중'}
+              </button>
+            </article>
+          `;
+        }).join('') : renderEmptyState({ title: '진행 중인 임무가 없습니다', description: '임무 카드에서 용병을 선택해 파견하세요.', compact: true })}
       </div>
     </section>
   `;
+}
+
+function getRunCompletesAt(run) {
+  return run?.completesAt
+    || run?.completes_at
+    || run?.completeAt
+    || run?.complete_at
+    || run?.missionEndsAt
+    || run?.mission_ends_at
+    || null;
 }
 
 function renderMercenaryHospital(items = []) {
