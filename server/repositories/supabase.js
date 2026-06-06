@@ -1,7 +1,7 @@
 const { getSupabaseAdminClient } = require('../supabaseClient');
 
-const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'is_admin_only', 'is_purchasable', 'is_reward_only', 'is_limited', 'completed', 'claimed']);
-const jsonColumns = new Set(['metadata', 'tags']);
+const booleanColumns = new Set(['is_active', 'is_hidden', 'is_public', 'is_anonymous', 'is_admin_only', 'is_purchasable', 'is_reward_only', 'is_limited', 'completed', 'claimed', 'is_unique', 'limited', 'rescue_insured']);
+const jsonColumns = new Set(['metadata', 'tags', 'recommended_roles', 'mercenary_ids', 'result_json', 'injury_result', 'death_result', 'rescue_result']);
 
 function client() {
   return getSupabaseAdminClient();
@@ -610,6 +610,10 @@ async function cleanupSmokeUsers(prefix) {
   await deleteRows('daily_mission_bonus_claims', (query) => query.in('user_id', userIds));
   await deleteRows('daily_mission_progress', (query) => query.in('user_id', userIds));
   await deleteRows('mine_logs', (query) => query.in('user_id', userIds));
+  await deleteRows('mercenary_treatments', (query) => query.in('user_id', userIds));
+  await deleteRows('mercenary_runs', (query) => query.in('user_id', userIds));
+  await deleteRows('mercenary_candidates', (query) => query.in('user_id', userIds));
+  await deleteRows('mercenaries', (query) => query.in('owner_user_id', userIds));
   await deleteRows('song_recommendations', (query) => query.in('user_id', userIds));
   await deleteRows('post_comments', (query) => query.in('user_id', userIds));
   await deleteRows('quotes', (query) => query.in('user_id', userIds));
@@ -620,7 +624,7 @@ async function cleanupSmokeUsers(prefix) {
 }
 
 async function initDatabase() {
-  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, mineLogs, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, rewardMappings, rewardGrants, seasonTrophies, casinoStats, pointPeaks, casinoEvents, notifications] = await Promise.all([
+  const [titles, titleGrants, gameResults, users, quotes, postComments, songs, missions, missionBonuses, mineLogs, mercenaries, mercenaryCandidates, mercenaryMissions, mercenaryRuns, mercenaryTreatments, cosmetics, userCosmetics, cosmeticEquips, seasons, hallOfFame, rewardMappings, rewardGrants, seasonTrophies, casinoStats, pointPeaks, casinoEvents, notifications] = await Promise.all([
     client().from('titles').select('id,category,source_type,is_purchasable,is_reward_only,css_class', { count: 'exact', head: true }),
     client().from('title_grants').select('id', { count: 'exact', head: true }),
     client().from('game_results').select('id', { count: 'exact', head: true }),
@@ -631,6 +635,11 @@ async function initDatabase() {
     client().from('daily_mission_progress').select('id').limit(1),
     client().from('daily_mission_bonus_claims').select('id').limit(1),
     client().from('mine_logs').select('id').limit(1),
+    client().from('mercenaries').select('id').limit(1),
+    client().from('mercenary_candidates').select('id').limit(1),
+    client().from('mercenary_missions').select('id').limit(1),
+    client().from('mercenary_runs').select('id').limit(1),
+    client().from('mercenary_treatments').select('id').limit(1),
     client().from('cosmetic_items').select('id').limit(1),
     client().from('user_cosmetics').select('id').limit(1),
     client().from('user_cosmetic_equips').select('user_id').limit(1),
@@ -644,7 +653,7 @@ async function initDatabase() {
     client().from('casino_events').select('id').limit(1),
     client().from('notifications').select('id').limit(1)
   ]);
-  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || mineLogs.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || rewardMappings.error || rewardGrants.error || seasonTrophies.error || casinoStats.error || pointPeaks.error || casinoEvents.error || notifications.error;
+  const schemaError = titles.error || titleGrants.error || gameResults.error || users.error || quotes.error || postComments.error || songs.error || missions.error || missionBonuses.error || mineLogs.error || mercenaries.error || mercenaryCandidates.error || mercenaryMissions.error || mercenaryRuns.error || mercenaryTreatments.error || cosmetics.error || userCosmetics.error || cosmeticEquips.error || seasons.error || hallOfFame.error || rewardMappings.error || rewardGrants.error || seasonTrophies.error || casinoStats.error || pointPeaks.error || casinoEvents.error || notifications.error;
   if (schemaError) {
     throw new Error(`Supabase schema is not ready. Run database/supabase.schema.sql and database/supabase.seed.sql first. ${schemaError.message}`);
   }

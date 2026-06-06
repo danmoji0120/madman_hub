@@ -120,12 +120,14 @@ async function main() {
     const home = await requestText('/');
     assert.ok(home.includes('<title>MADMEN HUB</title>'));
     assert.ok(home.includes('home-container'));
+    assert.ok(home.includes('activity-panel'));
     assert.ok(home.includes('community-panel'));
     assert.ok(home.includes('season-panel'));
     assert.ok(home.includes('casino-panel'));
+    assert.ok(home.includes('shop-panel'));
+    assert.ok(home.includes('mercenary-panel'));
     assert.ok(home.includes('account-panel'));
     assert.ok(home.includes('main-view-root'));
-    assert.ok(home.includes('/js/iaTabs.js'));
     assert.ok(home.includes('rel="manifest"'));
     assert.ok(home.includes('name="theme-color"'));
 
@@ -174,22 +176,21 @@ async function main() {
 
     const mainJs = await requestText('/js/main.js');
     assert.ok(mainJs.includes("dashboardRequest('/api/dashboard/summary')"));
+    assert.ok(mainJs.includes('openActivityPanel'));
     assert.ok(mainJs.includes('openCommunityPanel'));
     assert.ok(mainJs.includes('openSeasonPanel'));
     assert.ok(mainJs.includes('openCasinoPanel'));
+    assert.ok(mainJs.includes('openShopPanel'));
+    assert.ok(mainJs.includes('openMercenaryPanel'));
     assert.ok(mainJs.includes('openAccountPanel'));
-    assert.ok(mainJs.includes('openMorePanel'));
+    assert.ok(mainJs.includes('/api/missions/daily'));
+    assert.ok(mainJs.includes('/api/missions/weekly'));
+    assert.ok(mainJs.includes('/api/mine/status'));
+    assert.ok(mainJs.includes('claimActivityMissionBonus'));
     assert.ok(mainJs.includes("navigator.serviceWorker.register('/sw.js')"));
     assert.ok(mainJs.includes('beforeinstallprompt'));
     assert.ok(mainJs.includes('DEBUG_PWA'));
     assert.ok(!mainJs.includes("dashboardRequest('/api/dashboard')"));
-
-    const iaTabsJs = await requestText('/js/iaTabs.js');
-    assert.ok(iaTabsJs.includes('/api/missions/daily'));
-    assert.ok(iaTabsJs.includes('/api/missions/weekly'));
-    assert.ok(iaTabsJs.includes('/api/mine/status'));
-    assert.ok(iaTabsJs.includes('claimIaMissionBonus'));
-    assert.ok(iaTabsJs.includes('/bonus/'));
 
     const dailyMissions = await request('/api/missions/daily', { headers: auth });
     assertMissionResponseShape(dailyMissions, 'daily');

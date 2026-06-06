@@ -38,11 +38,7 @@ const ACCOUNT_TABS = [
   { key: 'titles', label: '칭호' },
   { key: 'cosmetics', label: '꾸미기' },
   { key: 'shop', label: '상점' },
-  { key: 'achievements', label: '업적' }
-];
-const MORE_CACHE_TTL_MS = 50 * 1000;
-const MORE_DEFAULT_TAB = 'notifications';
-const MORE_TABS = [
+  { key: 'achievements', label: '업적' },
   { key: 'notifications', label: '알림' },
   { key: 'settings', label: '설정' },
   { key: 'admin', label: '관리자', adminOnly: true },
@@ -52,7 +48,12 @@ const communityCache = new Map();
 const seasonCache = new Map();
 const casinoCache = new Map();
 const accountCache = new Map();
-const moreCache = new Map();
+const MERCENARY_CACHE_TTL_MS = 45 * 1000;
+let mercenaryCache = null;
+const ACTIVITY_CACHE_TTL_MS = 45 * 1000;
+let activityCache = null;
+let activityShellRendered = false;
+let activityLoaded = false;
 let communityShellRendered = false;
 let activeCommunityTab = COMMUNITY_DEFAULT_TAB;
 let seasonShellRendered = false;
@@ -62,8 +63,6 @@ let casinoShellRendered = false;
 let activeCasinoTab = CASINO_DEFAULT_TAB;
 let accountShellRendered = false;
 let activeAccountTab = ACCOUNT_DEFAULT_TAB;
-let moreShellRendered = false;
-let activeMoreTab = MORE_DEFAULT_TAB;
 let latestDashboardSummary = null;
 let activeTopTab = 'home';
 let deferredPwaPrompt = null;
@@ -240,12 +239,14 @@ function renderMainNavigation(me, unreadCount = 0) {
 
   const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount || '');
   nav.innerHTML = `
-    <a href="/">홈</a>
-    <button type="button" class="nav-tab-button" onclick="openCommunityPanel()">커뮤니티</button>
-    <button type="button" class="nav-tab-button" onclick="openCasinoPanel()">카지노</button>
-    <button type="button" class="nav-tab-button" onclick="openSeasonPanel()">시즌</button>
-    <button type="button" class="nav-tab-button" onclick="openAccountPanel()">내 정보</button>
-    <button type="button" class="nav-tab-button" onclick="openMorePanel()">더보기${unreadCount > 0 ? ` ${unreadLabel}` : ''}</button>
+    <button type="button" class="nav-tab-button" data-top-tab="home" onclick="openHomeView()">홈</button>
+    <button type="button" class="nav-tab-button" data-top-tab="activity" onclick="openActivityPanel()">활동</button>
+    <button type="button" class="nav-tab-button" data-top-tab="community" onclick="openCommunityPanel()">커뮤니티</button>
+    <button type="button" class="nav-tab-button" data-top-tab="casino" onclick="openCasinoPanel()">카지노</button>
+    <button type="button" class="nav-tab-button" data-top-tab="shop" onclick="openShopPanel()">상점</button>
+    <button type="button" class="nav-tab-button" data-top-tab="mercenary" onclick="openMercenaryPanel()">용병단</button>
+    <button type="button" class="nav-tab-button" data-top-tab="season" onclick="openSeasonPanel()">시즌</button>
+    <button type="button" class="nav-tab-button" data-top-tab="account" onclick="openAccountPanel()">내 정보</button>
     ${me ? '' : '<a href="/login.html">로그인</a>'}
   `;
 }
@@ -301,11 +302,13 @@ function renderHomeError(error) {
 }
 
 function renderGuestHome() {
+  closeActivityPanel();
   closeCommunityPanel();
   closeCasinoPanel();
+  closeShopPanel();
+  closeMercenaryPanel();
   closeSeasonPanel();
   closeAccountPanel();
-  closeMorePanel();
   latestDashboardSummary = null;
   renderHeroActions(null);
   renderMainNavigation(null, 0);
@@ -1324,13 +1327,23 @@ function accountTabLabel(tabKey) {
   return ACCOUNT_TABS.find((tab) => tab.key === tabKey)?.label || tabKey;
 }
 
+function getVisibleAccountTabs() {
+  const me = latestDashboardSummary?.me;
+  return ACCOUNT_TABS.filter((tab) => {
+    if (tab.adminOnly) return isAdminUser(me);
+    if (tab.authOnly) return Boolean(me?.id);
+    return true;
+  });
+}
+
 function renderAccountShell() {
   const root = document.querySelector('#account-shell');
   if (!root || accountShellRendered) return;
+  const visibleTabs = getVisibleAccountTabs();
 
   root.innerHTML = `
     <div class="community-tabs account-tabs" role="tablist" aria-label="내 정보 세부탭">
-      ${ACCOUNT_TABS.map((tab) => `
+      ${visibleTabs.map((tab) => `
         <button
           type="button"
           class="community-tab-button account-tab-button"
@@ -1439,21 +1452,94 @@ function renderAccountAchievements() {
   ]));
 }
 
-function renderAccountTabData(tabKey) {
+function renderAccountNotifications(data = {}) {
+  const items = Array.isArray(data.items) ? data.items.slice(0, 10) : [];
+  if (!latestDashboardSummary?.me?.id) {
+    setAccountPanelContent(renderCommunityEmpty(
+      '로그인이 필요합니다',
+      '알림 센터는 로그인 후 확인할 수 있습니다.',
+      '<a class="button inline small-button" href="/login.html">로그인</a>'
+    ));
+    return;
+  }
+  setAccountPanelContent(`
+    <div class="notification-list more-notification-list">
+      ${items.map((item) => `
+        <a class="notification-card ${item.isRead ? '' : 'unread'}" href="${escapeHtml(safeInternalUrl(item.targetUrl || item.target_url, '/notifications.html'))}">
+          <span class="home-notification-meta">
+            <span class="badge">${escapeHtml(notificationLabel(item.type))}</span>
+            <span class="meta">${escapeHtml(formatHomeDate(item.createdAt || item.created_at))}</span>
+          </span>
+          <strong>${escapeHtml(item.title)}</strong>
+          <p class="meta home-notification-body">${escapeHtml(truncateText(item.body || item.message, 92))}</p>
+        </a>
+      `).join('') || '<p class="empty-state">아직 알림이 없습니다.</p>'}
+    </div>
+    <div class="community-footer-actions">
+      <a class="button secondary inline small-button" href="/notifications.html">알림 센터 전체 보기</a>
+    </div>
+  `);
+}
+
+function renderAccountSettings() {
+  setAccountPanelContent(renderShortcutCards([
+    { badge: 'SETTINGS', title: '프로필 설정', body: '현재 설정은 프로필 편집 화면에서 관리합니다.', href: '/profile.html#profile-editor' },
+    { badge: 'SOON', title: '추가 설정 준비 중', body: '푸시 알림과 세부 앱 설정은 후속 작업에서 확장합니다.', href: '/profile.html#profile-editor' }
+  ]));
+  const panel = document.querySelector('#account-tab-panel');
+  if (panel) {
+    panel.insertAdjacentHTML('beforeend', `
+      <div class="shortcut-card-grid pwa-install-grid">
+        ${renderPwaInstallCard()}
+      </div>
+    `);
+  }
+}
+
+function renderAccountAdmin() {
+  const me = latestDashboardSummary?.me;
+  if (!isAdminUser(me)) {
+    setAccountPanelContent(renderCommunityEmpty('접근할 수 없습니다', '관리자 메뉴는 관리자와 owner에게만 표시됩니다.'));
+    return;
+  }
+  setAccountPanelContent(renderShortcutCards([
+    { badge: 'ADMIN', title: '관리자 페이지', body: '관리자 통계와 운영 도구는 기존 관리자 화면에서 확인합니다.', href: '/admin.html' }
+  ]));
+}
+
+function renderAccountLogout() {
+  setAccountPanelContent(`
+    <div class="community-empty">
+      <strong>로그아웃</strong>
+      <p class="meta">현재 세션을 종료합니다. 기존 인증 로직을 그대로 사용합니다.</p>
+      <button class="button inline small-button" type="button" onclick="API.logout()">로그아웃</button>
+    </div>
+  `);
+}
+
+function renderAccountTabData(tabKey, data = {}) {
   if (tabKey === 'profile') renderAccountProfile();
   if (tabKey === 'titles') renderAccountTitles();
   if (tabKey === 'cosmetics') renderAccountCosmetics();
   if (tabKey === 'shop') renderAccountShop();
   if (tabKey === 'achievements') renderAccountAchievements();
+  if (tabKey === 'notifications') renderAccountNotifications(data);
+  if (tabKey === 'settings') renderAccountSettings();
+  if (tabKey === 'admin') renderAccountAdmin();
+  if (tabKey === 'logout') renderAccountLogout();
 }
 
 async function fetchAccountTabData(tabKey) {
+  if (tabKey === 'notifications' && latestDashboardSummary?.me?.id) {
+    return dashboardRequest('/api/notifications?limit=10');
+  }
   return { static: true, tabKey };
 }
 
 async function loadAccountTab(tabKey = ACCOUNT_DEFAULT_TAB, options = {}) {
   renderAccountShell();
-  const nextTabKey = ACCOUNT_TABS.some((tab) => tab.key === tabKey) ? tabKey : ACCOUNT_DEFAULT_TAB;
+  const visibleTabs = getVisibleAccountTabs();
+  const nextTabKey = visibleTabs.some((tab) => tab.key === tabKey) ? tabKey : ACCOUNT_DEFAULT_TAB;
   setAccountActiveTab(nextTabKey);
 
   const cached = options.force ? null : getTimedCachedData(accountCache, 'account', nextTabKey, ACCOUNT_CACHE_TTL_MS);
@@ -1492,191 +1578,6 @@ function openAccountPanel(tabKey = ACCOUNT_DEFAULT_TAB) {
 
 function closeAccountPanel() {
   const panel = document.querySelector('#account-panel');
-  if (panel) panel.hidden = true;
-}
-
-function getVisibleMoreTabs() {
-  const me = latestDashboardSummary?.me;
-  return MORE_TABS.filter((tab) => {
-    if (tab.adminOnly) return isAdminUser(me);
-    if (tab.authOnly) return Boolean(me?.id);
-    return true;
-  });
-}
-
-function moreTabLabel(tabKey) {
-  return MORE_TABS.find((tab) => tab.key === tabKey)?.label || tabKey;
-}
-
-function renderMoreShell() {
-  const root = document.querySelector('#more-shell');
-  if (!root) return;
-  const visibleTabs = getVisibleMoreTabs();
-  root.innerHTML = `
-    <div class="community-tabs more-tabs" role="tablist" aria-label="더보기 항목">
-      ${visibleTabs.map((tab) => `
-        <button
-          type="button"
-          class="community-tab-button more-tab-button"
-          data-more-tab="${escapeHtml(tab.key)}"
-          onclick="loadMoreTab('${escapeHtml(tab.key)}')"
-        >
-          ${escapeHtml(tab.label)}
-        </button>
-      `).join('')}
-    </div>
-    <div class="more-tab-panel" id="more-tab-panel"></div>
-  `;
-  moreShellRendered = true;
-}
-
-function setMoreActiveTab(tabKey) {
-  activeMoreTab = tabKey;
-  document.querySelectorAll('[data-more-tab]').forEach((button) => {
-    const isActive = button.dataset.moreTab === tabKey;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-  });
-}
-
-function setMorePanelContent(html) {
-  const panel = document.querySelector('#more-tab-panel');
-  if (panel) panel.innerHTML = html;
-}
-
-function renderMoreLoading(tabKey) {
-  setMorePanelContent(renderLoadingState({
-    title: `${moreTabLabel(tabKey)}을 여는 중`,
-    description: '더보기 항목은 열 때만 준비합니다.',
-    rows: 2
-  }));
-}
-
-function renderMoreNotifications(data = {}) {
-  const items = Array.isArray(data.items) ? data.items.slice(0, 10) : [];
-  if (!latestDashboardSummary?.me?.id) {
-    setMorePanelContent(renderCommunityEmpty(
-      '로그인이 필요합니다',
-      '알림 센터는 로그인 후 확인할 수 있습니다.',
-      '<a class="button inline small-button" href="/login.html">로그인</a>'
-    ));
-    return;
-  }
-  setMorePanelContent(`
-    <div class="notification-list more-notification-list">
-      ${items.map((item) => `
-        <a class="notification-card ${item.isRead ? '' : 'unread'}" href="${escapeHtml(safeInternalUrl(item.targetUrl || item.target_url, '/notifications.html'))}">
-          <span class="home-notification-meta">
-            <span class="badge">${escapeHtml(notificationLabel(item.type))}</span>
-            <span class="meta">${escapeHtml(formatHomeDate(item.createdAt || item.created_at))}</span>
-          </span>
-          <strong>${escapeHtml(item.title)}</strong>
-          <p class="meta home-notification-body">${escapeHtml(truncateText(item.body || item.message, 92))}</p>
-        </a>
-      `).join('') || '<p class="empty-state">아직 알림이 없습니다.</p>'}
-    </div>
-    <div class="community-footer-actions">
-      <a class="button secondary inline small-button" href="/notifications.html">알림 센터 전체 보기</a>
-    </div>
-  `);
-}
-
-function renderMoreSettings() {
-  setMorePanelContent(renderShortcutCards([
-    { badge: 'SETTINGS', title: '프로필 설정', body: '현재 설정은 프로필 편집 화면에서 관리합니다.', href: '/profile.html#profile-editor' },
-    { badge: 'SOON', title: '추가 설정 준비 중', body: '푸시 알림과 세부 앱 설정은 후속 작업에서 확장합니다.', href: '/profile.html#profile-editor' }
-  ]));
-  const panel = document.querySelector('#more-tab-panel');
-  if (panel) {
-    panel.insertAdjacentHTML('beforeend', `
-      <div class="shortcut-card-grid pwa-install-grid">
-        ${renderPwaInstallCard()}
-      </div>
-    `);
-  }
-}
-
-function renderMoreAdmin() {
-  const me = latestDashboardSummary?.me;
-  if (!isAdminUser(me)) {
-    setMorePanelContent(renderCommunityEmpty('접근할 수 없습니다', '관리자 메뉴는 관리자와 owner에게만 표시됩니다.'));
-    return;
-  }
-  setMorePanelContent(renderShortcutCards([
-    { badge: 'ADMIN', title: '관리자 페이지', body: '관리자 통계와 운영 도구는 기존 관리자 화면에서 확인합니다.', href: '/admin.html' }
-  ]));
-}
-
-function renderMoreLogout() {
-  setMorePanelContent(`
-    <div class="community-empty">
-      <strong>로그아웃</strong>
-      <p class="meta">현재 세션을 종료합니다. 기존 인증 로직을 그대로 사용합니다.</p>
-      <button class="button inline small-button" type="button" onclick="API.logout()">로그아웃</button>
-    </div>
-  `);
-}
-
-function renderMoreTabData(tabKey, data = {}) {
-  if (tabKey === 'notifications') renderMoreNotifications(data);
-  if (tabKey === 'settings') renderMoreSettings();
-  if (tabKey === 'admin') renderMoreAdmin();
-  if (tabKey === 'logout') renderMoreLogout();
-}
-
-async function fetchMoreTabData(tabKey) {
-  if (tabKey === 'notifications' && latestDashboardSummary?.me?.id) {
-    return dashboardRequest('/api/notifications?limit=10');
-  }
-  return { static: true, tabKey };
-}
-
-async function loadMoreTab(tabKey = MORE_DEFAULT_TAB, options = {}) {
-  if (!moreShellRendered) renderMoreShell();
-  const visibleTabs = getVisibleMoreTabs();
-  const nextTabKey = visibleTabs.some((tab) => tab.key === tabKey) ? tabKey : MORE_DEFAULT_TAB;
-  setMoreActiveTab(nextTabKey);
-
-  const cached = options.force ? null : getTimedCachedData(moreCache, 'more', nextTabKey, MORE_CACHE_TTL_MS);
-  if (cached) {
-    dashboardPerf?.log(`more ${nextTabKey} cache hit`);
-    renderMoreTabData(nextTabKey, cached);
-    return;
-  }
-
-  renderMoreLoading(nextTabKey);
-  const startedAt = window.HubPerfLogger?.now?.() ?? Date.now();
-  try {
-    const data = await fetchMoreTabData(nextTabKey);
-    setTimedCachedData(moreCache, 'more', nextTabKey, data);
-    renderMoreTabData(nextTabKey, data);
-    const duration = Math.round((window.HubPerfLogger?.now?.() ?? Date.now()) - startedAt);
-    dashboardPerf?.log(nextTabKey === 'notifications' && latestDashboardSummary?.me?.id
-      ? `more notifications load ${duration}ms`
-      : `more ${nextTabKey} render`);
-  } catch (error) {
-    const duration = Math.round((window.HubPerfLogger?.now?.() ?? Date.now()) - startedAt);
-    dashboardPerf?.log(`more ${nextTabKey} load failed ${error?.status || error?.message || ''} ${duration}ms`.trim());
-    setMorePanelContent(renderErrorState({
-      title: `${moreTabLabel(nextTabKey)}을 열지 못했습니다`,
-      description: '잠시 후 다시 시도해 주세요.',
-      retryOnClick: `loadMoreTab('${escapeHtml(nextTabKey)}', { force: true })`
-    }));
-  }
-}
-
-function openMorePanel(tabKey = MORE_DEFAULT_TAB) {
-  const panel = document.querySelector('#more-panel');
-  if (!panel) return;
-  dashboardPerf?.log('more tab open');
-  panel.hidden = false;
-  renderMoreShell();
-  loadMoreTab(tabKey);
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function closeMorePanel() {
-  const panel = document.querySelector('#more-panel');
   if (panel) panel.hidden = true;
 }
 
@@ -2138,11 +2039,13 @@ function renderHomeHero(summary = {}) {
 }
 
 function renderGuestHome() {
+  closeActivityPanel();
   closeCommunityPanel();
   closeCasinoPanel();
+  closeShopPanel();
+  closeMercenaryPanel();
   closeSeasonPanel();
   closeAccountPanel();
-  closeMorePanel();
   latestDashboardSummary = null;
   renderHomeHero({});
   renderMainNavigation(null, 0);
@@ -2466,16 +2369,16 @@ function renderHomeTeaserZone() {
       </div>
     </div>
     <div class="home-teaser-grid">
-      <div class="home-mini-card">
+      <button class="home-mini-card ia-mini-button" type="button" data-home-action="shop">
         <strong>의뢰소</strong>
         <p class="meta">포인트 벌이를 위한 합법적인 척하는 일거리.</p>
         <span class="badge">준비 중</span>
-      </div>
-      <div class="home-mini-card">
+      </button>
+      <button class="home-mini-card ia-mini-button" type="button" data-home-action="mercenary">
         <strong>용병단</strong>
         <p class="meta">고용하고, 굴리고, 다치면 치료비를 뜯기는 예정.</p>
         <span class="badge">문 잠김</span>
-      </div>
+      </button>
     </div>
   `;
 }
@@ -2508,6 +2411,10 @@ document.addEventListener('click', (event) => {
     if (!target.disabled) checkIn();
     return;
   }
+  if (action === 'activity') {
+    openActivityPanel();
+    return;
+  }
   if (action === 'community') {
     openCommunityPanel();
     return;
@@ -2523,6 +2430,13 @@ document.addEventListener('click', (event) => {
   if (action === 'account') {
     openAccountPanel();
     return;
+  }
+  if (action === 'shop') {
+    openShopPanel();
+    return;
+  }
+  if (action === 'mercenary') {
+    openMercenaryPanel();
   }
 });
 
@@ -2600,6 +2514,656 @@ async function claimMissionBonus(code) {
   }
 }
 
+function debugActivity(...args) {
+  try {
+    if (localStorage.getItem('DEBUG_DASHBOARD') === 'true') console.log('[activity]', ...args);
+  } catch (error) {
+    // localStorage가 막힌 환경에서는 조용히 무시합니다.
+  }
+}
+
+function activityMissionReward(item = {}) {
+  return formatPoints(item.rewardPoints ?? item.reward_points ?? item.reward ?? 0);
+}
+
+function activityProgressText(item = {}) {
+  const current = Number(item.progress ?? item.current ?? item.count ?? 0);
+  const target = Number(item.target ?? item.required ?? item.goal ?? 0);
+  if (!target) return item.completed ? '완료' : '진행 중';
+  return `${Math.min(current, target)}/${target}`;
+}
+
+function normalizeActivityMissions(payload = {}) {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.missions)) return payload.missions;
+  if (Array.isArray(payload.data?.missions)) return payload.data.missions;
+  if (Array.isArray(payload.summary?.missions)) return payload.summary.missions;
+  if (Array.isArray(payload.today)) return payload.today;
+  if (Array.isArray(payload.weekly)) return payload.weekly;
+  if (Array.isArray(payload.items)) return payload.items;
+  return [];
+}
+
+function normalizeActivityBonuses(payload = {}) {
+  if (Array.isArray(payload?.bonuses)) return payload.bonuses;
+  if (Array.isArray(payload?.data?.bonuses)) return payload.data.bonuses;
+  if (Array.isArray(payload?.summary?.bonuses)) return payload.summary.bonuses;
+  if (Array.isArray(payload?.bonusMissions)) return payload.bonusMissions;
+  if (Array.isArray(payload?.bonus_missions)) return payload.bonus_missions;
+  return [];
+}
+
+function renderActivityLoadError(label) {
+  return `
+    <div class="ia-panel-error">
+      <strong>${escapeHtml(label)} 정보를 불러오지 못했습니다.</strong>
+      <p class="meta">잠시 후 다시 열어 주세요. 다른 활동 탭은 계속 사용할 수 있습니다.</p>
+    </div>
+  `;
+}
+
+function renderActivityMissionList(items = [], scope = 'daily') {
+  const missions = (Array.isArray(items) ? items : []).filter(Boolean);
+  if (!missions.length) return '<p class="empty-state">표시할 미션이 없습니다.</p>';
+  return `<div class="mission-list ia-mission-list">
+    ${missions.slice(0, 8).map((mission) => {
+      const code = mission.code || mission.id;
+      const claimed = Boolean(mission.claimed);
+      const completed = Boolean(mission.completed);
+      const status = claimed ? '수령 완료' : completed ? '수령 가능' : '진행 중';
+      const progress = activityProgressText(mission);
+      return `
+        <div class="mission-item ia-mission-item">
+          <div>
+            <strong>${escapeHtml(mission.title || mission.name || code || '미션')}</strong><br />
+            <span class="meta">${escapeHtml(progress)} · ${escapeHtml(status)} · ${escapeHtml(activityMissionReward(mission))}</span>
+          </div>
+          ${completed && !claimed && code
+            ? `<button class="button secondary inline small-button" type="button" onclick="claimActivityMission('${escapeHtml(scope)}','${escapeHtml(code)}')">보상 받기</button>`
+            : `<span class="badge">${escapeHtml(status)}</span>`}
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+function renderActivityBonusList(items = [], scope = 'daily') {
+  if (!items.length) return '';
+  return `<div class="ia-bonus-list">
+    ${items.map((bonus) => {
+      const code = bonus.code || bonus.id;
+      const claimed = Boolean(bonus.claimed);
+      const claimable = Boolean(bonus.claimable);
+      const completedCount = Number(bonus.completedCount ?? bonus.completed_count ?? bonus.progress ?? 0);
+      const required = bonus.requiredCompleted ?? bonus.required_completed ?? bonus.target ?? 0;
+      const progress = required === 'all' ? `${completedCount}/전체` : `${completedCount}/${Number(required || 0)}`;
+      const status = claimed ? '수령 완료' : claimable ? '수령 가능' : '진행 중';
+      return `
+        <div class="ia-bonus-item">
+          <div>
+            <strong>${escapeHtml(bonus.title || bonus.name || code || '보너스')}</strong><br />
+            <span class="meta">${escapeHtml(progress)} · ${escapeHtml(status)} · ${escapeHtml(activityMissionReward(bonus))}</span>
+          </div>
+          ${claimable && !claimed && code
+            ? `<button class="button secondary inline small-button" type="button" onclick="claimActivityMissionBonus('${escapeHtml(scope)}','${escapeHtml(code)}')">보너스 받기</button>`
+            : `<span class="badge">${escapeHtml(status)}</span>`}
+        </div>
+      `;
+    }).join('')}
+  </div>`;
+}
+
+function renderActivityMineLogs(mine = {}) {
+  const logs = (mine.recentLogs || mine.recent_logs || mine.logs || mine.history || []).slice(0, 3);
+  if (!logs.length) return '<p class="meta">최근 채굴 기록은 아직 없습니다.</p>';
+  return `<div class="ia-mine-log-list">
+    ${logs.map((log) => {
+      const label = log.resultLabel || log.result_label || log.label || log.resultCode || log.result_code || '채굴 결과';
+      const reward = log.formattedRewardAmount || log.formatted_reward_amount || formatPoints(log.rewardAmount ?? log.reward_amount ?? 0);
+      return `<div class="ia-mine-log-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(reward)}</strong></div>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderActivityShellLoading() {
+  const shell = document.querySelector('#activity-shell');
+  if (!shell) return;
+  shell.innerHTML = renderLoadingState({
+    title: '활동 정보를 불러오는 중',
+    description: '일일/주간미션과 광산 상태를 확인합니다.',
+    rows: 3
+  });
+}
+
+function renderActivityShell(data = {}) {
+  const shell = document.querySelector('#activity-shell');
+  if (!shell) return;
+  const dailyItems = normalizeActivityMissions(data.daily);
+  const weeklyItems = normalizeActivityMissions(data.weekly);
+  const dailyBonuses = normalizeActivityBonuses(data.daily);
+  const weeklyBonuses = normalizeActivityBonuses(data.weekly);
+  const mine = data.mine || {};
+  const dailyError = Boolean(data.daily?.error);
+  const weeklyError = Boolean(data.weekly?.error);
+  const mineError = Boolean(data.mine?.error);
+  const mineEarned = mine.todayEarned ?? mine.today_earned ?? mine.earnedToday ?? 0;
+  const mineState = mine.mineState || mine.mine_state || mine.stateLabel || mine.state || '광맥 확인 중';
+  const mineEarnedLabel = mine.formattedTodayEarned || mine.formatted_today_earned || formatPoints(mineEarned);
+  debugActivity('normalized', { dailyItems, weeklyItems });
+
+  shell.innerHTML = `
+    <section class="ia-activity-overview">
+      <article class="ia-action-card ia-attendance-card">
+        <span class="badge">출석</span>
+        <strong>오늘의 생존 확인</strong>
+        <p class="meta">홈에서도 출석할 수 있지만, 활동 탭에서 수급 흐름을 한눈에 봅니다.</p>
+        <button class="button inline" type="button" data-home-action="checkin">출석하기</button>
+      </article>
+      <a class="ia-action-card" href="/mine.html">
+        <span class="badge">광산</span>
+        <strong>격리소 광산</strong>
+        <p class="meta">오늘 채굴 수익 ${escapeHtml(mineEarnedLabel)} · 광맥 상태 ${escapeHtml(mineState)}</p>
+        ${mineError ? renderActivityLoadError('광산') : renderActivityMineLogs(mine)}
+        <span class="button secondary inline small-button">광산 열기</span>
+      </a>
+    </section>
+    <section class="ia-card-grid ia-mission-grid">
+      <article class="card ia-mission-card">
+        <div class="section-heading"><div><span class="badge">일일</span><h3>일일미션</h3></div></div>
+        ${dailyError ? renderActivityLoadError('일일미션') : renderActivityMissionList(dailyItems, 'daily')}
+        ${dailyError ? '' : renderActivityBonusList(dailyBonuses, 'daily')}
+      </article>
+      <article class="card ia-mission-card">
+        <div class="section-heading"><div><span class="badge">주간</span><h3>주간미션</h3></div></div>
+        ${weeklyError ? renderActivityLoadError('주간미션') : renderActivityMissionList(weeklyItems, 'weekly')}
+        ${weeklyError ? '' : renderActivityBonusList(weeklyBonuses, 'weekly')}
+      </article>
+    </section>
+    <section class="ia-card-grid">
+      <article class="ia-action-card is-quiet"><span class="badge">기록</span><strong>보상 기록</strong><p class="meta">출석, 미션, 광산 보상 내역은 포인트 기록과 광산 로그에 남습니다.</p></article>
+      <article class="ia-action-card is-quiet"><span class="badge">원칙</span><strong>벌 곳과 태울 곳 분리</strong><p class="meta">포인트는 활동에서 벌고, 카지노와 상점과 용병단에서 씁니다.</p></article>
+    </section>
+  `;
+}
+
+async function loadActivityPanel(options = {}) {
+  const shell = document.querySelector('#activity-shell');
+  if (!shell) return;
+  const cached = options.force ? null : activityCache;
+  if (cached && Date.now() - cached.cachedAt <= ACTIVITY_CACHE_TTL_MS) {
+    renderActivityShell(cached.data);
+    activityLoaded = true;
+    dashboardPerf?.log('activity cache hit');
+    return;
+  }
+
+  renderActivityShellLoading();
+  const [daily, weekly, mine] = await Promise.allSettled([
+    dashboardRequest('/api/missions/daily'),
+    dashboardRequest('/api/missions/weekly'),
+    dashboardRequest('/api/mine/status')
+  ]);
+  debugActivity('daily result', daily);
+  debugActivity('weekly result', weekly);
+  debugActivity('mine result', mine);
+  const dailyPayload = daily.status === 'fulfilled' ? daily.value : { error: true };
+  const weeklyPayload = weekly.status === 'fulfilled' ? weekly.value : { error: true };
+  const minePayload = mine.status === 'fulfilled' ? mine.value.status || mine.value.result || mine.value : { error: true };
+  const dailyItems = normalizeActivityMissions(dailyPayload);
+  const weeklyItems = normalizeActivityMissions(weeklyPayload);
+  debugActivity('normalized before render', { dailyItems, weeklyItems });
+  const data = { daily: dailyPayload, weekly: weeklyPayload, mine: minePayload };
+  renderActivityShell(data);
+  activityLoaded = daily.status === 'fulfilled'
+    && weekly.status === 'fulfilled'
+    && (dailyItems.length > 0 || weeklyItems.length > 0);
+  if (activityLoaded) activityCache = { cachedAt: Date.now(), data };
+}
+
+function shouldReloadActivityPanel() {
+  const shell = document.querySelector('#activity-shell');
+  return !activityLoaded
+    || !shell
+    || !shell.textContent.trim()
+    || shell.querySelectorAll('.ia-mission-item').length === 0;
+}
+
+async function claimActivityMission(scope, code) {
+  const message = document.querySelector('#dashboard-message');
+  try {
+    const data = await dashboardRequest(`/api/missions/${encodeURIComponent(scope)}/${encodeURIComponent(code)}/claim`, { method: 'POST' });
+    if (message) message.textContent = `미션 보상 ${formatPoints(data.rewardPoints)}를 받았습니다.`;
+    activityCache = null;
+    activityLoaded = false;
+    await loadActivityPanel({ force: true });
+    await loadDashboard();
+  } catch (error) {
+    if (message) message.textContent = error.message || '미션 보상을 받을 수 없습니다.';
+  }
+}
+
+async function claimActivityMissionBonus(scope, code) {
+  const message = document.querySelector('#dashboard-message');
+  try {
+    const data = await dashboardRequest(`/api/missions/${encodeURIComponent(scope)}/bonus/${encodeURIComponent(code)}/claim`, { method: 'POST' });
+    if (message) message.textContent = `보너스 보상 ${formatPoints(data.rewardPoints)}를 받았습니다.`;
+    activityCache = null;
+    activityLoaded = false;
+    await loadActivityPanel({ force: true });
+    await loadDashboard();
+  } catch (error) {
+    if (message) message.textContent = error.message || '보너스 보상을 받을 수 없습니다.';
+  }
+}
+
+function renderShopPanel() {
+  const shell = document.querySelector('#shop-shell');
+  if (!shell) return;
+  shell.innerHTML = `
+    <div class="ia-card-grid">
+      <a class="ia-action-card" href="/shop.html"><span class="badge">상점</span><strong>칭호 상점</strong><p class="meta">포인트로 칭호를 사고 장착할 준비를 합니다.</p></a>
+      <a class="ia-action-card" href="/cosmetics.html"><span class="badge">꾸미기</span><strong>꾸미기 상점</strong><p class="meta">프로필 프레임과 배경을 손봅니다.</p></a>
+      <article class="ia-action-card is-locked"><span class="badge">보급품</span><strong>보급품 창고</strong><p class="meta">광산/용병단 소모품을 위한 예정 구역입니다.</p></article>
+    </div>
+  `;
+}
+
+function renderMercenaryPanel() {
+  const shell = document.querySelector('#mercenary-shell');
+  if (!shell) return;
+  const slots = ['내 용병', '고용소', '훈련소', '의무실', '임무', '전투 기록', '랭킹'];
+  shell.innerHTML = `
+    <div class="ia-card-grid mercenary-planner-grid">
+      ${slots.map((title) => `
+        <article class="ia-action-card is-locked">
+          <span class="badge">예정</span>
+          <strong>${escapeHtml(title)}</strong>
+          <p class="meta">고용, 성장, 치료비, 임무 파견을 위한 용병단 콘텐츠 슬롯입니다.</p>
+        </article>
+      `).join('')}
+    </div>
+  `;
+}
+
+function mercenaryDebug(...args) {
+  try {
+    if (localStorage.DEBUG_DASHBOARD === 'true') console.log('[mercenary]', ...args);
+  } catch (error) {}
+}
+
+function mercenaryMessage(message) {
+  const target = document.querySelector('#dashboard-message');
+  if (target) target.textContent = message || '';
+}
+
+function mercenaryCanUseCache() {
+  return mercenaryCache && Date.now() - mercenaryCache.cachedAt < MERCENARY_CACHE_TTL_MS;
+}
+
+function renderMercenaryPortrait(item = {}) {
+  if (item.illustrationUrl) {
+    return `<div class="mercenary-portrait"><img src="${escapeHtml(safeInternalUrl(item.illustrationUrl, item.illustrationUrl))}" alt="${escapeHtml(item.name || '용병')} 초상화"></div>`;
+  }
+  const rarity = String(item.rarity || 'N').toLowerCase();
+  return `
+    <div class="mercenary-portrait mercenary-placeholder rarity-${escapeHtml(rarity)}">
+      <span>${escapeHtml(item.rarity || 'N')}</span>
+      <strong>${escapeHtml(item.roleLabel || item.role || '용병')}</strong>
+    </div>
+  `;
+}
+
+function renderMercenaryStats(item = {}) {
+  return `
+    <div class="mercenary-stats">
+      <span>공 ${escapeHtml(item.attack || 0)}</span>
+      <span>방 ${escapeHtml(item.defense || 0)}</span>
+      <span>지 ${escapeHtml(item.support || 0)}</span>
+      <span>기 ${escapeHtml(item.tech || 0)}</span>
+      <span>운 ${escapeHtml(item.luck || 0)}</span>
+    </div>
+  `;
+}
+
+function renderMercenaryBadges(item = {}) {
+  return `
+    <div class="mercenary-badges">
+      <span class="badge mercenary-rarity rarity-${escapeHtml(String(item.rarity || 'N').toLowerCase())}">${escapeHtml(item.rarity || 'N')}</span>
+      <span class="badge">성능 ${escapeHtml(item.performanceGrade || 'N')}</span>
+      ${item.limited ? '<span class="badge">한정</span>' : ''}
+      ${item.rarity === 'EX' ? '<span class="badge">EX 한정</span>' : ''}
+      ${item.rescueInsured ? '<span class="badge rescue">응급구조</span>' : ''}
+    </div>
+  `;
+}
+
+function renderMercenaryCard(item = {}) {
+  const isDead = item.status === 'dead';
+  return `
+    <article class="mercenary-card ${isDead ? 'is-dead' : ''}">
+      ${renderMercenaryPortrait(item)}
+      <div class="mercenary-card-body">
+        ${renderMercenaryBadges(item)}
+        <h3>${escapeHtml(item.name || '이름 없는 용병')}</h3>
+        <p class="meta">${escapeHtml(item.roleLabel || item.role || '')} · Lv.${escapeHtml(item.level || 1)} · 전투력 ${escapeHtml(item.power || 0)}</p>
+        <p class="meta">${escapeHtml(item.rarityNote || '')} · 상태 ${escapeHtml(item.statusLabel || item.status || '')}</p>
+        ${renderMercenaryStats(item)}
+        ${isDead ? '<p class="meta danger-text">전사 처리되어 임무, 치료, 응급구조 가입이 불가합니다.</p>' : ''}
+      </div>
+    </article>
+  `;
+}
+
+function renderMercenaryOverview(summary = {}, account = {}) {
+  const metrics = [
+    ['보유', summary.total || 0],
+    ['임무 중', summary.deployed || 0],
+    ['의무실', summary.hospitalized || 0],
+    ['전사', summary.dead || 0],
+    ['응급구조', summary.rescueInsured || 0],
+    ['완료 대기', summary.claimableRuns || 0],
+    ['총 전투력', summary.totalPower || 0],
+    ['잔고', account.formattedBalance || formatPoints(account.balance || 0)]
+  ];
+  return `
+    <section class="mercenary-section mercenary-overview">
+      <div class="section-heading">
+        <div>
+          <span class="badge">용병단 관제</span>
+          <h2>격리소 용병단</h2>
+          <p class="meta">모든 용병단 활동은 이 탭 안에서 진행됩니다.</p>
+        </div>
+        <button class="button secondary inline small-button" type="button" data-mercenary-action="refresh">새로고침</button>
+      </div>
+      <div class="mercenary-metric-grid">
+        ${metrics.map(([label, value]) => `<article class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></article>`).join('')}
+      </div>
+      <div class="mercenary-rule-card">
+        <p>일반 고용소에서는 N/R 절차 생성 용병만 등장합니다.</p>
+        <p>SR/SSR/EX는 고유 캐릭터이며 특수 계약, 시즌, 이벤트, 고난도 임무 등으로 획득합니다.</p>
+        <p>EX는 성능 등급이 아니라 한정 표시입니다. 실제 성능은 성능 등급으로 따로 표시됩니다.</p>
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryCandidates(items = []) {
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading">
+        <div>
+          <span class="badge">고용소</span>
+          <h2>일반 고용 후보</h2>
+          <p class="meta">일반 고용소 후보는 N/R만 등장하며, 같은 계열이 반복될 수 있습니다.</p>
+        </div>
+      </div>
+      <div class="mercenary-card-grid">
+        ${items.length ? items.map((item) => `
+          <article class="mercenary-card candidate-card">
+            ${renderMercenaryPortrait(item)}
+            <div class="mercenary-card-body">
+              ${renderMercenaryBadges(item)}
+              <h3>${escapeHtml(item.name)}</h3>
+              <p class="meta">${escapeHtml(item.roleLabel)} · 전투력 ${escapeHtml(item.power || 0)} · 고용비 ${escapeHtml(item.formattedHireCost || formatPoints(item.hireCost || 0))}</p>
+              ${renderMercenaryStats(item)}
+              <button class="button inline small-button" type="button" data-mercenary-action="hire" data-candidate-id="${escapeHtml(item.id)}">고용</button>
+            </div>
+          </article>
+        `).join('') : renderEmptyState({ title: '고용 후보가 없습니다', description: '새로고침하면 일반 고용소 후보를 다시 확인합니다.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryRoster(items = []) {
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading"><div><span class="badge">내 용병</span><h2>보유 용병</h2></div></div>
+      <div class="mercenary-card-grid">
+        ${items.length ? items.map(renderMercenaryCard).join('') : renderEmptyState({ title: '아직 고용한 용병이 없습니다', description: '고용소에서 N/R 용병을 먼저 데려오세요.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryRescue(items = []) {
+  const alive = items.filter((item) => item.status !== 'dead');
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading">
+        <div><span class="badge">응급구조</span><h2>응급구조 서비스</h2><p class="meta">가입 용병은 사망 직전 의무실로 회수됩니다. 해지 시 환불은 없습니다.</p></div>
+      </div>
+      <div class="mercenary-list">
+        ${alive.length ? alive.map((item) => {
+          const disabled = ['deployed', 'hospitalized'].includes(item.status);
+          return `
+            <article class="mercenary-row">
+              <strong>${escapeHtml(item.name)}</strong>
+              <span class="meta">${escapeHtml(item.rarity || '')} · 성능 ${escapeHtml(item.performanceGrade || '')} · ${escapeHtml(item.statusLabel || item.status || '')}</span>
+              <span class="meta">가입비 ${escapeHtml(formatPoints(item.rescueCost || 0))} · 사용 ${escapeHtml(item.rescueUsedCount || 0)}회</span>
+              ${item.rescueInsured
+                ? `<button class="button secondary inline small-button" type="button" data-mercenary-action="rescue-cancel" data-mercenary-id="${escapeHtml(item.id)}" ${disabled ? 'disabled' : ''}>해지</button>`
+                : `<button class="button inline small-button" type="button" data-mercenary-action="rescue-subscribe" data-mercenary-id="${escapeHtml(item.id)}" ${disabled ? 'disabled' : ''}>가입</button>`}
+            </article>
+          `;
+        }).join('') : renderEmptyState({ title: '응급구조를 적용할 용병이 없습니다', description: '전사자는 가입할 수 없습니다.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryMissionPicker(mission, mercenaries = []) {
+  const available = mercenaries.filter((item) => item.status === 'idle');
+  if (!available.length) return '<p class="meta">투입 가능한 대기 용병이 없습니다.</p>';
+  return `
+    <div class="mercenary-picker">
+      ${available.map((item) => `
+        <label>
+          <input type="checkbox" data-mercenary-pick data-mission-code="${escapeHtml(mission.code)}" value="${escapeHtml(item.id)}">
+          ${escapeHtml(item.name)} · ${escapeHtml(item.roleLabel || item.role)} · ${escapeHtml(item.power || 0)}
+        </label>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderMercenaryMissions(missions = [], mercenaries = []) {
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading">
+        <div><span class="badge">임무</span><h2>임무 파견</h2><p class="meta">임무는 시간이 걸리며, 완료 후 결과를 수령해야 보상과 경험치가 지급됩니다.</p></div>
+      </div>
+      <div class="mercenary-mission-grid">
+        ${missions.map((mission) => `
+          <article class="mercenary-mission-card">
+            <span class="badge">${escapeHtml(mission.difficulty)}</span>
+            <h3>${escapeHtml(mission.title)}</h3>
+            <p class="meta">${escapeHtml(mission.description || '')}</p>
+            <p class="meta">추천 ${escapeHtml((mission.recommendedRoleLabels || []).join(', '))}</p>
+            <p class="meta">보상 ${escapeHtml(mission.rewardLabel)} · 수행 ${escapeHtml(mission.durationLabel)} · 부상 ${escapeHtml(mission.injuryRisk)}% · 사망 ${escapeHtml(mission.deathRisk)}%</p>
+            ${renderMercenaryMissionPicker(mission, mercenaries)}
+            <button class="button inline small-button" type="button" data-mercenary-action="start-mission" data-mission-code="${escapeHtml(mission.code)}">임무 시작</button>
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryRuns(runs = []) {
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading"><div><span class="badge">진행 중</span><h2>진행 중 임무</h2></div></div>
+      <div class="mercenary-list">
+        ${runs.length ? runs.map((run) => `
+          <article class="mercenary-row">
+            <strong>${escapeHtml(run.mission?.title || run.missionCode)}</strong>
+            <span class="meta">${escapeHtml((run.mercenaries || []).map((item) => item.name).join(', '))}</span>
+            <span class="meta">완료 예정 ${escapeHtml(formatHomeDate(run.completesAt))} · 성공률 ${escapeHtml(run.successRate)}%</span>
+            <button class="button inline small-button" type="button" data-mercenary-action="claim-run" data-run-id="${escapeHtml(run.id)}" ${run.readyToClaim ? '' : 'disabled'}>결과 받기</button>
+          </article>
+        `).join('') : renderEmptyState({ title: '진행 중인 임무가 없습니다', description: '임무 카드에서 용병을 선택해 파견하세요.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryHospital(items = []) {
+  const hospital = items.filter((item) => ['injured', 'hospitalized'].includes(item.status));
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading"><div><span class="badge">의무실</span><h2>치료 대기</h2></div></div>
+      <div class="mercenary-list">
+        ${hospital.length ? hospital.map((item) => `
+          <article class="mercenary-row">
+            <strong>${escapeHtml(item.name)}</strong>
+            <span class="meta">부상 단계 ${escapeHtml(item.injuryLevel || 1)} · 치료비 ${escapeHtml(formatPoints(item.treatmentCost || 0))}</span>
+            <span class="meta">${item.rescueInsured ? '응급구조 가입 중' : '응급구조 미가입'}</span>
+            <button class="button inline small-button" type="button" data-mercenary-action="treat" data-mercenary-id="${escapeHtml(item.id)}">치료</button>
+          </article>
+        `).join('') : renderEmptyState({ title: '의무실이 조용합니다', description: '다친 용병이 생기면 여기에서 치료합니다.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function mercenaryResultLabel(result) {
+  return {
+    great_success: '대성공',
+    success: '성공',
+    partial_success: '부분 성공',
+    fail: '실패',
+    disaster: '대참사'
+  }[result] || result || '기록';
+}
+
+function renderMercenaryHistory(items = []) {
+  return `
+    <section class="mercenary-section">
+      <div class="section-heading"><div><span class="badge">기록</span><h2>최근 전투 기록</h2></div></div>
+      <div class="mercenary-list">
+        ${items.length ? items.slice(0, 10).map((run) => {
+          const injuryCount = Object.keys(run.injuryResult || {}).length;
+          const deathCount = Object.keys(run.deathResult || {}).length;
+          const rescueCount = Object.keys(run.rescueResult || {}).length;
+          return `
+            <article class="mercenary-row">
+              <strong>${escapeHtml(run.mission?.title || run.missionCode)} · ${escapeHtml(mercenaryResultLabel(run.result))}</strong>
+              <span class="meta">보상 ${escapeHtml(run.rewardLabel || formatPoints(run.rewardPoints || 0))} · XP ${escapeHtml(run.xpGained || 0)}</span>
+              <span class="meta">부상 ${escapeHtml(injuryCount)} · 전사 ${escapeHtml(deathCount)} · 응급회수 ${escapeHtml(rescueCount)}</span>
+            </article>
+          `;
+        }).join('') : renderEmptyState({ title: '전투 기록이 없습니다', description: '첫 임무를 완료하면 기록이 남습니다.', compact: true })}
+      </div>
+    </section>
+  `;
+}
+
+function renderMercenaryData(data = {}) {
+  const shell = document.querySelector('#mercenary-shell');
+  if (!shell) return;
+  const mercenaries = data.mercenaries || [];
+  shell.innerHTML = `
+    <div class="mercenary-shell">
+      ${renderMercenaryOverview(data.summary || {}, data.account || {})}
+      ${renderMercenaryCandidates(data.candidates || [])}
+      ${renderMercenaryRoster(mercenaries)}
+      ${renderMercenaryRescue(mercenaries)}
+      ${renderMercenaryMissions(data.missions || [], mercenaries)}
+      ${renderMercenaryRuns(data.runningRuns || [])}
+      ${renderMercenaryHospital(mercenaries)}
+      ${renderMercenaryHistory(data.history || [])}
+    </div>
+  `;
+}
+
+async function loadMercenaryPanel(options = {}) {
+  const shell = document.querySelector('#mercenary-shell');
+  if (!shell) return;
+  if (!options.force && mercenaryCanUseCache()) {
+    mercenaryDebug('cache hit');
+    renderMercenaryData(mercenaryCache.data);
+    return;
+  }
+  shell.innerHTML = renderLoadingState({ title: '용병단을 여는 중', description: '고용소와 임무 기록을 확인하고 있습니다.', rows: 3 });
+  try {
+    const data = await dashboardRequest('/api/mercenaries/overview');
+    mercenaryCache = { cachedAt: Date.now(), data };
+    renderMercenaryData(data);
+  } catch (error) {
+    shell.innerHTML = renderErrorState({
+      title: '용병단 정보를 불러오지 못했습니다',
+      description: '잠시 뒤 다시 시도해 주세요.',
+      actionHtml: '<button class="button secondary inline state-retry-button small-button" type="button" data-mercenary-action="mercenary-retry">다시 시도</button>'
+    });
+  }
+}
+
+function renderMercenaryPanel(options = {}) {
+  loadMercenaryPanel(options);
+}
+
+function selectedMercenaryIdsForMission(missionCode) {
+  const escaped = window.CSS?.escape ? CSS.escape(missionCode) : String(missionCode).replace(/"/g, '\\"');
+  return [...document.querySelectorAll(`[data-mercenary-pick][data-mission-code="${escaped}"]:checked`)]
+    .map((input) => Number(input.value))
+    .filter((id) => Number.isInteger(id) && id > 0);
+}
+
+async function handleMercenaryAction(action, target) {
+  const id = target.dataset.mercenaryId;
+  const candidateId = target.dataset.candidateId;
+  const runId = target.dataset.runId;
+  const missionCode = target.dataset.missionCode;
+  const previousDisabled = target.disabled;
+  target.disabled = true;
+  try {
+    if (action === 'refresh' || action === 'mercenary-retry') {
+      mercenaryCache = null;
+      await loadMercenaryPanel({ force: true });
+      return;
+    }
+    if (action === 'hire') {
+      await dashboardRequest(`/api/mercenaries/candidates/${encodeURIComponent(candidateId)}/hire`, { method: 'POST' });
+      mercenaryMessage('용병을 고용했습니다.');
+    } else if (action === 'rescue-subscribe') {
+      await dashboardRequest(`/api/mercenaries/${encodeURIComponent(id)}/rescue/subscribe`, { method: 'POST' });
+      mercenaryMessage('응급구조 서비스에 가입했습니다.');
+    } else if (action === 'rescue-cancel') {
+      await dashboardRequest(`/api/mercenaries/${encodeURIComponent(id)}/rescue/cancel`, { method: 'POST' });
+      mercenaryMessage('응급구조 서비스를 해지했습니다. 환불은 없습니다.');
+    } else if (action === 'start-mission') {
+      const mercenaryIds = selectedMercenaryIdsForMission(missionCode);
+      if (!mercenaryIds.length) throw new Error('투입할 용병을 1명 이상 선택해 주세요.');
+      await dashboardRequest(`/api/mercenaries/missions/${encodeURIComponent(missionCode)}/start`, {
+        method: 'POST',
+        body: JSON.stringify({ mercenaryIds })
+      });
+      mercenaryMessage('임무를 시작했습니다. 완료 시간이 지나면 결과를 수령하세요.');
+    } else if (action === 'claim-run') {
+      const data = await dashboardRequest(`/api/mercenaries/runs/${encodeURIComponent(runId)}/claim`, { method: 'POST' });
+      mercenaryMessage(`임무 결과: ${mercenaryResultLabel(data.result)} · 보상 ${formatPoints(data.rewardPoints || 0)}`);
+    } else if (action === 'treat') {
+      await dashboardRequest(`/api/mercenaries/${encodeURIComponent(id)}/treat`, { method: 'POST' });
+      mercenaryMessage('치료가 완료되었습니다.');
+    }
+    mercenaryCache = null;
+    await loadMercenaryPanel({ force: true });
+  } catch (error) {
+    mercenaryMessage(error.message || '용병단 처리 중 오류가 발생했습니다.');
+    if (action === 'mercenary-retry') await loadMercenaryPanel({ force: true });
+  } finally {
+    target.disabled = previousDisabled;
+  }
+}
+
+document.addEventListener('click', (event) => {
+  const target = event.target.closest('[data-mercenary-action]');
+  if (!target) return;
+  event.preventDefault();
+  handleMercenaryAction(target.dataset.mercenaryAction, target);
+});
+
 function updateTopTabActiveState() {
   document.querySelectorAll('[data-top-tab]').forEach((button) => {
     const isActive = button.dataset.topTab === activeTopTab;
@@ -2614,7 +3178,7 @@ function scrollMainViewToTop() {
 }
 
 function switchMainView(tabKey = 'home', { scroll = true } = {}) {
-  const validTabs = ['home', 'community', 'casino', 'season', 'account', 'more'];
+  const validTabs = ['home', 'activity', 'community', 'casino', 'shop', 'mercenary', 'season', 'account'];
   const nextTab = validTabs.includes(tabKey) ? tabKey : 'home';
   activeTopTab = nextTab;
   dashboardPerf?.log(`main view switch ${nextTab}`);
@@ -2631,17 +3195,29 @@ function renderMainNavigation(me, unreadCount = 0) {
   const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount || '');
   nav.innerHTML = `
     <button type="button" class="nav-tab-button" data-top-tab="home" onclick="openHomeView()">홈</button>
+    <button type="button" class="nav-tab-button" data-top-tab="activity" onclick="openActivityPanel()">활동</button>
     <button type="button" class="nav-tab-button" data-top-tab="community" onclick="openCommunityPanel()">커뮤니티</button>
     <button type="button" class="nav-tab-button" data-top-tab="casino" onclick="openCasinoPanel()">카지노</button>
+    <button type="button" class="nav-tab-button" data-top-tab="shop" onclick="openShopPanel()">상점</button>
+    <button type="button" class="nav-tab-button" data-top-tab="mercenary" onclick="openMercenaryPanel()">용병단</button>
     <button type="button" class="nav-tab-button" data-top-tab="season" onclick="openSeasonPanel()">시즌</button>
     <button type="button" class="nav-tab-button" data-top-tab="account" onclick="openAccountPanel()">내 정보</button>
-    <button type="button" class="nav-tab-button" data-top-tab="more" onclick="openMorePanel()">더보기${unreadCount > 0 ? ` ${unreadLabel}` : ''}</button>
   `;
   updateTopTabActiveState();
 }
 
 function openHomeView(options = {}) {
   switchMainView('home', options);
+}
+
+function openActivityPanel(options = {}) {
+  dashboardPerf?.log('activity tab open');
+  switchMainView('activity', options);
+  if (shouldReloadActivityPanel()) loadActivityPanel();
+}
+
+function closeActivityPanel() {
+  openHomeView();
 }
 
 function openCommunityPanel(tabKey = COMMUNITY_DEFAULT_TAB, options = {}) {
@@ -2663,6 +3239,26 @@ function openCasinoPanel(tabKey = CASINO_DEFAULT_TAB, options = {}) {
 }
 
 function closeCasinoPanel() {
+  openHomeView();
+}
+
+function openShopPanel(options = {}) {
+  dashboardPerf?.log('shop tab open');
+  switchMainView('shop', options);
+  renderShopPanel();
+}
+
+function closeShopPanel() {
+  openHomeView();
+}
+
+function openMercenaryPanel(options = {}) {
+  dashboardPerf?.log('mercenary tab open');
+  switchMainView('mercenary', options);
+  renderMercenaryPanel();
+}
+
+function closeMercenaryPanel() {
   openHomeView();
 }
 
@@ -2688,20 +3284,9 @@ function closeAccountPanel() {
   openHomeView();
 }
 
-function openMorePanel(tabKey = MORE_DEFAULT_TAB, options = {}) {
-  dashboardPerf?.log('more tab open');
-  switchMainView('more', options);
-  renderMoreShell();
-  loadMoreTab(tabKey);
-}
-
-function closeMorePanel() {
-  openHomeView();
-}
-
 function getMainViewFromHash() {
   const key = String(window.location.hash || '').replace(/^#/, '').trim();
-  return ['home', 'community', 'casino', 'season', 'account', 'more'].includes(key) ? key : '';
+  return ['home', 'activity', 'community', 'casino', 'shop', 'mercenary', 'season', 'account'].includes(key) ? key : '';
 }
 
 function openMainViewFromHash(options = {}) {
@@ -2712,6 +3297,10 @@ function openMainViewFromHash(options = {}) {
     openHomeView(options);
     return true;
   }
+  if (key === 'activity') {
+    openActivityPanel(options);
+    return true;
+  }
   if (key === 'community') {
     openCommunityPanel(COMMUNITY_DEFAULT_TAB, options);
     return true;
@@ -2720,16 +3309,20 @@ function openMainViewFromHash(options = {}) {
     openCasinoPanel(CASINO_DEFAULT_TAB, options);
     return true;
   }
+  if (key === 'shop') {
+    openShopPanel(options);
+    return true;
+  }
+  if (key === 'mercenary') {
+    openMercenaryPanel(options);
+    return true;
+  }
   if (key === 'season') {
     openSeasonPanel(SEASON_DEFAULT_TAB, options);
     return true;
   }
   if (key === 'account') {
     openAccountPanel(ACCOUNT_DEFAULT_TAB, options);
-    return true;
-  }
-  if (key === 'more') {
-    openMorePanel(MORE_DEFAULT_TAB, options);
     return true;
   }
   return false;

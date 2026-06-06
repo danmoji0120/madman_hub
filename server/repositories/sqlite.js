@@ -198,6 +198,65 @@ async function runMigrations() {
        metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
      )`
   );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mercenaries (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, owner_user_id INTEGER NOT NULL, mercenary_key TEXT NOT NULL,
+       template_key TEXT NOT NULL, is_unique INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL,
+       rarity TEXT NOT NULL, performance_grade TEXT NOT NULL, role TEXT NOT NULL,
+       level INTEGER NOT NULL DEFAULT 1, xp INTEGER NOT NULL DEFAULT 0,
+       attack INTEGER NOT NULL DEFAULT 0, defense INTEGER NOT NULL DEFAULT 0,
+       support INTEGER NOT NULL DEFAULT 0, tech INTEGER NOT NULL DEFAULT 0, luck INTEGER NOT NULL DEFAULT 0,
+       status TEXT NOT NULL DEFAULT 'idle', injury_level INTEGER NOT NULL DEFAULT 0,
+       illustration_url TEXT DEFAULT '', source_type TEXT NOT NULL DEFAULT 'hire_shop',
+       season_key TEXT DEFAULT '', limited INTEGER NOT NULL DEFAULT 0, exclusive_tag TEXT DEFAULT '',
+       rescue_insured INTEGER NOT NULL DEFAULT 0, rescue_plan TEXT NOT NULL DEFAULT 'none',
+       rescue_until TEXT, rescue_used_count INTEGER NOT NULL DEFAULT 0, dead_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE(owner_user_id, mercenary_key)
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mercenary_candidates (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, mercenary_key TEXT NOT NULL,
+       template_key TEXT NOT NULL, is_unique INTEGER NOT NULL DEFAULT 0, name TEXT NOT NULL,
+       rarity TEXT NOT NULL, performance_grade TEXT NOT NULL, role TEXT NOT NULL,
+       attack INTEGER NOT NULL DEFAULT 0, defense INTEGER NOT NULL DEFAULT 0,
+       support INTEGER NOT NULL DEFAULT 0, tech INTEGER NOT NULL DEFAULT 0, luck INTEGER NOT NULL DEFAULT 0,
+       hire_cost INTEGER NOT NULL DEFAULT 0, illustration_url TEXT DEFAULT '',
+       source_type TEXT NOT NULL DEFAULT 'hire_shop', season_key TEXT DEFAULT '',
+       limited INTEGER NOT NULL DEFAULT 0, exclusive_tag TEXT DEFAULT '',
+       status TEXT NOT NULL DEFAULT 'available', expires_at TEXT NOT NULL, hired_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE(user_id, mercenary_key)
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mercenary_missions (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, title TEXT NOT NULL,
+       description TEXT DEFAULT '', difficulty TEXT NOT NULL, recommended_roles TEXT NOT NULL DEFAULT '[]',
+       base_reward_min INTEGER NOT NULL DEFAULT 0, base_reward_max INTEGER NOT NULL DEFAULT 0,
+       base_success_rate INTEGER NOT NULL DEFAULT 50, injury_risk INTEGER NOT NULL DEFAULT 0,
+       death_risk INTEGER NOT NULL DEFAULT 0, duration_seconds INTEGER NOT NULL DEFAULT 60,
+       active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mercenary_runs (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, mission_code TEXT NOT NULL,
+       mercenary_ids TEXT NOT NULL DEFAULT '[]', success_rate INTEGER NOT NULL DEFAULT 0,
+       status TEXT NOT NULL DEFAULT 'running', result TEXT DEFAULT '', result_json TEXT NOT NULL DEFAULT '{}',
+       reward_points INTEGER NOT NULL DEFAULT 0, xp_gained INTEGER NOT NULL DEFAULT 0,
+       injury_result TEXT NOT NULL DEFAULT '{}', death_result TEXT NOT NULL DEFAULT '{}',
+       rescue_result TEXT NOT NULL DEFAULT '{}', started_at TEXT NOT NULL, completes_at TEXT NOT NULL,
+       completed_at TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS mercenary_treatments (
+       id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, mercenary_id INTEGER NOT NULL,
+       cost INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'completed',
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, completed_at TEXT
+     )`
+  );
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
@@ -205,6 +264,13 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code)');
   await run('CREATE INDEX IF NOT EXISTS idx_mine_logs_user_created ON mine_logs(user_id, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_mine_logs_created ON mine_logs(created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenaries_owner_status ON mercenaries(owner_user_id, status, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenaries_owner_template ON mercenaries(owner_user_id, template_key)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenary_candidates_user_status ON mercenary_candidates(user_id, status, expires_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenary_missions_active ON mercenary_missions(active, difficulty)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenary_runs_user_status ON mercenary_runs(user_id, status, completes_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenary_runs_created ON mercenary_runs(created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments(user_id, mercenary_id, created_at)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
        id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,

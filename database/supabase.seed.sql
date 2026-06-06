@@ -221,6 +221,29 @@ INSERT INTO achievements (code, name, description, category, reward_points) VALU
   ('DAILY_MISSION_ALL', '오늘의 관찰 완료', '하루의 모든 일일 미션을 완료했습니다.', 'missions', 15)
 ON CONFLICT (code) DO NOTHING;
 
+
+INSERT INTO mercenary_missions
+  (code, title, description, difficulty, recommended_roles, base_reward_min, base_reward_max,
+   base_success_rate, injury_risk, death_risk, duration_seconds, active)
+VALUES
+  ('patrol', '격리소 순찰', '복도에 굴러다니는 소동을 주워 담습니다.', 'easy', '["defender","scout"]', 20, 40, 70, 5, 0, 180, TRUE),
+  ('mine_guard', '광산 경비', '광산 입구에서 잡석과 유저의 욕심을 감시합니다.', 'normal', '["defender","engineer"]', 35, 70, 60, 10, 0, 300, TRUE),
+  ('incident_suppression', '소동 진압', '격리소의 작은 난리를 큰 난리가 되기 전에 눌러둡니다.', 'normal', '["supporter","medic"]', 30, 65, 62, 8, 0, 420, TRUE),
+  ('closed_zone_scout', '폐쇄구역 정찰', '지도에 없는 문 너머를 확인합니다.', 'hard', '["scout","attacker","engineer"]', 70, 150, 45, 18, 2, 720, TRUE),
+  ('debt_collector', '카지노 채무자 추적', '카지노 근처에서 사라진 포인트의 행방을 묻습니다.', 'dangerous', '["attacker","scout"]', 100, 230, 35, 25, 4, 900, TRUE)
+ON CONFLICT(code) DO UPDATE SET
+  title = excluded.title,
+  description = excluded.description,
+  difficulty = excluded.difficulty,
+  recommended_roles = excluded.recommended_roles,
+  base_reward_min = excluded.base_reward_min,
+  base_reward_max = excluded.base_reward_max,
+  base_success_rate = excluded.base_success_rate,
+  injury_risk = excluded.injury_risk,
+  death_risk = excluded.death_risk,
+  duration_seconds = excluded.duration_seconds,
+  active = excluded.active;
+
 INSERT INTO seasons (code, name, description, starts_at, ends_at, status, is_active)
 VALUES (
   'season_1',

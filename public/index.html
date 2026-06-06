@@ -103,6 +103,17 @@
 
     </section>
 
+    <section class="card main-view home-tab-panel activity-panel" id="activity-panel" data-main-view="activity" hidden>
+      <div class="section-heading">
+        <div>
+          <span class="badge">활동</span>
+          <h2>포인트 수급실</h2>
+        </div>
+        <button class="button secondary inline small-button" type="button" onclick="closeActivityPanel()">홈으로 접기</button>
+      </div>
+      <div id="activity-shell" class="ia-panel-shell"></div>
+    </section>
+
     <section class="card main-view home-tab-panel community-panel" id="community-panel" data-main-view="community" hidden>
       <div class="section-heading">
         <div>
@@ -134,6 +145,29 @@
         <button class="button secondary inline small-button" type="button" onclick="closeCasinoPanel()">홈으로 접기</button>
       </div>
       <div id="casino-shell"></div>
+    </section>
+
+    <section class="card main-view home-tab-panel shop-panel" id="shop-panel" data-main-view="shop" hidden>
+      <div class="section-heading">
+        <div>
+          <span class="badge">상점</span>
+          <h2>포인트 소비소</h2>
+        </div>
+        <button class="button secondary inline small-button" type="button" onclick="closeShopPanel()">홈으로 접기</button>
+      </div>
+      <div id="shop-shell"></div>
+    </section>
+
+    <section class="card main-view home-tab-panel mercenary-panel" id="mercenary-panel" data-main-view="mercenary" hidden>
+      <div class="section-heading">
+        <div>
+          <span class="badge">용병단</span>
+          <h2>격리소 용병단</h2>
+          <p class="meta">고용, 임무, 치료, 응급구조는 모두 이 탭 안에서 진행됩니다.</p>
+        </div>
+        <button class="button secondary inline small-button" type="button" onclick="closeMercenaryPanel()">홈으로 접기</button>
+      </div>
+      <div id="mercenary-shell"></div>
     </section>
 
     <section class="card main-view home-tab-panel account-panel" id="account-panel" data-main-view="account" hidden>

@@ -237,6 +237,115 @@ CREATE TABLE IF NOT EXISTS mine_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS mercenaries (
+  id BIGSERIAL PRIMARY KEY,
+  owner_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mercenary_key TEXT NOT NULL,
+  template_key TEXT NOT NULL,
+  is_unique BOOLEAN NOT NULL DEFAULT FALSE,
+  name TEXT NOT NULL,
+  rarity TEXT NOT NULL CHECK (rarity IN ('N', 'R', 'SR', 'SSR', 'EX')),
+  performance_grade TEXT NOT NULL CHECK (performance_grade IN ('N', 'R', 'SR', 'SSR')),
+  role TEXT NOT NULL CHECK (role IN ('attacker', 'defender', 'supporter', 'scout', 'engineer', 'medic')),
+  level INTEGER NOT NULL DEFAULT 1,
+  xp INTEGER NOT NULL DEFAULT 0,
+  attack INTEGER NOT NULL DEFAULT 0,
+  defense INTEGER NOT NULL DEFAULT 0,
+  support INTEGER NOT NULL DEFAULT 0,
+  tech INTEGER NOT NULL DEFAULT 0,
+  luck INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'deployed', 'injured', 'hospitalized', 'dead')),
+  injury_level INTEGER NOT NULL DEFAULT 0,
+  illustration_url TEXT DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT 'hire_shop',
+  season_key TEXT DEFAULT '',
+  limited BOOLEAN NOT NULL DEFAULT FALSE,
+  exclusive_tag TEXT DEFAULT '',
+  rescue_insured BOOLEAN NOT NULL DEFAULT FALSE,
+  rescue_plan TEXT NOT NULL DEFAULT 'none',
+  rescue_until TIMESTAMPTZ,
+  rescue_used_count INTEGER NOT NULL DEFAULT 0,
+  dead_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(owner_user_id, mercenary_key)
+);
+
+CREATE TABLE IF NOT EXISTS mercenary_candidates (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mercenary_key TEXT NOT NULL,
+  template_key TEXT NOT NULL,
+  is_unique BOOLEAN NOT NULL DEFAULT FALSE,
+  name TEXT NOT NULL,
+  rarity TEXT NOT NULL CHECK (rarity IN ('N', 'R', 'SR', 'SSR', 'EX')),
+  performance_grade TEXT NOT NULL CHECK (performance_grade IN ('N', 'R', 'SR', 'SSR')),
+  role TEXT NOT NULL CHECK (role IN ('attacker', 'defender', 'supporter', 'scout', 'engineer', 'medic')),
+  attack INTEGER NOT NULL DEFAULT 0,
+  defense INTEGER NOT NULL DEFAULT 0,
+  support INTEGER NOT NULL DEFAULT 0,
+  tech INTEGER NOT NULL DEFAULT 0,
+  luck INTEGER NOT NULL DEFAULT 0,
+  hire_cost INTEGER NOT NULL DEFAULT 0,
+  illustration_url TEXT DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT 'hire_shop',
+  season_key TEXT DEFAULT '',
+  limited BOOLEAN NOT NULL DEFAULT FALSE,
+  exclusive_tag TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'available',
+  expires_at TIMESTAMPTZ NOT NULL,
+  hired_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, mercenary_key)
+);
+
+CREATE TABLE IF NOT EXISTS mercenary_missions (
+  id BIGSERIAL PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  difficulty TEXT NOT NULL,
+  recommended_roles JSONB NOT NULL DEFAULT '[]'::jsonb,
+  base_reward_min INTEGER NOT NULL DEFAULT 0,
+  base_reward_max INTEGER NOT NULL DEFAULT 0,
+  base_success_rate INTEGER NOT NULL DEFAULT 50,
+  injury_risk INTEGER NOT NULL DEFAULT 0,
+  death_risk INTEGER NOT NULL DEFAULT 0,
+  duration_seconds INTEGER NOT NULL DEFAULT 60,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS mercenary_runs (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_code TEXT NOT NULL,
+  mercenary_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+  success_rate INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'running',
+  result TEXT DEFAULT '',
+  result_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  reward_points INTEGER NOT NULL DEFAULT 0,
+  xp_gained INTEGER NOT NULL DEFAULT 0,
+  injury_result JSONB NOT NULL DEFAULT '{}'::jsonb,
+  death_result JSONB NOT NULL DEFAULT '{}'::jsonb,
+  rescue_result JSONB NOT NULL DEFAULT '{}'::jsonb,
+  started_at TIMESTAMPTZ NOT NULL,
+  completes_at TIMESTAMPTZ NOT NULL,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS mercenary_treatments (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mercenary_id BIGINT NOT NULL REFERENCES mercenaries(id) ON DELETE CASCADE,
+  cost INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'completed',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
+
 CREATE TABLE IF NOT EXISTS guestbook_entries (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -466,6 +575,13 @@ CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_user_date ON daily_mission
 CREATE INDEX IF NOT EXISTS idx_daily_mission_progress_date_code ON daily_mission_progress(mission_date, mission_code);
 CREATE INDEX IF NOT EXISTS idx_mine_logs_user_created ON mine_logs(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mine_logs_created ON mine_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mercenaries_owner_status ON mercenaries(owner_user_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mercenaries_owner_template ON mercenaries(owner_user_id, template_key);
+CREATE INDEX IF NOT EXISTS idx_mercenary_candidates_user_status ON mercenary_candidates(user_id, status, expires_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mercenary_missions_active ON mercenary_missions(active, difficulty);
+CREATE INDEX IF NOT EXISTS idx_mercenary_runs_user_status ON mercenary_runs(user_id, status, completes_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mercenary_runs_created ON mercenary_runs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments(user_id, mercenary_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);
