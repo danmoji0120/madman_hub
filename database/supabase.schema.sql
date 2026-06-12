@@ -346,6 +346,35 @@ CREATE TABLE IF NOT EXISTS mercenary_treatments (
   completed_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS user_mercenaries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mercenary_id TEXT NOT NULL,
+  level INTEGER NOT NULL DEFAULT 1,
+  exp INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT '대기 중',
+  locked BOOLEAN NOT NULL DEFAULT FALSE,
+  hired_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_recruit_boards (
+  user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  board_date DATE NOT NULL,
+  refresh_count INTEGER NOT NULL DEFAULT 0,
+  candidate_ids TEXT[] NOT NULL DEFAULT '{}',
+  hired_candidate_ids TEXT[] NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS mercenary_recruit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  action TEXT NOT NULL,
+  mercenary_id TEXT,
+  gold_delta INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS guestbook_entries (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -582,6 +611,9 @@ CREATE INDEX IF NOT EXISTS idx_mercenary_missions_active ON mercenary_missions(a
 CREATE INDEX IF NOT EXISTS idx_mercenary_runs_user_status ON mercenary_runs(user_id, status, completes_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mercenary_runs_created ON mercenary_runs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments(user_id, mercenary_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_mercenaries_user_status ON user_mercenaries(user_id, status, hired_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_mercenaries_mercenary_id ON user_mercenaries(mercenary_id);
+CREATE INDEX IF NOT EXISTS idx_mercenary_recruit_logs_user_created ON mercenary_recruit_logs(user_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);

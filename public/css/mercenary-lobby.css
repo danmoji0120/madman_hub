@@ -1,0 +1,1959 @@
+@font-face {
+  font-family: "MercTitle";
+  src: url("/assets/mercenary/fonts/BookkMyungjo_Bold.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MercText";
+  src: url("/assets/mercenary/fonts/BookkMyungjo_Light.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --merc-gold: #d7aa54;
+  --merc-gold-bright: #ffd987;
+  --merc-red: #ba4538;
+  --merc-ink: rgba(12, 8, 5, 0.78);
+  --merc-panel: rgba(20, 13, 8, 0.78);
+  --merc-line: rgba(215, 170, 84, 0.58);
+  --merc-text: #f7ead0;
+  --merc-muted: #c7ac82;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body.mercenary-lobby-page {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--merc-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+  background: #080604;
+}
+
+button {
+  font: inherit;
+}
+
+.lobby-background {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background: url("/assets/mercenary/lobby/bg_mercenary_office.png") center center / cover no-repeat;
+}
+
+.lobby-dim {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.12) 42%, rgba(0, 0, 0, 0.68)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.56), transparent 22%, transparent 74%, rgba(0, 0, 0, 0.62));
+}
+
+.lobby-top-fade {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  height: 180px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.86), rgba(0, 0, 0, 0));
+}
+
+.mercenary-lobby {
+  position: relative;
+  min-height: 100vh;
+  padding: 28px 38px 28px;
+}
+
+.lobby-topbar {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 26px;
+}
+
+.lobby-home-link {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: rgba(247, 234, 208, 0.66);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  transition: color 140ms ease, text-shadow 140ms ease;
+}
+
+.lobby-home-link:hover {
+  color: var(--merc-gold-bright);
+  text-shadow: 0 0 14px rgba(255, 217, 135, 0.42);
+}
+
+.lobby-title,
+.panel-title,
+.hotspot-label,
+.hotspot-badge {
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  letter-spacing: 0;
+}
+
+.lobby-title {
+  margin: 0;
+  color: #fff4d6;
+  font-size: clamp(34px, 4vw, 58px);
+  line-height: 1.02;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.72), 0 0 22px rgba(215, 170, 84, 0.2);
+}
+
+.lobby-level-line {
+  margin: 9px 0 8px;
+  color: #dbc59c;
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 15px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.78);
+}
+
+.lobby-exp-bar {
+  width: min(420px, 52vw);
+  height: 5px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.lobby-exp-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #8e6430, #f0c56e);
+  box-shadow: 0 0 12px rgba(240, 197, 110, 0.58);
+}
+
+.top-resource-cluster {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 46px;
+  padding: 8px 14px;
+  border: 1px solid rgba(220, 178, 86, 0.22);
+  background: rgba(8, 6, 5, 0.32);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.lobby-top-actions {
+  margin-top: 10px;
+}
+
+.top-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  padding: 0;
+  color: #f1d199;
+  background: transparent;
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+  transition: color 140ms ease, filter 140ms ease, text-shadow 140ms ease;
+}
+
+.top-action:hover {
+  color: #ffe2a4;
+  filter: drop-shadow(0 0 8px rgba(230, 170, 80, 0.55));
+  text-shadow: 0 0 12px rgba(255, 217, 135, 0.38);
+}
+
+.top-action .count-badge {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #a32820;
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  line-height: 1;
+  box-shadow:
+    0 0 0 1px rgba(255, 210, 160, 0.28),
+    0 0 10px rgba(180, 30, 20, 0.45);
+}
+
+.merc-ui-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  vertical-align: middle;
+  filter:
+    drop-shadow(0 2px 3px rgba(0, 0, 0, 0.8))
+    drop-shadow(0 0 4px rgba(214, 168, 93, 0.18));
+}
+
+.merc-ui-icon.small {
+  width: 24px;
+  height: 24px;
+}
+
+.merc-ui-icon.medium {
+  width: 30px;
+  height: 30px;
+}
+
+.merc-ui-icon.large {
+  width: 42px;
+  height: 42px;
+}
+
+.merc-panel {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid rgba(215, 170, 84, 0.48);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 34%),
+    rgba(20, 13, 8, 0.68);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.42), 0 18px 48px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(6px);
+}
+
+.merc-panel::before,
+.merc-panel::after {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  content: "";
+  pointer-events: none;
+}
+
+.merc-panel::before {
+  top: 8px;
+  left: 8px;
+  border-top: 1px solid rgba(255, 217, 135, 0.72);
+  border-left: 1px solid rgba(255, 217, 135, 0.72);
+}
+
+.merc-panel::after {
+  right: 8px;
+  bottom: 8px;
+  border-right: 1px solid rgba(255, 217, 135, 0.72);
+  border-bottom: 1px solid rgba(255, 217, 135, 0.72);
+}
+
+.status-panel {
+  top: 54%;
+  left: 38px;
+  width: clamp(280px, 22vw, 320px);
+  padding: 22px 20px 20px;
+  transform: translateY(-50%);
+}
+
+.panel-title {
+  margin: 0 0 16px;
+  color: #ffe6aa;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.status-list {
+  display: grid;
+  gap: 8px;
+}
+
+.status-item {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 7px 0;
+  color: #f4e4c7;
+}
+
+.status-item .merc-ui-icon {
+  width: 32px;
+  height: 32px;
+  filter:
+    brightness(1.08)
+    contrast(1.06)
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7))
+    drop-shadow(0 0 5px rgba(238, 190, 92, 0.16));
+}
+
+.status-item span {
+  color: rgba(245, 225, 180, 0.88);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.status-item strong {
+  color: #fff1c2;
+  font-size: 18px;
+  text-align: right;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75);
+}
+
+.assistant-panel {
+  top: 54%;
+  right: 38px;
+  display: grid;
+  grid-template-columns: 108px 1fr;
+  gap: 14px;
+  width: clamp(320px, 25vw, 360px);
+  padding: 20px;
+  transform: translateY(-50%);
+}
+
+.assistant-figure {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 176px;
+}
+
+.assistant-silhouette {
+  position: relative;
+  width: 86px;
+  height: 154px;
+  opacity: 0.92;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.64));
+}
+
+.assistant-head,
+.assistant-body {
+  position: absolute;
+  left: 50%;
+  display: block;
+  transform: translateX(-50%);
+  background: linear-gradient(160deg, #31261c, #0d0b09);
+}
+
+.assistant-head {
+  top: 2px;
+  width: 48px;
+  height: 52px;
+  border-radius: 50% 50% 43% 43%;
+  box-shadow: inset 0 0 0 1px rgba(255, 220, 150, 0.12);
+}
+
+.assistant-body {
+  bottom: 0;
+  width: 82px;
+  height: 112px;
+  border-radius: 42px 42px 18px 18px;
+}
+
+.assistant-body::before {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  width: 38px;
+  height: 84px;
+  content: "";
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(215, 170, 84, 0.26), rgba(0, 0, 0, 0));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.assistant-copy {
+  min-width: 0;
+}
+
+.assistant-bubble {
+  position: relative;
+  margin: 0;
+  padding: 14px 15px;
+  color: #fff0d4;
+  font-family: "MercText", "Malgun Gothic", serif;
+  line-height: 1.6;
+  background: linear-gradient(90deg, rgba(24, 14, 6, 0.78), rgba(11, 8, 5, 0.36));
+  border-left: 2px solid rgba(232, 187, 89, 0.8);
+  box-shadow: inset 12px 0 18px rgba(255, 187, 70, 0.04);
+}
+
+.lobby-stage {
+  position: absolute;
+  inset: 142px 360px 150px 360px;
+  z-index: 2;
+  min-height: 410px;
+}
+
+.hotspot-layer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.lobby-hotspot {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+  border: 1px solid rgba(234, 196, 103, 0.42);
+  padding: 10px 12px;
+  color: #f9ead0;
+  background: rgba(10, 7, 4, 0.34);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+
+.lobby-hotspot:hover,
+.lobby-hotspot:focus-visible {
+  border-color: rgba(255, 221, 130, 0.9);
+  background: rgba(21, 13, 5, 0.55);
+  box-shadow:
+    0 0 22px rgba(255, 193, 91, 0.25),
+    inset 0 0 16px rgba(255, 214, 127, 0.08);
+  outline: none;
+  transform: translateY(-3px);
+}
+
+.lobby-hotspot[data-status="warning"]:hover,
+.lobby-hotspot[data-status="warning"]:focus-visible {
+  border-color: #ff8a6d;
+  box-shadow: 0 0 0 1px rgba(255, 138, 109, 0.2), 0 0 24px rgba(186, 69, 56, 0.42);
+}
+
+.hotspot-copy {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.hotspot-label {
+  font-weight: 800;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.hotspot-badge {
+  justify-self: start;
+  padding: 2px 6px;
+  color: #180f07;
+  background: var(--merc-gold-bright);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.lobby-hotspot[data-status="warning"] .hotspot-badge {
+  color: #fff3ea;
+  background: var(--merc-red);
+}
+
+.lobby-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 12px;
+  width: max-content;
+  max-width: 260px;
+  padding: 9px 10px;
+  color: #f9e7c8;
+  font-family: "MercText", "Malgun Gothic", serif;
+  background: rgba(6, 4, 3, 0.82);
+  border: 1px solid rgba(255, 214, 127, 0.52);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  box-shadow: 0 0 18px rgba(255, 193, 91, 0.14);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.lobby-hotspot:hover .lobby-tooltip,
+.lobby-hotspot:focus-visible .lobby-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hotspot-recruitment {
+  top: 24%;
+  left: 7%;
+}
+
+.hotspot-missions {
+  top: 46%;
+  left: 39%;
+}
+
+.hotspot-infirmary {
+  top: 62%;
+  right: 7%;
+}
+
+.lobby-notice {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  z-index: 8;
+  margin: 0;
+  padding: 11px 16px;
+  color: #fff2d2;
+  background: rgba(10, 7, 4, 0.82);
+  border: 1px solid rgba(215, 170, 84, 0.7);
+  transform: translateX(-50%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.bottom-ui {
+  position: absolute;
+  right: 38px;
+  bottom: 26px;
+  left: 38px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(360px, auto);
+  gap: 18px;
+  align-items: end;
+}
+
+.log-panel,
+.quick-nav {
+  border: 1px solid rgba(215, 172, 82, 0.34);
+  background: rgba(8, 5, 3, 0.42);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.34), 0 12px 32px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(4px);
+}
+
+.log-panel {
+  padding: 16px 18px;
+}
+
+.log-panel .panel-title {
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.log-panel ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.log-panel li {
+  color: #e8d5b8;
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 14px;
+}
+
+.quick-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px;
+}
+
+.quick-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 50px;
+  border: 1px solid rgba(214, 171, 82, 0.36);
+  padding: 8px 13px;
+  color: #f4dfaa;
+  background: rgba(14, 9, 5, 0.48);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.quick-nav .merc-ui-icon {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.65));
+}
+
+.quick-nav button:hover,
+.quick-nav button:focus-visible {
+  border-color: rgba(255, 215, 126, 0.82);
+  color: var(--merc-gold-bright);
+  background: rgba(28, 17, 7, 0.66);
+  outline: none;
+  box-shadow:
+    0 0 14px rgba(255, 190, 82, 0.18),
+    inset 0 0 12px rgba(255, 210, 110, 0.05);
+  transform: translateY(-1px);
+}
+
+.quick-nav button:hover .merc-ui-icon,
+.quick-nav button:focus-visible .merc-ui-icon {
+  filter:
+    drop-shadow(0 2px 5px rgba(0, 0, 0, 0.65))
+    drop-shadow(0 0 8px rgba(255, 201, 98, 0.32));
+}
+
+body.roster-open {
+  overflow: hidden;
+}
+
+body.recruitment-open {
+  overflow: hidden;
+}
+
+.mercenary-roster-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+}
+
+.mercenary-roster-screen[hidden] {
+  display: none !important;
+}
+
+.roster-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 76% 44%, rgba(127, 72, 196, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(5, 3, 2, 0.82));
+  backdrop-filter: blur(5px);
+}
+
+.roster-shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 14px;
+  width: calc(100vw - 16px);
+  max-width: none;
+  height: calc(100vh - 16px);
+  max-height: none;
+  margin: 0 auto;
+  border: 1px solid rgba(216, 171, 82, 0.48);
+  background:
+    linear-gradient(135deg, rgba(255, 240, 190, 0.06), transparent 28%),
+    rgba(11, 8, 6, 0.86);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 232, 173, 0.05),
+    0 26px 70px rgba(0, 0, 0, 0.62);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.roster-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.roster-kicker,
+.roster-count {
+  color: rgba(229, 200, 146, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 13px;
+}
+
+.roster-title {
+  margin: 2px 0 4px;
+  color: #fff0bd;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 34px;
+  line-height: 1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+}
+
+.roster-close-button,
+.visual-actions button {
+  border: 1px solid rgba(222, 178, 88, 0.42);
+  color: #f5dba0;
+  background: rgba(17, 10, 5, 0.66);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.roster-close-button {
+  min-width: 82px;
+  padding: 10px 14px;
+}
+
+.roster-close-button:hover,
+.visual-actions button:hover,
+.visual-actions button:focus-visible {
+  border-color: rgba(255, 217, 132, 0.86);
+  background: rgba(34, 18, 7, 0.72);
+  outline: none;
+  box-shadow: 0 0 16px rgba(255, 195, 80, 0.16);
+}
+
+.roster-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(112px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(214, 171, 82, 0.28);
+  background: rgba(8, 5, 3, 0.42);
+}
+
+.roster-controls label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: rgba(245, 225, 180, 0.8);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.roster-controls input,
+.roster-controls select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(214, 171, 82, 0.34);
+  padding: 8px 9px;
+  color: #f6e5c1;
+  background: rgba(12, 8, 5, 0.76);
+  font: inherit;
+}
+
+.roster-layout {
+  display: grid;
+  grid-template-columns: 340px minmax(520px, 1fr) minmax(500px, 600px);
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.roster-list-panel,
+.roster-detail-panel,
+.roster-visual-panel {
+  min-height: 0;
+  border: 1px solid rgba(214, 171, 82, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 238, 180, 0.035), transparent 22%),
+    rgba(10, 7, 5, 0.7);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.38);
+}
+
+.roster-list-panel,
+.roster-detail-panel {
+  overflow: auto;
+}
+
+.roster-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.merc-card {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid rgba(180, 154, 101, 0.34);
+  padding: 8px;
+  color: #f6e7c6;
+  background: rgba(13, 9, 6, 0.68);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, background 150ms ease;
+}
+
+.merc-card:hover,
+.merc-card:focus-visible,
+.merc-card.is-selected {
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.merc-card-portrait {
+  width: 72px;
+  height: 92px;
+}
+
+.merc-card-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  opacity: 0;
+}
+
+.merc-card-portrait img.is-loaded {
+  opacity: 1;
+}
+
+.merc-card-body {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.merc-card-name {
+  color: #fff1c2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.merc-card-name em {
+  font-style: normal;
+}
+
+.merc-card-line,
+.merc-card-meta {
+  color: rgba(231, 208, 166, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 13px;
+}
+
+.merc-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.merc-card-meta strong {
+  color: #ffe4a4;
+  white-space: nowrap;
+}
+
+.merc-image-wrap {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 229, 162, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(39, 28, 18, 0.72), rgba(8, 6, 5, 0.92));
+}
+
+.merc-image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 236, 190, 0.28);
+}
+
+.merc-image-placeholder::before {
+  width: 46px;
+  height: 58px;
+  content: "";
+  border-radius: 22px 22px 10px 10px;
+  background:
+    radial-gradient(circle at 50% 18%, currentColor 0 12px, transparent 13px),
+    linear-gradient(180deg, transparent 24px, currentColor 25px 100%);
+  opacity: 0.55;
+}
+
+.grade-n {
+  --grade-color: #8ca176;
+  --grade-glow: rgba(128, 165, 108, 0.24);
+}
+
+.grade-r {
+  --grade-color: #6bb7ff;
+  --grade-glow: rgba(72, 157, 255, 0.28);
+}
+
+.grade-sr {
+  --grade-color: #c381ff;
+  --grade-glow: rgba(178, 97, 255, 0.32);
+}
+
+.grade-ssr {
+  --grade-color: #ffca68;
+  --grade-glow: rgba(255, 174, 64, 0.36);
+}
+
+.grade-ex {
+  --grade-color: #aaf7ff;
+  --grade-glow: rgba(119, 227, 255, 0.38);
+}
+
+.merc-card.is-selected,
+.merc-card:hover,
+.detail-heading,
+.visual-art-panel,
+.equipment-slot {
+  border-color: var(--grade-color, rgba(214, 171, 82, 0.5));
+  box-shadow:
+    0 0 20px var(--grade-glow, rgba(214, 171, 82, 0.18)),
+    inset 0 0 12px rgba(255, 235, 180, 0.04);
+}
+
+.roster-detail-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+}
+
+.detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(214, 171, 82, 0.36);
+  padding: 12px;
+  background: rgba(17, 10, 5, 0.62);
+}
+
+.grade-badge {
+  display: inline-grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--grade-color, #d7aa54);
+  color: var(--grade-color, #ffd987);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 22px;
+}
+
+.detail-heading h3 {
+  margin: 0;
+  color: #fff2c7;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 26px;
+}
+
+.detail-heading p,
+.detail-paper p,
+.merc-skill-card p,
+.merc-bonus-box p {
+  margin: 0;
+  color: rgba(238, 217, 179, 0.84);
+  font-family: "MercText", "Malgun Gothic", serif;
+  line-height: 1.5;
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.detail-meta-grid div,
+.merc-stat,
+.detail-paper,
+.detail-section,
+.merc-skill-card,
+.merc-bonus-box {
+  border: 1px solid rgba(151, 113, 58, 0.34);
+  background: rgba(218, 184, 119, 0.08);
+}
+
+.detail-meta-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+}
+
+.detail-meta-grid span,
+.detail-exp span,
+.equipment-slot span,
+.equipment-slot em,
+.section-row-title span {
+  color: rgba(224, 194, 138, 0.76);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.detail-meta-grid strong {
+  color: #fff0c4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 15px;
+}
+
+.detail-exp {
+  display: grid;
+  gap: 6px;
+}
+
+.detail-exp div {
+  height: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.detail-exp i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #745caa, #ffd174);
+  box-shadow: 0 0 12px rgba(255, 209, 116, 0.32);
+}
+
+.detail-paper,
+.detail-section {
+  padding: 12px;
+}
+
+.detail-paper h4,
+.detail-section h4,
+.section-row-title h4,
+.merc-bonus-box h4 {
+  margin: 0 0 8px;
+  color: #ffe6aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 18px;
+}
+
+.section-row-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-row-title strong {
+  color: #ffd174;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.merc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 9px;
+}
+
+.merc-stat span {
+  color: rgba(224, 194, 138, 0.76);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.merc-stat strong {
+  color: #fff1c2;
+}
+
+.merc-skill-card {
+  padding: 12px;
+}
+
+.merc-skill-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #fff1c2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 19px;
+}
+
+.merc-bonus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-bonus-box {
+  padding: 10px;
+}
+
+.merc-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.merc-tag-list span {
+  border: 1px solid rgba(214, 171, 82, 0.28);
+  padding: 4px 8px;
+  color: rgba(246, 226, 185, 0.84);
+  background: rgba(10, 7, 5, 0.54);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.roster-visual-panel {
+  display: grid;
+  grid-template-rows: minmax(460px, 1fr) auto;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.visual-art-panel {
+  min-height: 0;
+  border: 1px solid rgba(214, 171, 82, 0.34);
+  background:
+    radial-gradient(circle at 50% 18%, var(--grade-glow, rgba(214, 171, 82, 0.16)), transparent 36%),
+    rgba(6, 5, 4, 0.62);
+}
+
+.merc-full-art {
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+}
+
+.merc-full-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0;
+}
+
+.merc-full-art img.is-loaded {
+  opacity: 1;
+}
+
+.equipment-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.equipment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.equipment-slot {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(214, 171, 82, 0.34);
+  padding: 9px;
+  background: rgba(14, 9, 5, 0.62);
+}
+
+.equipment-slot strong,
+.equipment-slot em {
+  display: block;
+}
+
+.equipment-slot strong {
+  color: #fff0c4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.visual-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.visual-actions button {
+  min-height: 38px;
+}
+
+.roster-empty {
+  margin: 0;
+  padding: 18px;
+  color: rgba(238, 217, 179, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.recruitment-board-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.recruitment-board-screen[hidden] {
+  display: none !important;
+}
+
+.recruitment-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 38% 42%, rgba(169, 93, 35, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.48), rgba(5, 3, 2, 0.76));
+  backdrop-filter: blur(4px);
+}
+
+.recruitment-shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  width: min(96vw, 1500px);
+  height: min(92vh, 900px);
+  border: 1px solid rgba(198, 138, 66, 0.54);
+  padding: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 216, 139, 0.06), transparent 28%),
+    rgba(12, 7, 4, 0.88);
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(255, 232, 173, 0.05);
+}
+
+.recruitment-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recruitment-title {
+  margin: 2px 0 4px;
+  color: #ffe6a8;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 36px;
+  line-height: 1;
+}
+
+.recruitment-desc {
+  margin: 0;
+  color: rgba(238, 217, 179, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.recruitment-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recruitment-gold {
+  border: 1px solid rgba(220, 178, 86, 0.3);
+  padding: 9px 12px;
+  color: #ffd985;
+  background: rgba(10, 7, 5, 0.5);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.recruitment-close-button,
+.recruitment-panel-actions button,
+.flyer-actions button {
+  border: 1px solid rgba(143, 93, 44, 0.54);
+  color: #4b2f18;
+  background: rgba(236, 200, 134, 0.72);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.recruitment-close-button {
+  padding: 10px 14px;
+}
+
+.recruitment-layout {
+  display: grid;
+  grid-template-columns: minmax(760px, 1fr) 320px;
+  gap: 16px;
+  min-height: 0;
+}
+
+.cork-board {
+  position: relative;
+  min-height: 0;
+  border: 20px solid #321b0d;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(54, 27, 10, 0.24) 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 34%, rgba(255, 231, 168, 0.12) 0 1px, transparent 2px),
+    repeating-linear-gradient(8deg, rgba(70, 36, 13, 0.08) 0 2px, transparent 2px 7px),
+    linear-gradient(45deg, rgba(96, 54, 21, 0.18) 25%, transparent 25%, transparent 75%, rgba(96, 54, 21, 0.18) 75%),
+    #8d5d31;
+  background-size: 18px 18px, 23px 23px, auto, 34px 34px, auto;
+  box-shadow:
+    inset 0 0 0 4px rgba(92, 50, 20, 0.72),
+    inset 0 0 40px rgba(42, 21, 8, 0.6),
+    0 18px 50px rgba(0, 0, 0, 0.38);
+  overflow: hidden;
+}
+
+.flyer-list {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  padding: 42px 24px 34px;
+  align-items: center;
+}
+
+.recruit-loading {
+  grid-column: 1 / -1;
+  color: #fff2cb;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  text-align: center;
+}
+
+.recruit-flyer {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+  min-height: 500px;
+  border: 1px solid rgba(92, 52, 23, 0.38);
+  border-radius: 2px 7px 3px 5px;
+  padding: 18px 15px 14px;
+  color: #392313;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(92, 54, 20, 0.08) 0 1px, transparent 2px),
+    radial-gradient(circle at 80% 72%, rgba(255, 246, 210, 0.22) 0 1px, transparent 2px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 28%),
+    #d9c193;
+  background-size: 17px 19px, 29px 31px, auto, auto;
+  box-shadow:
+    0 7px 13px rgba(38, 18, 7, 0.34),
+    3px 5px 0 rgba(55, 27, 11, 0.09),
+    inset 0 0 18px rgba(93, 55, 19, 0.12);
+  transform: translate(var(--flyer-x), var(--flyer-top)) rotate(var(--flyer-tilt));
+}
+
+.recruit-flyer::before {
+  position: absolute;
+  top: -13px;
+  left: var(--pin-x);
+  width: 28px;
+  height: 28px;
+  content: "";
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #ffe4a6, #8d1c16 58%, #3f0807 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.recruit-flyer.has-tape::before {
+  top: -9px;
+  width: 82px;
+  height: 24px;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(166, 132, 82, 0.18) 0 7px, transparent 7px 14px),
+    rgba(238, 218, 172, 0.58);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.2);
+  transform: translateX(-50%) rotate(calc(var(--flyer-tilt) * -0.45));
+}
+
+.flyer-grade-stamp {
+  justify-self: start;
+  border: 2px solid currentColor;
+  padding: 2px 9px;
+  color: #5f7048;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 24px;
+  line-height: 1;
+  transform: rotate(-5deg);
+  opacity: 0.92;
+}
+
+.recruit-flyer.grade-r .flyer-grade-stamp {
+  color: #27638e;
+}
+
+.recruit-flyer.grade-sr .flyer-grade-stamp {
+  color: #755096;
+  text-shadow: 0 0 5px rgba(117, 80, 150, 0.14);
+}
+
+.flyer-portrait {
+  width: 100%;
+  height: 145px;
+  border: 1px solid rgba(67, 39, 19, 0.42);
+  filter: sepia(0.45) grayscale(0.25) contrast(0.9);
+}
+
+.flyer-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  opacity: 0;
+}
+
+.flyer-portrait img.is-loaded {
+  opacity: 1;
+}
+
+.flyer-copy h3 {
+  margin: 0 0 6px;
+  color: #2f1d10;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 19px;
+  line-height: 1.18;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.flyer-meta,
+.flyer-memo,
+.flyer-stats {
+  margin: 0;
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.flyer-meta {
+  color: rgba(58, 34, 17, 0.82);
+  font-size: 13px;
+}
+
+.flyer-memo {
+  margin-top: 8px;
+  color: rgba(54, 31, 15, 0.9);
+  font-size: 14px;
+  line-height: 1.45;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.flyer-stats {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  color: #3c2411;
+}
+
+.flyer-stats strong {
+  color: #8a3318;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 17px;
+  text-shadow: 0 1px 0 rgba(255, 231, 174, 0.32);
+}
+
+.flyer-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.flyer-actions button {
+  min-height: 34px;
+}
+
+.flyer-actions button:hover,
+.flyer-actions button:focus-visible,
+.recruitment-panel-actions button:hover,
+.recruitment-panel-actions button:focus-visible,
+.recruitment-close-button:hover,
+.recruitment-close-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(91, 44, 16, 0.8);
+  outline: none;
+  box-shadow: 0 0 12px rgba(255, 228, 156, 0.24);
+}
+
+.recruitment-info-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  border: 1px solid rgba(214, 171, 82, 0.38);
+  padding: 16px;
+  background: rgba(9, 6, 4, 0.72);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.42);
+}
+
+.recruitment-info-panel h3,
+.recruit-rate-box h4 {
+  margin: 0;
+  color: #ffe1a0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.recruitment-info-panel dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.recruitment-info-panel dl div,
+.recruit-rate-box p {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  border-bottom: 1px solid rgba(214, 171, 82, 0.18);
+  padding-bottom: 6px;
+}
+
+.recruitment-info-panel dl div:nth-child(2),
+.recruitment-info-panel dl div:nth-child(3),
+.recruitment-info-panel dl div:nth-child(4) {
+  border: 1px solid rgba(214, 171, 82, 0.24);
+  padding: 8px 9px;
+  background: rgba(42, 24, 9, 0.34);
+}
+
+.recruitment-info-panel dt,
+.recruit-guide,
+.recruit-rate-box span {
+  color: rgba(232, 211, 174, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.recruitment-info-panel dd,
+.recruit-rate-box strong {
+  margin: 0;
+  color: #fff0bd;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.recruit-rate-box {
+  display: grid;
+  gap: 8px;
+}
+
+.recruit-guide {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.45;
+}
+
+.recruitment-panel-actions {
+  display: grid;
+  gap: 9px;
+}
+
+.recruitment-panel-actions button {
+  min-height: 42px;
+}
+
+#recruit-refresh-button {
+  border-color: rgba(142, 63, 24, 0.7);
+  color: #ffe0a2;
+  background:
+    linear-gradient(180deg, rgba(104, 38, 18, 0.9), rgba(56, 23, 11, 0.92));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 224, 162, 0.08),
+    0 10px 20px rgba(0, 0, 0, 0.28);
+}
+
+#recruit-refresh-button:disabled {
+  color: rgba(238, 217, 179, 0.48);
+  background: rgba(22, 16, 12, 0.72);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.recruit-modal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.recruit-modal-layer[hidden] {
+  display: none !important;
+}
+
+.recruit-detail-modal,
+.recruit-confirm-modal {
+  position: relative;
+  border: 1px solid rgba(214, 171, 82, 0.48);
+  background:
+    linear-gradient(135deg, rgba(255, 237, 174, 0.06), transparent 32%),
+    rgba(12, 8, 5, 0.96);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62), inset 0 0 0 1px rgba(255, 230, 170, 0.05);
+}
+
+.recruit-detail-modal {
+  width: min(980px, calc(100vw - 64px));
+  max-height: min(820px, calc(100vh - 64px));
+  overflow: auto;
+  padding: 16px;
+}
+
+.recruit-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  border: 1px solid rgba(214, 171, 82, 0.42);
+  padding: 7px 10px;
+  color: #f5dba0;
+  background: rgba(17, 10, 5, 0.76);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.recruit-detail-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.recruit-detail-portrait {
+  min-height: 420px;
+  border: 1px solid var(--grade-color, rgba(214, 171, 82, 0.42));
+  background:
+    radial-gradient(circle at 50% 18%, var(--grade-glow, rgba(214, 171, 82, 0.16)), transparent 38%),
+    rgba(7, 5, 4, 0.72);
+}
+
+.recruit-detail-portrait img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  opacity: 0;
+}
+
+.recruit-detail-portrait img.is-loaded {
+  opacity: 1;
+}
+
+.recruit-detail-body {
+  display: grid;
+  gap: 10px;
+}
+
+.recruit-detail-memo {
+  margin: 0;
+  border: 1px solid rgba(151, 113, 58, 0.34);
+  padding: 10px;
+  color: rgba(238, 217, 179, 0.88);
+  background: rgba(218, 184, 119, 0.08);
+  font-family: "MercText", "Malgun Gothic", serif;
+  line-height: 1.5;
+}
+
+.recruit-mini-stat-grid,
+.recruit-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recruit-mini-stat,
+.recruit-detail-facts div {
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid rgba(151, 113, 58, 0.34);
+  padding: 8px;
+  background: rgba(218, 184, 119, 0.08);
+}
+
+.recruit-mini-stat span,
+.recruit-detail-facts span {
+  color: rgba(224, 194, 138, 0.76);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.recruit-mini-stat strong,
+.recruit-detail-facts strong {
+  color: #fff1c2;
+}
+
+.recruit-bonus-grid {
+  grid-template-columns: 1fr;
+}
+
+.recruit-detail-actions,
+.recruit-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.recruit-detail-actions button,
+.recruit-confirm-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(214, 171, 82, 0.42);
+  padding: 8px 12px;
+  color: #f5dba0;
+  background: rgba(17, 10, 5, 0.76);
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.recruit-detail-actions button:first-child,
+#recruit-confirm-primary {
+  color: #ffe0a2;
+  background: linear-gradient(180deg, rgba(104, 38, 18, 0.9), rgba(56, 23, 11, 0.92));
+}
+
+.recruit-confirm-modal {
+  width: min(460px, calc(100vw - 48px));
+  padding: 20px;
+}
+
+.recruit-confirm-modal h3 {
+  margin: 0 0 14px;
+  color: #ffe1a0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.recruit-confirm-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.recruit-confirm-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(214, 171, 82, 0.2);
+  padding-bottom: 7px;
+}
+
+.recruit-confirm-list dt {
+  color: rgba(232, 211, 174, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.recruit-confirm-list dd {
+  margin: 0;
+  color: #fff0bd;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  text-align: right;
+}
+
+@media (max-width: 1180px) {
+  .lobby-stage {
+    right: 320px;
+    left: 320px;
+  }
+
+  .bottom-ui {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-nav {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1180px) {
+  .roster-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    max-height: none;
+  }
+
+  .roster-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .roster-layout {
+    grid-template-columns: 320px minmax(420px, 1fr);
+  }
+
+  .roster-visual-panel {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1fr);
+    grid-template-rows: minmax(260px, 1fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  .recruitment-shell {
+    width: calc(100vw - 24px);
+    height: calc(100vh - 24px);
+  }
+
+  .recruitment-layout {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .flyer-list {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    height: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  body.mercenary-lobby-page {
+    overflow-y: auto;
+  }
+
+  .mercenary-lobby {
+    display: grid;
+    gap: 18px;
+    min-height: 100vh;
+    padding: 22px 18px 24px;
+  }
+
+  .lobby-topbar {
+    display: grid;
+  }
+
+  .lobby-top-actions {
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .lobby-exp-bar {
+    width: min(420px, 100%);
+  }
+
+  .status-panel,
+  .assistant-panel,
+  .lobby-stage,
+  .bottom-ui {
+    position: relative;
+    inset: auto;
+    width: auto;
+    transform: none;
+  }
+
+  .lobby-stage {
+    min-height: 430px;
+  }
+
+  .assistant-panel {
+    grid-template-columns: 92px 1fr;
+  }
+
+  .bottom-ui {
+    right: auto;
+    bottom: auto;
+    left: auto;
+  }
+
+  .mercenary-roster-screen {
+    padding: 8px;
+  }
+
+  .roster-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .roster-controls,
+  .roster-layout,
+  .roster-visual-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .roster-layout {
+    overflow: visible;
+  }
+
+  .roster-list-panel,
+  .roster-detail-panel {
+    overflow: visible;
+  }
+
+  .merc-bonus-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recruitment-board-screen {
+    padding: 8px;
+  }
+
+  .recruitment-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .recruitment-header,
+  .recruitment-header-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .flyer-list {
+    grid-template-columns: 1fr;
+    padding: 24px 18px;
+  }
+
+  .recruit-flyer {
+    min-height: 0;
+    transform: none;
+  }
+
+  .recruit-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .recruit-detail-portrait {
+    min-height: 300px;
+  }
+
+  .recruit-mini-stat-grid,
+  .recruit-detail-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .lobby-title {
+    font-size: 34px;
+  }
+
+  .lobby-hotspot {
+    min-width: 172px;
+  }
+
+  .hotspot-recruitment {
+    top: 10%;
+    left: 4%;
+  }
+
+  .hotspot-missions {
+    top: 42%;
+    left: 12%;
+  }
+
+  .hotspot-infirmary {
+    top: 70%;
+    right: 4%;
+  }
+
+  .quick-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-nav button {
+    justify-content: center;
+  }
+}

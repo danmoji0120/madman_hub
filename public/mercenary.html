@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0806" />
+  <title>용병사무소 로비 0.1</title>
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=214" />
+</head>
+<body class="mercenary-lobby-page">
+  <div class="lobby-background" aria-hidden="true"></div>
+  <div class="lobby-dim" aria-hidden="true"></div>
+  <div class="lobby-top-fade" aria-hidden="true"></div>
+
+  <main class="mercenary-lobby" aria-label="용병사무소 로비">
+    <header class="lobby-topbar">
+      <div class="lobby-title-block">
+        <a class="lobby-home-link" href="/" aria-label="허브 홈으로">MADMEN HUB</a>
+        <h1 class="lobby-title" id="office-name">폐급 용병단 사무소</h1>
+        <p class="lobby-level-line" id="level-line">Lv. 12 · 평판 D급 · 다음 등급까지 68%</p>
+        <div class="lobby-exp-bar" aria-label="다음 등급까지 68%">
+          <span id="exp-fill" style="width: 68%"></span>
+        </div>
+      </div>
+
+      <nav class="lobby-top-actions top-resource-cluster" id="top-actions" aria-label="용병사무소 상단 메뉴"></nav>
+    </header>
+
+    <section class="merc-panel status-panel" aria-labelledby="status-panel-title">
+      <h2 class="panel-title" id="status-panel-title">사무소 현황</h2>
+      <div class="status-list" id="status-list"></div>
+    </section>
+
+    <section class="lobby-stage" aria-label="로비 핫스팟">
+      <div class="hotspot-layer" id="hotspot-layer"></div>
+      <p class="lobby-notice" id="lobby-notice" role="status" aria-live="polite" hidden></p>
+    </section>
+
+    <section class="merc-panel assistant-panel" aria-labelledby="assistant-panel-title">
+      <div class="assistant-figure" aria-hidden="true">
+        <div class="assistant-silhouette">
+          <span class="assistant-head"></span>
+          <span class="assistant-body"></span>
+        </div>
+      </div>
+      <div class="assistant-copy">
+        <h2 class="panel-title" id="assistant-panel-title">접수원 마렌</h2>
+        <p class="assistant-bubble" id="assistant-line">소장님, 오늘도 정상적인 의뢰는 하나도 없습니다.</p>
+      </div>
+    </section>
+
+    <footer class="bottom-ui">
+      <section class="log-panel" aria-labelledby="log-panel-title">
+        <h2 class="panel-title" id="log-panel-title">최근 로그</h2>
+        <ul id="recent-log-list"></ul>
+      </section>
+      <nav class="quick-nav" id="quick-nav" aria-label="빠른 메뉴"></nav>
+    </footer>
+
+    <section class="mercenary-roster-screen" id="mercenary-roster-screen" aria-label="용병 관리" hidden>
+      <div class="roster-background-scrim" aria-hidden="true"></div>
+      <div class="roster-shell">
+        <header class="roster-header">
+          <div>
+            <span class="roster-kicker">용병 목록 / 상세 0.1</span>
+            <h2 class="roster-title">용병 관리</h2>
+            <p class="roster-count" id="roster-count">보유 용병 27/40</p>
+          </div>
+          <button class="roster-close-button" id="roster-close-button" type="button">닫기</button>
+        </header>
+
+        <section class="roster-controls" aria-label="용병 검색과 필터">
+          <label>
+            <span>검색</span>
+            <input id="merc-search-input" type="search" placeholder="이름, 종족, 역할, 태그" autocomplete="off" />
+          </label>
+          <label>
+            <span>등급</span>
+            <select id="merc-grade-filter"></select>
+          </label>
+          <label>
+            <span>포지션</span>
+            <select id="merc-position-filter"></select>
+          </label>
+          <label>
+            <span>상태</span>
+            <select id="merc-status-filter"></select>
+          </label>
+          <label>
+            <span>종족</span>
+            <select id="merc-species-filter"></select>
+          </label>
+          <label>
+            <span>정렬</span>
+            <select id="merc-sort-select"></select>
+          </label>
+        </section>
+
+        <div class="roster-layout">
+          <aside class="roster-list-panel" aria-label="보유 용병 목록">
+            <div class="roster-list" id="mercenary-list"></div>
+          </aside>
+          <section class="roster-detail-panel" id="mercenary-detail" aria-label="선택 용병 상세"></section>
+          <aside class="roster-visual-panel" id="mercenary-visual" aria-label="선택 용병 전신 일러와 장비"></aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
+      <div class="recruitment-background-scrim" aria-hidden="true"></div>
+      <div class="recruitment-shell">
+        <header class="recruitment-header">
+          <div>
+            <span class="roster-kicker">싸구려 인력 게시판</span>
+            <h2 class="recruitment-title">채용 게시판</h2>
+            <p class="recruitment-desc">오늘 사무소 벽에 붙은 수상한 구직 전단입니다.</p>
+          </div>
+          <div class="recruitment-header-actions">
+            <span class="recruitment-gold" id="recruitment-gold"></span>
+            <button class="recruitment-close-button" id="recruitment-close-button" type="button">닫기</button>
+          </div>
+        </header>
+
+        <div class="recruitment-layout">
+          <section class="cork-board" aria-label="구직 전단 게시판">
+            <div class="flyer-list" id="recruitment-flyer-list"></div>
+          </section>
+
+          <aside class="recruitment-info-panel" aria-label="채용 게시판 정보">
+            <h3>게시판 정보</h3>
+            <dl>
+              <div><dt>게시 중인 구직 전단</dt><dd>5장</dd></div>
+              <div><dt>오늘 남은 갱신</dt><dd id="recruit-refresh-count">4/4</dd></div>
+              <div><dt>무료 갱신</dt><dd>없음</dd></div>
+              <div><dt>갱신 비용</dt><dd id="recruit-refresh-cost">20,000G</dd></div>
+              <div><dt>보유 골드</dt><dd id="recruit-owned-gold">18,420G</dd></div>
+            </dl>
+
+            <section class="recruit-rate-box">
+              <h4>등급 등장 확률</h4>
+              <p><span>N</span><strong>94.9%</strong></p>
+              <p><span>R</span><strong>5.0%</strong></p>
+              <p><span>SR</span><strong>0.1%</strong></p>
+            </section>
+
+            <ul class="recruit-guide">
+              <li>갱신은 하루 최대 4회까지 가능합니다.</li>
+              <li>SR 이상 인재는 일반 게시판에 거의 올라오지 않습니다.</li>
+              <li>고급 용병은 주로 소문 조사에서 발견됩니다.</li>
+            </ul>
+
+            <div class="recruitment-panel-actions">
+              <button type="button" id="recruit-refresh-button">게시판 갱신 · 20,000G</button>
+              <button type="button" id="recruit-panel-close-button">닫기</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="recruit-modal-layer" id="recruit-detail-modal" hidden>
+        <article class="recruit-detail-modal">
+          <button class="recruit-modal-close" type="button" data-recruit-detail-close>닫기</button>
+          <div id="recruit-detail-content"></div>
+        </article>
+      </div>
+
+      <div class="recruit-modal-layer" id="recruit-confirm-modal" hidden>
+        <article class="recruit-confirm-modal">
+          <h3 id="recruit-confirm-title">확인</h3>
+          <div id="recruit-confirm-content"></div>
+          <div class="recruit-confirm-actions">
+            <button type="button" id="recruit-confirm-primary">확인</button>
+            <button type="button" id="recruit-confirm-cancel">취소</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/api.js?v=214"></script>
+  <script src="/js/mercenary-data-loader.js?v=214"></script>
+  <script src="/js/mercenary-lobby.js?v=214"></script>
+</body>
+</html>

@@ -1,16 +1,21 @@
-const CACHE_NAME = 'madmen-hub-static-v186b';
+const CACHE_NAME = 'madmen-hub-static-v214';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/offline.html',
   '/manifest.webmanifest',
   '/css/app.css',
+  '/css/mercenary-lobby.css',
   '/js/api.js',
   '/js/perfLogger.js',
   '/js/formatters.js',
   '/js/titleBadge.js',
   '/js/notificationBadge.js',
   '/js/main.js',
+  '/js/mercenary-data-loader.js',
+  '/js/mercenary-lobby.js',
+  '/mercenary.html',
+  '/data/mercenaries.master.json',
   '/icons/icon.svg',
   '/icons/maskable-icon.svg'
 ];

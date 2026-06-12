@@ -27,6 +27,7 @@ const cosmeticsRoutes = require('./routes/cosmetics.routes');
 const seasonsRoutes = require('./routes/seasons.routes');
 const notificationsRoutes = require('./routes/notifications.routes');
 const mineRoutes = require('./routes/mine.routes');
+const mercenaryRoutes = require('./routes/mercenary.routes');
 const mercenariesRoutes = require('./routes/mercenaries.routes');
 
 const app = express();
@@ -62,7 +63,12 @@ app.use('/api/cosmetics', cosmeticsRoutes);
 app.use('/api/seasons', seasonsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/mine', mineRoutes);
+app.use('/api/mercenary', mercenaryRoutes);
 app.use('/api/mercenaries', mercenariesRoutes);
+
+app.get(['/mercenary', '/mercenary/'], (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/mercenary.html'));
+});
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: '찾을 수 없는 경로입니다.' });
