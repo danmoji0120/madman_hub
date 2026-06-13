@@ -38,6 +38,83 @@ function normalizeOwned(row) {
   };
 }
 
+function normalizeMercenaryProfile(row) {
+  if (!row) return null;
+  return {
+    userId: row.user_id,
+    gold: Number(row.gold || 0),
+    reputation: Number(row.reputation || 0),
+    rank: row.rank || 'D',
+    officeLevel: Number(row.office_level || 1),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+async function getMercenaryProfile(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeMercenaryProfile(data);
+  }
+
+  return normalizeMercenaryProfile(await get('SELECT * FROM user_mercenary_profiles WHERE user_id = ?', [userId]));
+}
+
+async function createMercenaryProfile({ userId, gold = 0 }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .insert({
+        user_id: userId,
+        gold,
+        reputation: 0,
+        rank: 'D',
+        office_level: 1
+      })
+      .select()
+      .single();
+    if (error) {
+      if (error.code === '23505') return getMercenaryProfile(userId);
+      throw error;
+    }
+    return normalizeMercenaryProfile(data);
+  }
+
+  await run(
+    `INSERT OR IGNORE INTO user_mercenary_profiles
+     (user_id, gold, reputation, rank, office_level)
+     VALUES (?, ?, 0, 'D', 1)`,
+    [userId, gold]
+  );
+  return getMercenaryProfile(userId);
+}
+
+async function updateMercenaryGold(userId, nextGold) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .update({ gold: nextGold, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeMercenaryProfile(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_profiles
+     SET gold = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ?`,
+    [nextGold, userId]
+  );
+  return getMercenaryProfile(userId);
+}
+
 async function getRecruitBoard(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -159,6 +236,9 @@ async function createRecruitLog({ userId, action, mercenaryId = null, goldDelta 
 }
 
 module.exports = {
+  getMercenaryProfile,
+  createMercenaryProfile,
+  updateMercenaryGold,
   getRecruitBoard,
   upsertRecruitBoard,
   listUserMercenaries,

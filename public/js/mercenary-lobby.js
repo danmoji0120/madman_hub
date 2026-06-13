@@ -648,7 +648,7 @@ function applyRecruitBoardPayload(payload) {
   recruitmentState.refreshRemaining = Number(board.refreshRemaining ?? Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - recruitmentState.refreshCount));
   recruitmentState.maxRefresh = Number(board.maxRefresh || RECRUIT_DAILY_REFRESH_LIMIT);
   recruitmentState.refreshCost = Number(board.refreshCost || RECRUIT_REFRESH_COST);
-  recruitmentState.gold = Number(payload.gold ?? mercenaryLobbyState.gold);
+  recruitmentState.gold = Number(payload.gold ?? payload.mercenaryProfile?.gold ?? mercenaryLobbyState.gold);
   recruitmentState.hiredCandidateIds = Array.isArray(board.hiredCandidateIds) ? board.hiredCandidateIds : [];
   recruitmentState.candidates = (board.candidates || []).map(normalizeMercenaryForRoster);
   mercenaryLobbyState.gold = recruitmentState.gold;
@@ -678,7 +678,7 @@ async function loadOwnedMercenariesFromApi() {
   rosterState.errorMessage = normalized.length
     ? ''
     : '아직 보유한 용병이 없습니다. 채용 게시판에서 용병을 영입해 보세요.';
-  mercenaryLobbyState.gold = Number(payload.gold ?? mercenaryLobbyState.gold);
+  mercenaryLobbyState.gold = Number(payload.gold ?? payload.mercenaryProfile?.gold ?? mercenaryLobbyState.gold);
   renderTopActions(mercenaryLobbyState);
   rosterState.selectedId = ownedMercenaryRoster[0]?.id || '';
   return true;

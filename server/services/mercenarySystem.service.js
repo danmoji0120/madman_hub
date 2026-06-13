@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const { provider, run } = require('../db');
-const { ensurePointAccount, addPointTransaction } = require('./points.service');
 const repo = require('../repositories/mercenarySystem.repo');
 
 const MASTER_PATH = path.join(__dirname, '../../public/data/mercenaries.master.json');
@@ -13,11 +12,55 @@ const RECRUIT_GRADE_RATES = [
   { grade: 'R', rate: 5.0 },
   { grade: 'SR', rate: 0.1 }
 ];
+const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 50000) || 0;
 
 let masterCache = null;
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { status, code });
+}
+
+function publicMercenaryProfile(profile) {
+  return {
+    gold: Number(profile?.gold || 0),
+    reputation: Number(profile?.reputation || 0),
+    rank: profile?.rank || 'D',
+    officeLevel: Number(profile?.officeLevel || 1)
+  };
+}
+
+async function getOrCreateMercenaryProfile(userId) {
+  const existing = await repo.getMercenaryProfile(userId);
+  if (existing) return existing;
+  return repo.createMercenaryProfile({ userId, gold: MERCENARY_INITIAL_GOLD });
+}
+
+async function getMercenaryGold(userId) {
+  const profile = await getOrCreateMercenaryProfile(userId);
+  return Number(profile.gold || 0);
+}
+
+async function spendMercenaryGold(userId, amount, reason = '') {
+  const cost = Number(amount || 0);
+  if (!Number.isFinite(cost) || cost <= 0) {
+    throw httpError(400, '용병단 골드 차감액이 올바르지 않습니다.', 'INVALID_GOLD_AMOUNT');
+  }
+  const profile = await getOrCreateMercenaryProfile(userId);
+  if (Number(profile.gold || 0) < cost) {
+    throw httpError(400, '용병단 골드가 부족합니다.', 'NOT_ENOUGH_GOLD');
+  }
+  const updated = await repo.updateMercenaryGold(userId, Number(profile.gold || 0) - cost);
+  return { profile: updated, reason };
+}
+
+async function addMercenaryGold(userId, amount, reason = '') {
+  const value = Number(amount || 0);
+  if (!Number.isFinite(value) || value <= 0) {
+    throw httpError(400, '용병단 골드 지급액이 올바르지 않습니다.', 'INVALID_GOLD_AMOUNT');
+  }
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const updated = await repo.updateMercenaryGold(userId, Number(profile.gold || 0) + value);
+  return { profile: updated, reason };
 }
 
 function readMasterData() {
@@ -131,22 +174,34 @@ function attachCandidate(master, hiredIds = []) {
   };
 }
 
-function serializeBoard(board, account) {
+function serializeBoard(board, profile) {
   const lookup = masterById();
   const hiredIds = board.hiredCandidateIds || [];
+  const mercenaryProfile = publicMercenaryProfile(profile);
   return {
+    ok: true,
     board: {
       boardDate: board.boardDate,
       refreshCount: board.refreshCount,
       refreshRemaining: Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - board.refreshCount),
+      remainingRefreshes: Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - board.refreshCount),
       maxRefresh: RECRUIT_DAILY_REFRESH_LIMIT,
+      refreshLimit: RECRUIT_DAILY_REFRESH_LIMIT,
       refreshCost: RECRUIT_REFRESH_COST,
       candidateIds: board.candidateIds,
       hiredCandidateIds: hiredIds,
       candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
       rates: RECRUIT_GRADE_RATES
     },
-    gold: Number(account?.balance || 0)
+    candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
+    boardDate: board.boardDate,
+    refreshCount: board.refreshCount,
+    refreshLimit: RECRUIT_DAILY_REFRESH_LIMIT,
+    remainingRefreshes: Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - board.refreshCount),
+    refreshCost: RECRUIT_REFRESH_COST,
+    rates: RECRUIT_GRADE_RATES.reduce((acc, item) => ({ ...acc, [item.grade]: item.rate }), {}),
+    gold: mercenaryProfile.gold,
+    mercenaryProfile
   };
 }
 
@@ -166,11 +221,11 @@ async function ensureTodayBoard(userId) {
 }
 
 async function getRecruitBoard(userId) {
-  const [board, account] = await Promise.all([
+  const [board, profile] = await Promise.all([
     ensureTodayBoard(userId),
-    ensurePointAccount(userId)
+    getOrCreateMercenaryProfile(userId)
   ]);
-  return serializeBoard(board, account);
+  return serializeBoard(board, profile);
 }
 
 async function refreshRecruitBoard(userId) {
@@ -181,14 +236,7 @@ async function refreshRecruitBoard(userId) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
-    const account = await addPointTransaction({
-      userId,
-      amount: -RECRUIT_REFRESH_COST,
-      type: 'mercenary_recruit_refresh',
-      reason: '용병 채용 게시판 유료 갱신',
-      sourcePlatform: 'hub-mercenary-recruit',
-      sourceId: `${board.boardDate}:${board.refreshCount + 1}`
-    });
+    const spent = await spendMercenaryGold(userId, RECRUIT_REFRESH_COST, '용병 채용 게시판 유료 갱신');
     const nextCount = board.refreshCount + 1;
     const updated = await repo.upsertRecruitBoard({
       userId,
@@ -199,16 +247,13 @@ async function refreshRecruitBoard(userId) {
     });
     await repo.createRecruitLog({
       userId,
-      action: 'refresh',
+      action: 'refresh_board',
       goldDelta: -RECRUIT_REFRESH_COST
     });
     if (provider === 'sqlite') await run('COMMIT');
-    return serializeBoard(updated, account);
+    return serializeBoard(updated, spent.profile);
   } catch (error) {
     if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
-    if (error.message === '포인트가 부족합니다.') {
-      throw httpError(400, '골드가 부족합니다.', 'insufficient_gold');
-    }
     throw error;
   }
 }
@@ -230,14 +275,7 @@ async function hireRecruitCandidate(userId, mercenaryId) {
   const hireCost = getRecruitCost(mercenary);
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
-    const account = await addPointTransaction({
-      userId,
-      amount: -hireCost,
-      type: 'mercenary_recruit_hire',
-      reason: `용병 영입: ${mercenary.name}`,
-      sourcePlatform: 'hub-mercenary-recruit',
-      sourceId: mercenary.id
-    });
+    const spent = await spendMercenaryGold(userId, hireCost, `용병 영입: ${mercenary.name}`);
     const instance = deterministicInstanceState(mercenary.id, mercenary.maxLevel);
     const owned = await repo.createUserMercenary({
       userId,
@@ -255,29 +293,28 @@ async function hireRecruitCandidate(userId, mercenaryId) {
     });
     await repo.createRecruitLog({
       userId,
-      action: 'hire',
+      action: 'hire_mercenary',
       mercenaryId: mercenary.id,
       goldDelta: -hireCost
     });
     if (provider === 'sqlite') await run('COMMIT');
     return {
-      ...serializeBoard(updated, account),
+      ...serializeBoard(updated, spent.profile),
       hired: { ...mercenary, ...owned, recruitCost: hireCost },
+      hiredMercenary: { ...mercenary, ...owned, recruitCost: hireCost },
+      hiredCandidateIds: updated.hiredCandidateIds,
       hireCost
     };
   } catch (error) {
     if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
-    if (error.message === '포인트가 부족합니다.') {
-      throw httpError(400, '골드가 부족합니다.', 'insufficient_gold');
-    }
     throw error;
   }
 }
 
 async function listMyMercenaries(userId) {
-  const [ownedRows, account] = await Promise.all([
+  const [ownedRows, profile] = await Promise.all([
     repo.listUserMercenaries(userId),
-    ensurePointAccount(userId)
+    getOrCreateMercenaryProfile(userId)
   ]);
   const lookup = masterById();
   const items = ownedRows.map((row) => {
@@ -297,9 +334,11 @@ async function listMyMercenaries(userId) {
   }).filter(Boolean);
 
   return {
+    ok: true,
     items,
     mercenaries: items,
-    gold: Number(account?.balance || 0),
+    gold: Number(profile?.gold || 0),
+    mercenaryProfile: publicMercenaryProfile(profile),
     capacity: 40
   };
 }
@@ -309,5 +348,9 @@ module.exports = {
   refreshRecruitBoard,
   hireRecruitCandidate,
   listMyMercenaries,
-  getRecruitCost
+  getRecruitCost,
+  getOrCreateMercenaryProfile,
+  getMercenaryGold,
+  spendMercenaryGold,
+  addMercenaryGold
 };

@@ -271,6 +271,18 @@ async function runMigrations() {
      )`
   );
   await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
+       user_id INTEGER PRIMARY KEY,
+       gold INTEGER NOT NULL DEFAULT 0,
+       reputation INTEGER NOT NULL DEFAULT 0,
+       rank TEXT NOT NULL DEFAULT 'D',
+       office_level INTEGER NOT NULL DEFAULT 1,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
+  await run(
     `CREATE TABLE IF NOT EXISTS user_recruit_boards (
        user_id INTEGER PRIMARY KEY,
        board_date TEXT NOT NULL,
@@ -308,6 +320,7 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments(user_id, mercenary_id, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenaries_user_status ON user_mercenaries(user_id, status, hired_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenaries_mercenary_id ON user_mercenaries(mercenary_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_profiles_gold ON user_mercenary_profiles(gold)');
   await run('CREATE INDEX IF NOT EXISTS idx_mercenary_recruit_logs_user_created ON mercenary_recruit_logs(user_id, created_at)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
