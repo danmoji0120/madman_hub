@@ -74,6 +74,32 @@ function normalizeSquad(row) {
   };
 }
 
+function normalizeRun(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    missionId: row.mission_id,
+    missionTitle: row.mission_title,
+    selectedMercenaryIds: parseJsonList(row.selected_mercenary_ids).map((id) => String(id)),
+    successRate: Number(row.success_rate || 0),
+    rewardGold: Number(row.reward_gold || 0),
+    failureRewardGold: Number(row.failure_reward_gold || 0),
+    officeExp: Number(row.office_exp || 0),
+    mercenaryExp: Number(row.mercenary_exp || 0),
+    failureOfficeExp: Number(row.failure_office_exp || 0),
+    failureMercenaryExp: Number(row.failure_mercenary_exp || 0),
+    durationSeconds: Number(row.duration_seconds || 0),
+    startedAt: row.started_at,
+    completesAt: row.completes_at,
+    claimedAt: row.claimed_at || null,
+    resultStatus: row.result_status || null,
+    resultText: row.result_text || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function getMercenaryProfile(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -136,6 +162,35 @@ async function updateMercenaryGold(userId, nextGold) {
      SET gold = ?, updated_at = CURRENT_TIMESTAMP
      WHERE user_id = ?`,
     [nextGold, userId]
+  );
+  return getMercenaryProfile(userId);
+}
+
+async function updateMercenaryProfileProgress(userId, { gold, officeLevel, officeExp }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .update({
+        gold,
+        office_level: officeLevel,
+        office_exp: officeExp,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeMercenaryProfile(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_profiles
+     SET gold = ?,
+         office_level = ?,
+         office_exp = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ?`,
+    [gold, officeLevel, officeExp, userId]
   );
   return getMercenaryProfile(userId);
 }
@@ -320,6 +375,39 @@ async function updateUserMercenaryStatus(userId, ownedMercenaryId, {
   return getUserMercenary(userId, ownedMercenaryId);
 }
 
+async function updateUserMercenaryProgress(userId, ownedMercenaryId, { currentLevel, currentExp }) {
+  const safeLevel = Math.max(1, Number(currentLevel || 1) || 1);
+  const safeExp = Math.max(0, Number(currentExp || 0) || 0);
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenaries')
+      .update({
+        level: safeLevel,
+        exp: safeExp,
+        current_level: safeLevel,
+        current_exp: safeExp
+      })
+      .eq('user_id', userId)
+      .eq('id', ownedMercenaryId)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOwned(data);
+  }
+
+  await run(
+    `UPDATE user_mercenaries
+     SET level = ?,
+         exp = ?,
+         current_level = ?,
+         current_exp = ?
+     WHERE user_id = ? AND id = ?`,
+    [safeLevel, safeExp, safeLevel, safeExp, userId, ownedMercenaryId]
+  );
+  return getUserMercenary(userId, ownedMercenaryId);
+}
+
 async function listUserSquads(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -467,10 +555,137 @@ async function createRecruitLog({ userId, action, mercenaryId = null, goldDelta 
   );
 }
 
+async function createMercenaryRun(payload) {
+  const row = {
+    id: payload.id,
+    user_id: payload.userId,
+    mission_id: payload.missionId,
+    mission_title: payload.missionTitle,
+    selected_mercenary_ids: payload.selectedMercenaryIds || [],
+    success_rate: payload.successRate,
+    reward_gold: payload.rewardGold || 0,
+    failure_reward_gold: payload.failureRewardGold || 0,
+    office_exp: payload.officeExp || 0,
+    mercenary_exp: payload.mercenaryExp || 0,
+    failure_office_exp: payload.failureOfficeExp || 0,
+    failure_mercenary_exp: payload.failureMercenaryExp || 0,
+    duration_seconds: payload.durationSeconds || 0,
+    started_at: payload.startedAt,
+    completes_at: payload.completesAt
+  };
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_runs')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeRun(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_runs
+     (id, user_id, mission_id, mission_title, selected_mercenary_ids, success_rate,
+      reward_gold, failure_reward_gold, office_exp, mercenary_exp, failure_office_exp,
+      failure_mercenary_exp, duration_seconds, started_at, completes_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      row.id,
+      row.user_id,
+      row.mission_id,
+      row.mission_title,
+      JSON.stringify(row.selected_mercenary_ids),
+      row.success_rate,
+      row.reward_gold,
+      row.failure_reward_gold,
+      row.office_exp,
+      row.mercenary_exp,
+      row.failure_office_exp,
+      row.failure_mercenary_exp,
+      row.duration_seconds,
+      row.started_at,
+      row.completes_at
+    ]
+  );
+  return getMercenaryRun(payload.userId, payload.id);
+}
+
+async function listOpenMercenaryRuns(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .is('claimed_at', null)
+      .order('completes_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeRun);
+  }
+
+  const rows = await all(
+    `SELECT * FROM user_mercenary_runs
+     WHERE user_id = ? AND claimed_at IS NULL
+     ORDER BY completes_at ASC, created_at ASC`,
+    [userId]
+  );
+  return rows.map(normalizeRun);
+}
+
+async function getMercenaryRun(userId, runId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', runId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeRun(data);
+  }
+
+  return normalizeRun(await get(
+    'SELECT * FROM user_mercenary_runs WHERE user_id = ? AND id = ?',
+    [userId, runId]
+  ));
+}
+
+async function claimMercenaryRun(userId, runId, { resultStatus, resultText, claimedAt }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_runs')
+      .update({
+        claimed_at: claimedAt,
+        result_status: resultStatus,
+        result_text: resultText,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', runId)
+      .is('claimed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeRun(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_runs
+     SET claimed_at = ?,
+         result_status = ?,
+         result_text = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND claimed_at IS NULL`,
+    [claimedAt, resultStatus, resultText, userId, runId]
+  );
+  return getMercenaryRun(userId, runId);
+}
+
 module.exports = {
   getMercenaryProfile,
   createMercenaryProfile,
   updateMercenaryGold,
+  updateMercenaryProfileProgress,
   getRecruitBoard,
   upsertRecruitBoard,
   listUserMercenaries,
@@ -478,11 +693,16 @@ module.exports = {
   hasOwnedMercenary,
   createUserMercenary,
   updateUserMercenaryStatus,
+  updateUserMercenaryProgress,
   listUserSquads,
   getUserSquad,
   getUserSquadBySlot,
   createUserSquad,
   updateUserSquad,
   deleteUserSquad,
-  createRecruitLog
+  createRecruitLog,
+  createMercenaryRun,
+  listOpenMercenaryRuns,
+  getMercenaryRun,
+  claimMercenaryRun
 };

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=229" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=231" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -175,6 +175,60 @@
       </div>
     </section>
 
+    <section class="mercenary-mission-view" id="mercenary-mission-view" aria-label="용병단 의뢰" hidden>
+      <div class="mission-background-scrim" aria-hidden="true"></div>
+      <div class="mission-shell">
+        <header class="mission-topbar">
+          <div class="mission-title-block">
+            <span class="mission-kicker">비전투 의뢰 0.1</span>
+            <h2>용병단 의뢰</h2>
+            <p id="mission-office-line">접수 데스크 · 파견 관리</p>
+          </div>
+          <button class="mission-close-button" id="mission-close-button" type="button">닫기</button>
+        </header>
+
+        <div class="mission-layout">
+          <aside class="mission-list-panel" aria-label="의뢰 목록">
+            <div class="mission-panel-heading">
+              <h3>의뢰 목록</h3>
+              <span id="mission-count">0건</span>
+            </div>
+            <div class="mission-list" id="mission-list"></div>
+          </aside>
+
+          <section class="mission-detail-panel" aria-label="선택 의뢰 상세">
+            <div id="mission-detail"></div>
+          </section>
+
+          <aside class="mission-dispatch-panel" aria-label="편성 선택">
+            <div class="mission-panel-heading">
+              <h3>편성 선택</h3>
+              <span id="mission-run-limit">0/1</span>
+            </div>
+            <div class="mission-squad-list" id="mission-squad-list"></div>
+            <div class="mission-dispatch-summary" id="mission-dispatch-summary"></div>
+            <button class="mission-start-button" id="mission-start-button" type="button" disabled>의뢰 시작</button>
+          </aside>
+        </div>
+
+        <footer class="mission-run-panel" aria-label="진행 중 의뢰">
+          <div class="mission-panel-heading">
+            <h3>진행 중 의뢰</h3>
+            <span id="mission-active-count">0/1</span>
+          </div>
+          <div class="mission-run-list" id="mission-run-list"></div>
+        </footer>
+      </div>
+
+      <div class="mission-result-layer" id="mission-result-modal" hidden>
+        <article class="mission-result-modal">
+          <h3 id="mission-result-title">의뢰 결과</h3>
+          <div id="mission-result-content"></div>
+          <button type="button" id="mission-result-close">확인</button>
+        </article>
+      </div>
+    </section>
+
     <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
       <div class="recruitment-background-scrim" aria-hidden="true"></div>
       <div class="recruitment-shell">
@@ -264,6 +318,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=230"></script>
+  <script src="/js/mercenary-lobby.js?v=231"></script>
 </body>
 </html>

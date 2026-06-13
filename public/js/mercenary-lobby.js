@@ -77,7 +77,7 @@ const mercenaryLobbyState = {
   ],
   quickNav: [
     { label: '용병 목록', icon: 'group', action: 'roster' },
-    { label: '의뢰 목록', icon: 'scroll', action: 'ready' },
+    { label: '의뢰 목록', icon: 'scroll', action: 'missions' },
     { label: '편성/파견', icon: 'crossedSwords', action: 'squads' },
     { label: '의무실', icon: 'medicalCross', action: 'ready' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
@@ -411,6 +411,20 @@ const squadState = {
   loading: false,
   errorMessage: ''
 };
+
+const missionState = {
+  missions: [],
+  squads: [],
+  owned: [],
+  runs: [],
+  selectedMissionId: '',
+  selectedSquadId: '',
+  activeRunCount: 0,
+  maxActiveRuns: 1,
+  loading: false,
+  errorMessage: ''
+};
+let missionTimer = null;
 
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
@@ -836,6 +850,71 @@ function calculateBaseWorkPower(mercenary) {
     || Number(stats.TEC || 0) + Number(stats.SUP || 0) + Number(stats.SPD || 0);
 }
 
+function getMissionRiskPenalty(risk) {
+  return { '낮음': 0, '보통': -5, '높음': -12, '위험': -20 }[String(risk || '')] ?? 0;
+}
+
+function calculateMissionWorkPower(members, mission) {
+  const safeMembers = Array.isArray(members) ? members.filter(Boolean) : [];
+  const primaryStats = Array.isArray(mission?.primaryStats) ? mission.primaryStats : [];
+  if (!primaryStats.length) {
+    return safeMembers.reduce((sum, member) => sum + calculateBaseWorkPower(member), 0);
+  }
+  return safeMembers.reduce((sum, member) => {
+    const effective = member.effectiveStats || {};
+    const legacy = member.stats || {};
+    return sum + primaryStats.reduce((statSum, stat) => {
+      const lower = String(stat || '').toLowerCase();
+      const upper = String(stat || '').toUpperCase();
+      return statSum + Number(effective[lower] ?? legacy[upper] ?? 0);
+    }, 0);
+  }, 0);
+}
+
+function countMatchedMissionTags(members, mission) {
+  const preferred = new Set((mission?.preferredTags || []).map((tag) => String(tag).trim()).filter(Boolean));
+  if (!preferred.size) return 0;
+  const tags = new Set();
+  for (const member of members || []) {
+    for (const tag of member.tags || []) {
+      const normalized = String(tag || '').trim();
+      if (normalized) tags.add(normalized);
+    }
+  }
+  return [...preferred].filter((tag) => tags.has(tag)).length;
+}
+
+function countMatchedMissionPositions(members, mission) {
+  const preferred = new Set((mission?.preferredPositions || []).map((item) => String(item).trim()).filter(Boolean));
+  if (!preferred.size) return 0;
+  const positions = new Set();
+  for (const member of members || []) {
+    [member.position, member.role, member.job].forEach((value) => {
+      const normalized = String(value || '').trim();
+      if (normalized) positions.add(normalized);
+    });
+  }
+  return [...preferred].filter((position) => positions.has(position)).length;
+}
+
+function calculateMissionSuccessRate(members, mission) {
+  const recommended = Math.max(50, Number(mission?.recommendedWorkPower || 0) || 50);
+  const partyWorkPower = calculateMissionWorkPower(members, mission);
+  const baseRate = 45 + ((partyWorkPower - recommended) / recommended) * 35;
+  const matchedTagCount = countMatchedMissionTags(members, mission);
+  const matchedPositionCount = countMatchedMissionPositions(members, mission);
+  const riskPenalty = getMissionRiskPenalty(mission?.risk);
+  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty);
+  return {
+    partyWorkPower,
+    recommendedWorkPower: recommended,
+    matchedTagCount,
+    matchedPositionCount,
+    riskPenalty,
+    successRate: Math.max(15, Math.min(95, successRate))
+  };
+}
+
 function summarizeSquadMembers(members) {
   const safeMembers = Array.isArray(members) ? members.filter(Boolean) : [];
   const tagCounts = new Map();
@@ -1246,6 +1325,410 @@ function bindSquadControls() {
   }
 }
 
+function formatMissionDuration(seconds) {
+  const value = Math.max(0, Number(seconds || 0) || 0);
+  const minutes = Math.floor(value / 60);
+  const rest = value % 60;
+  if (!minutes) return `${rest}초`;
+  return `${minutes}분 ${String(rest).padStart(2, '0')}초`;
+}
+
+function normalizeMissionRun(run) {
+  return {
+    ...run,
+    selectedMercenaryIds: Array.isArray(run?.selectedMercenaryIds) ? run.selectedMercenaryIds.map(String) : [],
+    members: Array.isArray(run?.members) ? run.members.map(normalizeMercenaryForRoster) : [],
+    remainingSeconds: Math.max(0, Number(run?.remainingSeconds || 0) || 0),
+    readyToClaim: Boolean(run?.readyToClaim)
+  };
+}
+
+function selectedMission() {
+  return missionState.missions.find((mission) => mission.missionId === missionState.selectedMissionId) || missionState.missions[0] || null;
+}
+
+function selectedMissionSquad() {
+  return missionState.squads.find((squad) => String(squad.id || '') === String(missionState.selectedSquadId || '')) || null;
+}
+
+async function loadMissionData() {
+  const [missionPayload, squadPayload, myPayload, runPayload] = await Promise.all([
+    apiRequest('/api/mercenary/missions', { perfScope: 'mercenary-missions' }),
+    apiRequest('/api/mercenary/squads', { perfScope: 'mercenary-mission-squads' }),
+    apiRequest('/api/mercenary/my', { perfScope: 'mercenary-mission-owned' }),
+    apiRequest('/api/mercenary/runs', { perfScope: 'mercenary-runs' })
+  ]);
+  updateMercenaryCurrencyDisplay(missionPayload);
+  updateMercenaryCurrencyDisplay(squadPayload);
+  updateMercenaryCurrencyDisplay(myPayload);
+  updateMercenaryCurrencyDisplay(runPayload);
+
+  missionState.missions = Array.isArray(missionPayload?.missions) ? missionPayload.missions : [];
+  missionState.owned = Array.isArray(myPayload?.items)
+    ? myPayload.items.map(normalizeMercenaryForRoster)
+    : [];
+  const slotsSource = Array.isArray(squadPayload?.slots) ? squadPayload.slots : [];
+  missionState.squads = slotsSource
+    .map((slot, index) => normalizeSquadSlot(slot, Number(slot?.slotIndex || index + 1)))
+    .filter((slot) => slot.id && slot.ownedMercenaryIds.length);
+  missionState.runs = Array.isArray(runPayload?.runs) ? runPayload.runs.map(normalizeMissionRun) : [];
+  missionState.activeRunCount = Number(runPayload?.activeRunCount || missionState.runs.length) || 0;
+  missionState.maxActiveRuns = Number(runPayload?.maxActiveRuns || missionPayload?.mercenaryProfile?.maxActiveRuns || 1) || 1;
+
+  if (!missionState.selectedMissionId || !missionState.missions.some((mission) => mission.missionId === missionState.selectedMissionId)) {
+    missionState.selectedMissionId = missionState.missions[0]?.missionId || '';
+  }
+  if (!missionState.selectedSquadId || !missionState.squads.some((squad) => String(squad.id) === String(missionState.selectedSquadId))) {
+    missionState.selectedSquadId = missionState.squads[0]?.id || '';
+  }
+  missionState.errorMessage = '';
+}
+
+async function openMissionView() {
+  if (!requireMercenaryAuth()) return;
+  const screen = document.querySelector('#mercenary-mission-view');
+  if (!screen) return;
+  screen.hidden = false;
+  document.body.classList.add('mission-open');
+  missionState.loading = true;
+  missionState.errorMessage = '';
+  renderMissionLoading();
+
+  let authFailed = false;
+  try {
+    await loadMissionData();
+  } catch (error) {
+    console.warn('[mercenary/missions] load failed', error);
+    if (error.status === 401) {
+      authFailed = true;
+      closeMissionView();
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    missionState.errorMessage = '의뢰 정보를 불러오지 못했습니다.';
+  } finally {
+    missionState.loading = false;
+    if (authFailed) return;
+    bindMissionControls();
+    renderMissionView();
+    startMissionTimer();
+  }
+}
+
+function closeMissionView() {
+  document.querySelector('#mercenary-mission-view')?.setAttribute('hidden', '');
+  document.body.classList.remove('mission-open');
+  stopMissionTimer();
+  closeMissionResult();
+}
+
+function renderMissionLoading() {
+  document.querySelector('#mission-list') && (document.querySelector('#mission-list').innerHTML = '<p class="mission-empty">의뢰 목록을 확인하는 중입니다.</p>');
+  document.querySelector('#mission-detail') && (document.querySelector('#mission-detail').innerHTML = '<p class="mission-empty">접수 서류를 펼치는 중입니다.</p>');
+  document.querySelector('#mission-squad-list') && (document.querySelector('#mission-squad-list').innerHTML = '<p class="mission-empty">편성 목록을 불러오는 중입니다.</p>');
+  document.querySelector('#mission-run-list') && (document.querySelector('#mission-run-list').innerHTML = '<p class="mission-empty">진행 중 의뢰를 확인하는 중입니다.</p>');
+}
+
+function renderMissionView() {
+  if (missionState.errorMessage) {
+    renderMissionError(missionState.errorMessage);
+    return;
+  }
+  renderMissionList();
+  renderMissionDetail();
+  renderMissionSquads();
+  renderMissionRuns();
+}
+
+function renderMissionError(message) {
+  document.querySelector('#mission-list') && (document.querySelector('#mission-list').innerHTML = '<p class="mission-empty">의뢰 없음</p>');
+  document.querySelector('#mission-detail') && (document.querySelector('#mission-detail').innerHTML = `<p class="mission-empty">${escapeHtml(message)}</p>`);
+  document.querySelector('#mission-squad-list') && (document.querySelector('#mission-squad-list').innerHTML = '<p class="mission-empty">편성 목록을 표시할 수 없습니다.</p>');
+  document.querySelector('#mission-run-list') && (document.querySelector('#mission-run-list').innerHTML = '<p class="mission-empty">진행 중 의뢰를 표시할 수 없습니다.</p>');
+}
+
+function renderMissionList() {
+  const list = document.querySelector('#mission-list');
+  const count = document.querySelector('#mission-count');
+  if (!list) return;
+  if (count) count.textContent = `${missionState.missions.length}건`;
+  if (!missionState.missions.length) {
+    list.innerHTML = '<p class="mission-empty">현재 접수 가능한 비전투 의뢰가 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = missionState.missions.map((mission) => `
+    <button class="mission-card ${mission.missionId === missionState.selectedMissionId ? 'is-selected' : ''}" type="button" data-mission-id="${escapeHtml(mission.missionId)}">
+      <span class="mission-badge">비전투</span>
+      <strong>${escapeHtml(mission.title)}</strong>
+      <small>${escapeHtml(mission.type)} · 위험도 ${escapeHtml(mission.risk)}</small>
+      <span>권장 작업력 ${formatNumber(mission.recommendedWorkPower)}</span>
+      <span>보상 ${formatNumber(mission.rewardGold)}G · ${formatMissionDuration(mission.durationSeconds)}</span>
+    </button>
+  `).join('');
+
+  list.querySelectorAll('[data-mission-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      missionState.selectedMissionId = button.dataset.missionId;
+      renderMissionView();
+    });
+  });
+}
+
+function missionPreviewForSelection() {
+  const mission = selectedMission();
+  const squad = selectedMissionSquad();
+  const members = squad?.members || [];
+  if (!mission || !members.length) return null;
+  return calculateMissionSuccessRate(members, mission);
+}
+
+function missionStartBlockReason() {
+  const mission = selectedMission();
+  const squad = selectedMissionSquad();
+  if (!mission) return '의뢰를 선택하세요.';
+  if (!squad) return '파견할 편성을 선택하세요.';
+  const members = squad.members || [];
+  if (members.length < Number(mission.minMembers || 1)) return `최소 ${mission.minMembers}명이 필요합니다.`;
+  if (members.length > Number(mission.maxMembers || 3)) return `최대 ${mission.maxMembers}명까지 가능합니다.`;
+  if (members.some((member) => member.available === false)) return '사용 불가 상태의 용병이 포함되어 있습니다.';
+  if (missionState.activeRunCount >= missionState.maxActiveRuns) return '동시 진행 의뢰 한도에 도달했습니다.';
+  return '';
+}
+
+function renderMissionDetail() {
+  const root = document.querySelector('#mission-detail');
+  if (!root) return;
+  const mission = selectedMission();
+  if (!mission) {
+    root.innerHTML = '<p class="mission-empty">의뢰를 선택하세요.</p>';
+    return;
+  }
+  const preview = missionPreviewForSelection();
+  root.innerHTML = `
+    <div class="mission-detail-heading">
+      <span class="mission-badge">비전투 · ${escapeHtml(mission.type)}</span>
+      <h3>${escapeHtml(mission.title)}</h3>
+      <p>${escapeHtml(mission.description)}</p>
+    </div>
+    <div class="mission-detail-grid">
+      <div><span>위험도</span><strong>${escapeHtml(mission.risk)}</strong></div>
+      <div><span>주요 스탯</span><strong>${(mission.primaryStats || []).map(escapeHtml).join(', ') || '기본 작업력'}</strong></div>
+      <div><span>권장 작업력</span><strong>${formatNumber(mission.recommendedWorkPower)}</strong></div>
+      <div><span>인원</span><strong>${mission.minMembers}~${mission.maxMembers}명</strong></div>
+      <div><span>소요 시간</span><strong>${formatMissionDuration(mission.durationSeconds)}</strong></div>
+      <div><span>예상 성공률</span><strong>${preview ? `${preview.successRate}%` : '편성 선택 필요'}</strong></div>
+    </div>
+    <div class="mission-reward-grid">
+      <article>
+        <strong>성공 보상</strong>
+        <p>${formatNumber(mission.rewardGold)}G · 사무소 EXP ${formatNumber(mission.officeExp)} · 용병 EXP ${formatNumber(mission.mercenaryExp)}</p>
+      </article>
+      <article>
+        <strong>실패 보상</strong>
+        <p>${formatNumber(mission.failureRewardGold)}G · 사무소 EXP ${formatNumber(mission.failureOfficeExp)} · 용병 EXP ${formatNumber(mission.failureMercenaryExp)}</p>
+      </article>
+    </div>
+    <div class="mission-factor-box">
+      <strong>성공률 영향</strong>
+      <p>${preview ? `현재 작업력 ${formatNumber(preview.partyWorkPower)} / 태그 보너스 ${preview.matchedTagCount}개 / 포지션 보너스 ${preview.matchedPositionCount}개 / 위험도 보정 ${preview.riskPenalty}` : '편성을 선택하면 예상 성공률이 계산됩니다.'}</p>
+    </div>
+  `;
+  renderMissionStartState();
+}
+
+function renderMissionSquads() {
+  const list = document.querySelector('#mission-squad-list');
+  if (!list) return;
+  if (!missionState.squads.length) {
+    list.innerHTML = '<p class="mission-empty">저장된 편성이 없습니다. 편성 화면에서 파견조를 저장해 주세요.</p>';
+    renderMissionStartState();
+    return;
+  }
+  list.innerHTML = missionState.squads.map((squad) => {
+    const selected = String(squad.id) === String(missionState.selectedSquadId);
+    const summary = summarizeSquadMembers(squad.members || []);
+    const unavailable = (squad.members || []).some((member) => member.available === false);
+    return `
+      <button class="mission-squad-card ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}" type="button" data-mission-squad="${escapeHtml(squad.id)}">
+        <strong>${escapeHtml(squad.name)}</strong>
+        <span>${summary.memberCount}명 · 작업력 ${formatNumber(summary.totalWorkPower)}</span>
+        <span>${summary.mainTags.join(', ') || '태그 없음'}</span>
+        <div class="mission-squad-portraits">
+          ${(squad.members || []).slice(0, 3).map((member) => renderImageWithPlaceholder(member, 'mission-mini-portrait')).join('')}
+        </div>
+        ${unavailable ? '<em>사용 불가 용병 포함</em>' : ''}
+      </button>
+    `;
+  }).join('');
+  list.querySelectorAll('[data-mission-squad]').forEach((button) => {
+    button.addEventListener('click', () => {
+      missionState.selectedSquadId = button.dataset.missionSquad;
+      renderMissionView();
+    });
+  });
+  renderMissionStartState();
+}
+
+function renderMissionStartState() {
+  const summary = document.querySelector('#mission-dispatch-summary');
+  const button = document.querySelector('#mission-start-button');
+  const runLimit = document.querySelector('#mission-run-limit');
+  const mission = selectedMission();
+  const squad = selectedMissionSquad();
+  const preview = missionPreviewForSelection();
+  const blockReason = missionStartBlockReason();
+  if (runLimit) runLimit.textContent = `${missionState.activeRunCount}/${missionState.maxActiveRuns}`;
+  if (summary) {
+    summary.innerHTML = `
+      <strong>${squad ? escapeHtml(squad.name) : '편성 미선택'}</strong>
+      <p>${mission ? escapeHtml(mission.title) : '의뢰를 선택하세요.'}</p>
+      <p>${preview ? `예상 성공률 ${preview.successRate}% · 작업력 ${formatNumber(preview.partyWorkPower)}` : '편성을 선택하면 성공률이 표시됩니다.'}</p>
+      ${blockReason ? `<em>${escapeHtml(blockReason)}</em>` : '<em class="is-ready">파견 준비 완료</em>'}
+    `;
+  }
+  if (button) {
+    button.disabled = Boolean(blockReason);
+    button.textContent = blockReason ? '의뢰 시작 불가' : '의뢰 시작';
+  }
+}
+
+function renderMissionRuns() {
+  const list = document.querySelector('#mission-run-list');
+  const active = document.querySelector('#mission-active-count');
+  if (!list) return;
+  if (active) active.textContent = `${missionState.activeRunCount}/${missionState.maxActiveRuns}`;
+  if (!missionState.runs.length) {
+    list.innerHTML = '<p class="mission-empty">진행 중인 의뢰가 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = missionState.runs.map((runItem) => `
+    <article class="mission-run-card ${runItem.readyToClaim ? 'is-ready' : ''}">
+      <div>
+        <strong>${escapeHtml(runItem.missionTitle)}</strong>
+        <span>성공률 ${formatNumber(runItem.successRate)}% · ${runItem.readyToClaim ? '완료 대기' : `남은 시간 ${formatMissionDuration(runItem.remainingSeconds)}`}</span>
+      </div>
+      <div class="mission-run-members">
+        ${(runItem.members || []).map((member) => renderImageWithPlaceholder(member, 'mission-mini-portrait')).join('')}
+      </div>
+      <button type="button" data-mission-claim="${escapeHtml(runItem.id)}" ${runItem.readyToClaim ? '' : 'disabled'}>${runItem.readyToClaim ? '결과 받기' : '진행 중'}</button>
+    </article>
+  `).join('');
+  list.querySelectorAll('[data-mission-claim]').forEach((button) => {
+    button.addEventListener('click', () => claimMissionRun(button.dataset.missionClaim));
+  });
+}
+
+async function startSelectedMission() {
+  const mission = selectedMission();
+  const squad = selectedMissionSquad();
+  const blockReason = missionStartBlockReason();
+  if (blockReason) {
+    showReadyNotice(blockReason);
+    renderMissionStartState();
+    return;
+  }
+  try {
+    const payload = await apiRequest('/api/mercenary/runs/start', {
+      method: 'POST',
+      body: JSON.stringify({ missionId: mission.missionId, squadId: squad.id }),
+      perfScope: 'mercenary-run-start'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    showReadyNotice('의뢰를 시작했습니다. 용병들이 파견 중 상태가 됩니다.');
+    await loadMissionData();
+    renderMissionView();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '의뢰 시작에 실패했습니다.');
+  }
+}
+
+async function claimMissionRun(runId) {
+  try {
+    const payload = await apiRequest('/api/mercenary/runs/claim', {
+      method: 'POST',
+      body: JSON.stringify({ runId }),
+      perfScope: 'mercenary-run-claim'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    renderMissionResult(payload);
+    await loadMissionData();
+    renderMissionView();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '의뢰 결과 수령에 실패했습니다.');
+  }
+}
+
+function renderMissionResult(payload) {
+  const modal = document.querySelector('#mission-result-modal');
+  const title = document.querySelector('#mission-result-title');
+  const content = document.querySelector('#mission-result-content');
+  if (!modal || !title || !content) return;
+  const result = payload?.result || {};
+  title.textContent = result.status === 'success' ? '의뢰 성공' : '의뢰 실패';
+  content.innerHTML = `
+    <p>${escapeHtml(result.resultText || '')}</p>
+    <dl class="mission-result-list">
+      <div><dt>골드</dt><dd>+${formatNumber(result.gainedGold)}G</dd></div>
+      <div><dt>사무소 EXP</dt><dd>+${formatNumber(result.gainedOfficeExp)}</dd></div>
+      <div><dt>용병 EXP</dt><dd>+${formatNumber(result.gainedMercenaryExp)}</dd></div>
+    </dl>
+    <div class="mission-result-members">
+      ${(payload.members || []).map((member) => `
+        <p><strong>${escapeHtml(member.name)}</strong> Lv.${formatNumber(member.beforeLevel)} → Lv.${formatNumber(member.afterLevel)} · EXP ${formatNumber(member.afterExp)}${member.levelUps ? ` · 레벨업 +${member.levelUps}` : ''}</p>
+      `).join('')}
+    </div>
+  `;
+  modal.hidden = false;
+}
+
+function closeMissionResult() {
+  document.querySelector('#mission-result-modal')?.setAttribute('hidden', '');
+}
+
+function startMissionTimer() {
+  stopMissionTimer();
+  missionTimer = window.setInterval(() => {
+    if (document.querySelector('#mercenary-mission-view')?.hidden) {
+      stopMissionTimer();
+      return;
+    }
+    let changed = false;
+    missionState.runs = missionState.runs.map((runItem) => {
+      if (runItem.readyToClaim || runItem.remainingSeconds <= 0) return runItem;
+      changed = true;
+      const nextRemaining = Math.max(0, runItem.remainingSeconds - 1);
+      return { ...runItem, remainingSeconds: nextRemaining, readyToClaim: nextRemaining <= 0 };
+    });
+    if (changed) renderMissionRuns();
+  }, 1000);
+}
+
+function stopMissionTimer() {
+  if (missionTimer) {
+    window.clearInterval(missionTimer);
+    missionTimer = null;
+  }
+}
+
+function bindMissionControls() {
+  const closeButton = document.querySelector('#mission-close-button');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeMissionView);
+  }
+  const startButton = document.querySelector('#mission-start-button');
+  if (startButton && startButton.dataset.bound !== 'true') {
+    startButton.dataset.bound = 'true';
+    startButton.addEventListener('click', startSelectedMission);
+  }
+  const resultClose = document.querySelector('#mission-result-close');
+  if (resultClose && resultClose.dataset.bound !== 'true') {
+    resultClose.dataset.bound = 'true';
+    resultClose.addEventListener('click', closeMissionResult);
+  }
+}
+
 function setRosterErrorState(message, source = 'error') {
   ownedMercenaryRoster = [];
   rosterState.selectedId = '';
@@ -1389,6 +1872,10 @@ function renderHotspots(hotspots) {
         openRecruitmentBoard();
         return;
       }
+      if (button.classList.contains('hotspot-missions')) {
+        openMissionView();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -1418,6 +1905,10 @@ function renderQuickNav(items) {
       }
       if (button.dataset.quickAction === 'squads') {
         openSquadView();
+        return;
+      }
+      if (button.dataset.quickAction === 'missions') {
+        openMissionView();
         return;
       }
       showReadyNotice();

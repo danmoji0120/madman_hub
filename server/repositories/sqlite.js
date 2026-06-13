@@ -342,6 +342,31 @@ async function runMigrations() {
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
      )`
   );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_runs (
+       id TEXT PRIMARY KEY,
+       user_id INTEGER NOT NULL,
+       mission_id TEXT NOT NULL,
+       mission_title TEXT NOT NULL,
+       selected_mercenary_ids TEXT NOT NULL DEFAULT '[]',
+       success_rate INTEGER NOT NULL,
+       reward_gold INTEGER NOT NULL DEFAULT 0,
+       failure_reward_gold INTEGER NOT NULL DEFAULT 0,
+       office_exp INTEGER NOT NULL DEFAULT 0,
+       mercenary_exp INTEGER NOT NULL DEFAULT 0,
+       failure_office_exp INTEGER NOT NULL DEFAULT 0,
+       failure_mercenary_exp INTEGER NOT NULL DEFAULT 0,
+       duration_seconds INTEGER NOT NULL DEFAULT 0,
+       started_at TEXT NOT NULL,
+       completes_at TEXT NOT NULL,
+       claimed_at TEXT,
+       result_status TEXT,
+       result_text TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
@@ -362,6 +387,10 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_profiles_gold ON user_mercenary_profiles(gold)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_squads_user_slot ON user_mercenary_squads(user_id, slot_index)');
   await run('CREATE INDEX IF NOT EXISTS idx_mercenary_recruit_logs_user_created ON mercenary_recruit_logs(user_id, created_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user ON user_mercenary_runs(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
        id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,

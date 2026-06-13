@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { randomUUID } = require('crypto');
 const { provider, run } = require('../db');
 const { ensurePointAccount } = require('./points.service');
 const repo = require('../repositories/mercenarySystem.repo');
 
 const MASTER_PATH = path.join(__dirname, '../../public/data/mercenaries.master.json');
+const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.missions.master.json');
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 4;
@@ -41,6 +43,7 @@ const BASE_EXP_BY_GRADE = {
 const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 50000) || 0;
 
 let masterCache = null;
+let missionCache = null;
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { status, code });
@@ -467,6 +470,184 @@ function attachCandidate(master, hiredIds = []) {
   };
 }
 
+function readMissionData() {
+  if (!missionCache) {
+    const rows = JSON.parse(fs.readFileSync(MISSION_MASTER_PATH, 'utf8'));
+    missionCache = rows
+      .filter((item) => item && item.missionId && item.category)
+      .map((item) => ({
+        ...item,
+        missionId: String(item.missionId).trim(),
+        enabled: Boolean(item.enabled),
+        category: String(item.category || '').trim(),
+        type: String(item.type || '').trim(),
+        risk: String(item.risk || '낮음').trim(),
+        primaryStats: Array.isArray(item.primaryStats) ? item.primaryStats.map((stat) => String(stat).toUpperCase()) : [],
+        recommendedWorkPower: Number(item.recommendedWorkPower || 0) || 0,
+        minMembers: Number(item.minMembers || 1) || 1,
+        maxMembers: Number(item.maxMembers || 3) || 3,
+        durationSeconds: Number(item.durationSeconds || 0) || 0,
+        rewardGold: Number(item.rewardGold || 0) || 0,
+        failureRewardGold: Number(item.failureRewardGold || 0) || 0,
+        preferredTags: Array.isArray(item.preferredTags) ? item.preferredTags.map(String).filter(Boolean) : [],
+        preferredPositions: Array.isArray(item.preferredPositions) ? item.preferredPositions.map(String).filter(Boolean) : [],
+        officeExp: Number(item.officeExp || 0) || 0,
+        mercenaryExp: Number(item.mercenaryExp || 0) || 0,
+        failureOfficeExp: Number(item.failureOfficeExp || 0) || 0,
+        failureMercenaryExp: Number(item.failureMercenaryExp || 0) || 0
+      }));
+  }
+  return missionCache;
+}
+
+function missionById() {
+  return new Map(readMissionData().map((mission) => [mission.missionId, mission]));
+}
+
+function getMissionRiskRank(risk) {
+  return { '낮음': 1, '보통': 2, '높음': 3, '위험': 4 }[String(risk || '')] || 9;
+}
+
+function getMissionRiskPenalty(risk) {
+  return { '낮음': 0, '보통': -5, '높음': -12, '위험': -20 }[String(risk || '')] ?? 0;
+}
+
+function getMissionUnlockState(mission, officeLevel) {
+  const condition = String(mission?.unlockCondition || '').trim();
+  if (!condition || condition === '기본') return { unlocked: true, lockedReason: '' };
+  if (condition.includes('소문망')) {
+    return { unlocked: false, lockedReason: '소문망 기능 개방 후 등장합니다.' };
+  }
+  const levelMatch = condition.match(/사무소\s*레벨\s*(\d+)\s*이상/);
+  if (levelMatch) {
+    const required = Number(levelMatch[1] || 0);
+    return Number(officeLevel || 1) >= required
+      ? { unlocked: true, lockedReason: '' }
+      : { unlocked: false, lockedReason: `사무소 레벨 ${required} 이상 필요` };
+  }
+  return { unlocked: false, lockedReason: condition || '등장 조건을 만족하지 못했습니다.' };
+}
+
+function publicMission(mission) {
+  return {
+    missionId: mission.missionId,
+    enabled: mission.enabled,
+    title: mission.title,
+    category: mission.category,
+    type: mission.type,
+    risk: mission.risk,
+    primaryStats: mission.primaryStats || [],
+    recommendedWorkPower: mission.recommendedWorkPower,
+    minMembers: mission.minMembers,
+    maxMembers: mission.maxMembers,
+    durationSeconds: mission.durationSeconds,
+    rewardGold: mission.rewardGold,
+    failureRewardGold: mission.failureRewardGold,
+    preferredTags: mission.preferredTags || [],
+    preferredPositions: mission.preferredPositions || [],
+    description: mission.description || '',
+    successText: mission.successText || '',
+    failureText: mission.failureText || '',
+    unlockCondition: mission.unlockCondition || '',
+    officeExp: mission.officeExp,
+    mercenaryExp: mission.mercenaryExp,
+    failureOfficeExp: mission.failureOfficeExp,
+    failureMercenaryExp: mission.failureMercenaryExp
+  };
+}
+
+function calculateMissionWorkPower(ownedMercenaries, mission) {
+  const members = Array.isArray(ownedMercenaries) ? ownedMercenaries.filter(Boolean) : [];
+  const primaryStats = Array.isArray(mission?.primaryStats) ? mission.primaryStats : [];
+  if (!primaryStats.length) {
+    return members.reduce((sum, member) => sum + calculateBaseWorkPower(member), 0);
+  }
+
+  return members.reduce((sum, member) => {
+    const stats = normalizeBaseStats(member.effectiveStats || member.baseStats || {});
+    return sum + primaryStats.reduce((statSum, stat) => {
+      return statSum + Number(stats[String(stat).toLowerCase()] || 0);
+    }, 0);
+  }, 0);
+}
+
+function countMatchedMissionTags(ownedMercenaries, mission) {
+  const preferred = new Set((mission?.preferredTags || []).map((tag) => String(tag).trim()).filter(Boolean));
+  if (!preferred.size) return 0;
+  const memberTags = new Set();
+  for (const member of ownedMercenaries || []) {
+    for (const tag of member.tags || []) {
+      const normalized = String(tag || '').trim();
+      if (normalized) memberTags.add(normalized);
+    }
+  }
+  return [...preferred].filter((tag) => memberTags.has(tag)).length;
+}
+
+function countMatchedMissionPositions(ownedMercenaries, mission) {
+  const preferred = new Set((mission?.preferredPositions || []).map((item) => String(item).trim()).filter(Boolean));
+  if (!preferred.size) return 0;
+  const memberPositions = new Set();
+  for (const member of ownedMercenaries || []) {
+    [member.position, member.role, member.job].forEach((value) => {
+      const normalized = String(value || '').trim();
+      if (normalized) memberPositions.add(normalized);
+    });
+  }
+  return [...preferred].filter((position) => memberPositions.has(position)).length;
+}
+
+function calculateMissionSuccessRate(ownedMercenaries, mission) {
+  const recommended = Math.max(50, Number(mission?.recommendedWorkPower || 0) || 50);
+  const partyWorkPower = calculateMissionWorkPower(ownedMercenaries, mission);
+  const baseRate = 45 + ((partyWorkPower - recommended) / recommended) * 35;
+  const matchedTagCount = countMatchedMissionTags(ownedMercenaries, mission);
+  const matchedPositionCount = countMatchedMissionPositions(ownedMercenaries, mission);
+  const riskPenalty = getMissionRiskPenalty(mission?.risk);
+  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty);
+  return {
+    partyWorkPower,
+    recommendedWorkPower: recommended,
+    matchedTagCount,
+    matchedPositionCount,
+    riskPenalty,
+    successRate: Math.max(15, Math.min(95, successRate))
+  };
+}
+
+function decideMissionResult(successRate, randomValue = Math.random()) {
+  const safeRate = Math.max(1, Math.min(100, Number(successRate || 0) || 0));
+  return randomValue * 100 < safeRate ? 'success' : 'failure';
+}
+
+function serializeRun(runRow, members = []) {
+  const now = Date.now();
+  const completesAtMs = new Date(runRow.completesAt).getTime();
+  const remainingSeconds = Math.max(0, Math.ceil((completesAtMs - now) / 1000));
+  return {
+    id: runRow.id,
+    missionId: runRow.missionId,
+    missionTitle: runRow.missionTitle,
+    selectedMercenaryIds: runRow.selectedMercenaryIds || [],
+    members,
+    successRate: runRow.successRate,
+    rewardGold: runRow.rewardGold,
+    failureRewardGold: runRow.failureRewardGold,
+    officeExp: runRow.officeExp,
+    mercenaryExp: runRow.mercenaryExp,
+    failureOfficeExp: runRow.failureOfficeExp,
+    failureMercenaryExp: runRow.failureMercenaryExp,
+    durationSeconds: runRow.durationSeconds,
+    startedAt: runRow.startedAt,
+    completesAt: runRow.completesAt,
+    claimedAt: runRow.claimedAt,
+    resultStatus: runRow.resultStatus,
+    resultText: runRow.resultText,
+    remainingSeconds,
+    readyToClaim: remainingSeconds <= 0 && !runRow.claimedAt
+  };
+}
+
 async function serializeBoard(userId, board, profile) {
   const lookup = masterById();
   const hiredIds = board.hiredCandidateIds || [];
@@ -854,6 +1035,285 @@ async function deleteSquad(userId, squadId) {
   };
 }
 
+async function listMissions(userId) {
+  const [profile, communityPoints] = await Promise.all([
+    getOrCreateMercenaryProfile(userId),
+    getCommunityPoints(userId)
+  ]);
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  const missions = readMissionData()
+    .map((mission, index) => ({ mission, index, unlock: getMissionUnlockState(mission, mercenaryProfile.officeLevel) }))
+    .filter(({ mission, unlock }) => mission.enabled && mission.category === 'non_combat' && unlock.unlocked)
+    .sort((a, b) => getMissionRiskRank(a.mission.risk) - getMissionRiskRank(b.mission.risk) || a.index - b.index)
+    .map(({ mission }) => publicMission(mission));
+
+  return {
+    ok: true,
+    missions,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile
+  };
+}
+
+function getUnlockedMissionOrThrow(missionId, officeLevel) {
+  const mission = missionById().get(String(missionId || '').trim());
+  if (!mission) throw httpError(404, '의뢰를 찾을 수 없습니다.', 'MISSION_NOT_FOUND');
+  if (!mission.enabled) throw httpError(400, '비활성화된 의뢰입니다.', 'MISSION_DISABLED');
+  if (mission.category !== 'non_combat') {
+    throw httpError(400, '현재는 비전투 의뢰만 파견할 수 있습니다.', 'INVALID_MISSION_CATEGORY');
+  }
+  const unlock = getMissionUnlockState(mission, officeLevel);
+  if (!unlock.unlocked) {
+    throw httpError(403, unlock.lockedReason || '의뢰 조건을 만족하지 못했습니다.', 'MISSION_LOCKED');
+  }
+  return mission;
+}
+
+async function resolveMissionMemberIds(userId, payload = {}) {
+  if (payload.squadId) {
+    const squad = await repo.getUserSquad(userId, payload.squadId);
+    if (!squad) throw httpError(404, '편성을 찾을 수 없습니다.', 'SQUAD_NOT_FOUND');
+    if (!squad.ownedMercenaryIds.length) throw httpError(400, '빈 편성은 파견할 수 없습니다.', 'SQUAD_EMPTY');
+    return squad.ownedMercenaryIds;
+  }
+
+  if (!Array.isArray(payload.ownedMercenaryIds)) {
+    throw httpError(400, '파견할 보유 용병을 선택해 주세요.', 'INVALID_MERCENARY_SELECTION');
+  }
+  return payload.ownedMercenaryIds.map((id) => String(id || '').trim()).filter(Boolean);
+}
+
+function validateMissionMemberCount(memberIds, mission) {
+  if (!memberIds.length) {
+    throw httpError(400, '파견할 보유 용병을 선택해 주세요.', 'INVALID_MERCENARY_SELECTION');
+  }
+  if (memberIds.length < Number(mission.minMembers || 1)) {
+    throw httpError(400, `최소 ${mission.minMembers}명이 필요합니다.`, 'INVALID_MERCENARY_SELECTION');
+  }
+  if (memberIds.length > Number(mission.maxMembers || 3)) {
+    throw httpError(400, `최대 ${mission.maxMembers}명까지 파견할 수 있습니다.`, 'INVALID_MERCENARY_SELECTION');
+  }
+}
+
+async function buildRunMembers(userId, memberIds) {
+  const ownedRows = await repo.listUserMercenaries(userId);
+  const lookup = masterById();
+  const ownedById = new Map(ownedRows.map((row) => [String(row.id), row]));
+  return memberIds.map((id) => {
+    const row = ownedById.get(String(id));
+    return buildOwnedMercenaryItem(row, lookup.get(row?.mercenaryId));
+  }).filter(Boolean);
+}
+
+async function listRuns(userId) {
+  const [runs, ownedItemById, profile, communityPoints] = await Promise.all([
+    repo.listOpenMercenaryRuns(userId),
+    ownedItemMapForSquads(userId),
+    getOrCreateMercenaryProfile(userId),
+    getCommunityPoints(userId)
+  ]);
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  const serialized = runs.map((runRow) => serializeRun(
+    runRow,
+    (runRow.selectedMercenaryIds || []).map((id) => ownedItemById.get(String(id))).filter(Boolean)
+  ));
+
+  return {
+    ok: true,
+    runs: serialized,
+    activeRunCount: serialized.length,
+    maxActiveRuns: mercenaryProfile.maxActiveRuns,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile
+  };
+}
+
+async function startMissionRun(userId, payload = {}) {
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  const mission = getUnlockedMissionOrThrow(payload.missionId, mercenaryProfile.officeLevel);
+  const openRuns = await repo.listOpenMercenaryRuns(userId);
+  if (openRuns.length >= mercenaryProfile.maxActiveRuns) {
+    throw httpError(409, '동시에 진행 가능한 의뢰 수를 초과했습니다.', 'ACTIVE_RUN_LIMIT_REACHED');
+  }
+
+  const memberIds = await resolveMissionMemberIds(userId, payload);
+  if (new Set(memberIds).size !== memberIds.length) {
+    throw httpError(400, '같은 보유 용병이 중복 선택되었습니다.', 'DUPLICATE_OWNED_MERCENARY');
+  }
+  validateMissionMemberCount(memberIds, mission);
+  await assertOwnedMercenariesAvailable(userId, memberIds);
+  const members = await buildRunMembers(userId, memberIds);
+  if (members.length !== memberIds.length) {
+    throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
+  }
+
+  const successPreview = calculateMissionSuccessRate(members, mission);
+  const now = new Date();
+  const completesAt = new Date(now.getTime() + Math.max(1, mission.durationSeconds) * 1000);
+  const runId = `run_${randomUUID()}`;
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const runRow = await repo.createMercenaryRun({
+      id: runId,
+      userId,
+      missionId: mission.missionId,
+      missionTitle: mission.title,
+      selectedMercenaryIds: memberIds,
+      successRate: successPreview.successRate,
+      rewardGold: mission.rewardGold,
+      failureRewardGold: mission.failureRewardGold,
+      officeExp: mission.officeExp,
+      mercenaryExp: mission.mercenaryExp,
+      failureOfficeExp: mission.failureOfficeExp,
+      failureMercenaryExp: mission.failureMercenaryExp,
+      durationSeconds: mission.durationSeconds,
+      startedAt: now.toISOString(),
+      completesAt: completesAt.toISOString()
+    });
+    for (const ownedId of memberIds) {
+      await repo.updateUserMercenaryStatus(userId, ownedId, {
+        operationalStatus: 'dispatched',
+        currentActivityType: 'mission',
+        currentActivityId: runId
+      });
+    }
+    if (provider === 'sqlite') await run('COMMIT');
+    return {
+      ok: true,
+      run: serializeRun(runRow, members),
+      successPreview,
+      ...(await listRuns(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
+function assertRunClaimable(runRow) {
+  if (!runRow) throw httpError(404, '의뢰 진행 기록을 찾을 수 없습니다.', 'RUN_NOT_FOUND');
+  if (runRow.claimedAt) throw httpError(409, '이미 결과를 수령한 의뢰입니다.', 'RUN_ALREADY_CLAIMED');
+  if (new Date(runRow.completesAt).getTime() > Date.now()) {
+    throw httpError(409, '아직 완료되지 않은 의뢰입니다.', 'RUN_NOT_COMPLETE');
+  }
+}
+
+async function claimMissionRun(userId, runId) {
+  const runRow = await repo.getMercenaryRun(userId, runId);
+  assertRunClaimable(runRow);
+
+  const memberIds = runRow.selectedMercenaryIds || [];
+  const ownedRows = await repo.listUserMercenaries(userId);
+  const ownedById = new Map(ownedRows.map((row) => [String(row.id), row]));
+  const lookup = masterById();
+  const selectedRows = memberIds.map((id) => ownedById.get(String(id)));
+  if (selectedRows.some((row) => !row)) {
+    throw httpError(404, '파견 용병 정보를 찾을 수 없습니다.', 'RUN_MEMBER_NOT_FOUND');
+  }
+
+  const mission = missionById().get(runRow.missionId) || {
+    successText: '의뢰를 완료했습니다.',
+    failureText: '의뢰를 완수하지 못했습니다.'
+  };
+  const resultStatus = decideMissionResult(runRow.successRate);
+  const succeeded = resultStatus === 'success';
+  const gainedGold = succeeded ? runRow.rewardGold : runRow.failureRewardGold;
+  const gainedOfficeExp = succeeded ? runRow.officeExp : runRow.failureOfficeExp;
+  const gainedMercenaryExp = succeeded ? runRow.mercenaryExp : runRow.failureMercenaryExp;
+  const resultText = succeeded
+    ? (mission.successText || '의뢰를 완료했습니다.')
+    : (mission.failureText || '의뢰를 완수하지 못했습니다.');
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const profile = await getOrCreateMercenaryProfile(userId);
+    const officeProgress = applyOfficeExpProgress(profile, gainedOfficeExp);
+    const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
+      gold: Number(profile.gold || 0) + gainedGold,
+      officeLevel: officeProgress.officeLevel,
+      officeExp: officeProgress.officeExp
+    });
+
+    const memberResults = [];
+    for (const row of selectedRows) {
+      const master = lookup.get(row.mercenaryId);
+      if (!master) throw httpError(404, '파견 용병 마스터 정보를 찾을 수 없습니다.', 'RUN_MEMBER_NOT_FOUND');
+      const beforeProgress = normalizeOwnedProgress(row, master);
+      const afterProgress = applyMercenaryExpProgress(row, gainedMercenaryExp, master);
+      await repo.updateUserMercenaryProgress(userId, row.id, {
+        currentLevel: afterProgress.currentLevel,
+        currentExp: afterProgress.currentExp
+      });
+      const statusRow = await repo.updateUserMercenaryStatus(userId, row.id, {
+        operationalStatus: 'idle',
+        currentActivityType: null,
+        currentActivityId: null
+      });
+      const afterItem = buildOwnedMercenaryItem(statusRow, master);
+      memberResults.push({
+        ownedId: row.id,
+        name: master.name,
+        grade: master.grade,
+        beforeLevel: beforeProgress.currentLevel,
+        afterLevel: afterProgress.currentLevel,
+        beforeExp: beforeProgress.currentExp,
+        afterExp: afterProgress.currentExp,
+        expToNext: afterProgress.expToNext,
+        expProgress: afterProgress.expProgress,
+        isMaxLevel: afterProgress.isMaxLevel,
+        levelUps: Math.max(0, afterProgress.currentLevel - beforeProgress.currentLevel),
+        effectiveStats: afterItem.effectiveStats,
+        workPower: afterItem.workPower,
+        combatPower: afterItem.combatPower
+      });
+    }
+
+    const claimed = await repo.claimMercenaryRun(userId, runRow.id, {
+      resultStatus,
+      resultText,
+      claimedAt: new Date().toISOString()
+    });
+    if (gainedGold > 0) {
+      await repo.createRecruitLog({
+        userId,
+        action: 'mission_reward',
+        mercenaryId: runRow.missionId,
+        goldDelta: gainedGold
+      });
+    }
+    if (provider === 'sqlite') await run('COMMIT');
+    const mercenaryProfile = publicMercenaryProfile(updatedProfile);
+    return {
+      ok: true,
+      result: {
+        runId: runRow.id,
+        missionTitle: runRow.missionTitle,
+        status: resultStatus,
+        resultText,
+        gainedGold,
+        gainedOfficeExp,
+        gainedMercenaryExp
+      },
+      run: serializeRun(claimed, memberResults),
+      members: memberResults,
+      gold: mercenaryProfile.gold,
+      mercenaryGold: mercenaryProfile.gold,
+      communityPoints: await getCommunityPoints(userId),
+      mercenaryProfile,
+      ...(await listRuns(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 module.exports = {
   getRecruitBoard,
   refreshRecruitBoard,
@@ -882,7 +1342,17 @@ module.exports = {
   calculateCombatPowerFromStats,
   calculateBaseWorkPowerFromStats,
   calculateBaseWorkPower,
+  calculateMissionWorkPower,
+  calculateMissionSuccessRate,
+  getMissionRiskPenalty,
+  countMatchedMissionTags,
+  countMatchedMissionPositions,
+  decideMissionResult,
   summarizeSquad,
+  listMissions,
+  listRuns,
+  startMissionRun,
+  claimMissionRun,
   listSquads,
   createSquad,
   updateSquad,

@@ -630,6 +630,10 @@ body.recruitment-open {
   overflow: hidden;
 }
 
+body.mission-open {
+  overflow: hidden;
+}
+
 .mercenary-roster-screen {
   position: fixed;
   inset: 0;
@@ -2321,6 +2325,356 @@ body.recruitment-open {
   font-style: normal;
 }
 
+.mercenary-mission-view {
+  position: fixed;
+  inset: 0;
+  z-index: 32;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.mercenary-mission-view[hidden] {
+  display: none;
+}
+
+.mission-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(58, 42, 24, 0.18), transparent 48%),
+    rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+.mission-shell {
+  position: relative;
+  width: min(98vw, 1640px);
+  height: min(94vh, 920px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(132px, 0.22fr);
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(214, 168, 93, 0.44);
+  background:
+    linear-gradient(180deg, rgba(22, 15, 10, 0.95), rgba(6, 5, 4, 0.96)),
+    rgba(10, 7, 5, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 235, 180, 0.06),
+    0 24px 70px rgba(0, 0, 0, 0.68);
+  color: #f4dfb4;
+  overflow: hidden;
+}
+
+.mission-topbar,
+.mission-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mission-title-block h2,
+.mission-panel-heading h3,
+.mission-detail-heading h3 {
+  margin: 0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.mission-title-block h2 {
+  font-size: 31px;
+  color: #ffe2a4;
+}
+
+.mission-title-block p,
+.mission-kicker,
+.mission-panel-heading span,
+.mission-card small,
+.mission-empty,
+.mission-factor-box,
+.mission-run-card span,
+.mission-squad-card span,
+.mission-squad-card em,
+.mission-dispatch-summary {
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+}
+
+.mission-kicker {
+  display: inline-block;
+  margin-bottom: 3px;
+  color: #ba8f52;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.mission-close-button,
+.mission-start-button,
+.mission-run-card button,
+.mission-result-modal button {
+  min-height: 38px;
+  border: 1px solid rgba(214, 168, 93, 0.45);
+  background: linear-gradient(180deg, rgba(74, 47, 22, 0.9), rgba(31, 20, 12, 0.92));
+  color: #ffe2a4;
+  padding: 8px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mission-close-button:hover,
+.mission-start-button:hover:not(:disabled),
+.mission-run-card button:hover:not(:disabled),
+.mission-result-modal button:hover {
+  filter: drop-shadow(0 0 8px rgba(230, 170, 80, 0.45));
+}
+
+.mission-start-button:disabled,
+.mission-run-card button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.mission-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 320px minmax(480px, 1fr) 340px;
+  gap: 12px;
+}
+
+.mission-list-panel,
+.mission-detail-panel,
+.mission-dispatch-panel,
+.mission-run-panel {
+  min-height: 0;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: linear-gradient(180deg, rgba(27, 19, 12, 0.78), rgba(8, 7, 6, 0.82));
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.42);
+}
+
+.mission-list-panel,
+.mission-detail-panel,
+.mission-dispatch-panel {
+  padding: 13px;
+  overflow: hidden;
+}
+
+.mission-list,
+.mission-squad-list {
+  margin-top: 11px;
+  display: grid;
+  gap: 9px;
+  max-height: calc(100% - 42px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.mission-card,
+.mission-squad-card {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  border: 1px solid rgba(152, 108, 58, 0.38);
+  background: rgba(18, 13, 9, 0.72);
+  color: #f2ddb1;
+  padding: 11px;
+  cursor: pointer;
+}
+
+.mission-card.is-selected,
+.mission-squad-card.is-selected {
+  border-color: rgba(255, 210, 120, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 170, 0.12), 0 0 18px rgba(214, 168, 93, 0.16);
+}
+
+.mission-squad-card.is-unavailable {
+  opacity: 0.58;
+  background:
+    repeating-linear-gradient(135deg, rgba(120, 22, 18, 0.16) 0 6px, transparent 6px 13px),
+    rgba(18, 13, 9, 0.72);
+}
+
+.mission-badge {
+  justify-self: start;
+  border: 1px solid rgba(180, 124, 61, 0.6);
+  background: rgba(91, 49, 23, 0.72);
+  color: #ffd899;
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mission-detail-panel {
+  overflow-y: auto;
+}
+
+.mission-detail-heading {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(214, 168, 93, 0.18);
+}
+
+.mission-detail-heading p {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.82);
+  line-height: 1.55;
+}
+
+.mission-detail-grid,
+.mission-reward-grid,
+.mission-result-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.mission-detail-grid div,
+.mission-reward-grid article,
+.mission-factor-box,
+.mission-result-list div {
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(7, 6, 5, 0.5);
+  padding: 10px;
+}
+
+.mission-detail-grid span,
+.mission-result-list dt {
+  display: block;
+  color: rgba(238, 209, 153, 0.64);
+  font-size: 12px;
+}
+
+.mission-detail-grid strong,
+.mission-result-list dd {
+  margin: 0;
+  color: #fff1c2;
+}
+
+.mission-reward-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mission-reward-grid p,
+.mission-factor-box p {
+  margin: 5px 0 0;
+  color: rgba(244, 223, 180, 0.8);
+}
+
+.mission-factor-box {
+  margin-top: 12px;
+}
+
+.mission-squad-portraits,
+.mission-run-members {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mission-mini-portrait {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(0, 0, 0, 0.34);
+  overflow: hidden;
+}
+
+.mission-mini-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.mission-dispatch-summary {
+  margin: 12px 0;
+  padding: 11px;
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.mission-dispatch-summary p,
+.mission-dispatch-summary em {
+  display: block;
+  margin: 5px 0 0;
+  color: rgba(244, 223, 180, 0.75);
+}
+
+.mission-dispatch-summary .is-ready {
+  color: #a7e08e;
+}
+
+.mission-start-button {
+  width: 100%;
+}
+
+.mission-run-panel {
+  padding: 12px;
+  overflow: hidden;
+}
+
+.mission-run-list {
+  margin-top: 9px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  max-height: calc(100% - 38px);
+  overflow-y: auto;
+}
+
+.mission-run-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(7, 6, 5, 0.52);
+  padding: 9px;
+}
+
+.mission-run-card.is-ready {
+  border-color: rgba(147, 215, 104, 0.55);
+}
+
+.mission-empty {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.62);
+}
+
+.mission-result-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.56);
+}
+
+.mission-result-layer[hidden] {
+  display: none;
+}
+
+.mission-result-modal {
+  width: min(92vw, 560px);
+  border: 1px solid rgba(214, 168, 93, 0.48);
+  background: linear-gradient(180deg, rgba(28, 19, 12, 0.98), rgba(6, 5, 4, 0.98));
+  color: #f5dfb5;
+  padding: 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+
+.mission-result-members {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.mission-result-members p {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.8);
+}
+
 .mercenary-auth-overlay {
   position: fixed;
   inset: 0;
@@ -2634,6 +2988,34 @@ body.recruitment-open {
 
   .squad-status-legend {
     align-items: flex-start;
+  }
+
+  .mercenary-mission-view {
+    padding: 8px;
+  }
+
+  .mission-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .mission-layout,
+  .mission-run-list,
+  .mission-detail-grid,
+  .mission-reward-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-list-panel,
+  .mission-detail-panel,
+  .mission-dispatch-panel,
+  .mission-run-panel {
+    overflow: visible;
+  }
+
+  .mission-run-card {
+    grid-template-columns: 1fr;
   }
 }
 
