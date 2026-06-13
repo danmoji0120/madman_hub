@@ -4035,7 +4035,7 @@
       "귀족",
       "정보"
     ],
-    "imageKey": "r_human_fixer_oscar",
+    "imageKey": "r_human_field_quartermaster_marlow",
     "dedicatedIllustration": true,
     "obtainMethod": "R 소환/상점",
     "memo": "진실보다 소개비를 더 믿는 남자",
@@ -5438,7 +5438,7 @@
       "폭파",
       "장비"
     ],
-    "imageKey": "n_dwarf_01",
+    "imageKey": "n_dwarf_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "정비 창고 배치 가능",
@@ -5477,7 +5477,7 @@
       "장비",
       "철거"
     ],
-    "imageKey": "n_dwarf_02",
+    "imageKey": "n_dwarf_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "철거 의뢰 보조",
@@ -5515,7 +5515,7 @@
       "보급",
       "장기임무"
     ],
-    "imageKey": "n_elf_01",
+    "imageKey": "n_elf_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "레이드 보급 태그 채우기",
@@ -5553,7 +5553,7 @@
       "정찰",
       "후열"
     ],
-    "imageKey": "n_elf_02",
+    "imageKey": "n_elf_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "초반 원거리 채움용",
@@ -5592,7 +5592,7 @@
       "운반",
       "저위험"
     ],
-    "imageKey": "n_goblin_02",
+    "imageKey": "n_goblin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "슬라임/오염 의뢰용",
@@ -5631,7 +5631,7 @@
       "하수도",
       "N운용"
     ],
-    "imageKey": "n_goblin_01",
+    "imageKey": "n_goblin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "종족 공용 컷 재사용",
@@ -5669,7 +5669,7 @@
       "보급",
       "장기임무"
     ],
-    "imageKey": "n_human_01",
+    "imageKey": "n_human_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "가장 기본적인 인력",
@@ -5708,7 +5708,7 @@
       "의무실",
       "N운용"
     ],
-    "imageKey": "n_human_02",
+    "imageKey": "n_human_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "내부 행정용으로 유용",
@@ -5746,7 +5746,7 @@
       "설치",
       "노동"
     ],
-    "imageKey": "n_orc_02",
+    "imageKey": "n_orc_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "겁은 많지만 덩치는 큼",
@@ -5784,7 +5784,7 @@
       "방어",
       "경비"
     ],
-    "imageKey": "n_orc_01",
+    "imageKey": "n_orc_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "초반 탱커 보조",
@@ -5822,7 +5822,7 @@
       "하수도",
       "운반"
     ],
-    "imageKey": "n_raccoonkin_01",
+    "imageKey": "n_raccoonkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "하수도는 싫어함",
@@ -5860,7 +5860,7 @@
       "추적",
       "은밀"
     ],
-    "imageKey": "n_wolfkin_01",
+    "imageKey": "n_wolfkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "조사 의뢰용",
@@ -5899,7 +5899,7 @@
       "하수도",
       "N운용"
     ],
-    "imageKey": "n_slime_cleaner_01",
+    "imageKey": "n_slime_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "바닥 청소는 잘하지만 바닥도 같이 먹을 수 있음",
@@ -5938,7 +5938,7 @@
       "오염",
       "N운용"
     ],
-    "imageKey": "n_slime_drain_01",
+    "imageKey": "n_slime_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "보고서에 발자국 대신 점액이 남음",
@@ -5977,7 +5977,7 @@
       "오염",
       "폐기물"
     ],
-    "imageKey": "n_slime_toxic_01",
+    "imageKey": "n_slime_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "적보다 장비가 먼저 녹을 수 있음",
@@ -6016,7 +6016,7 @@
       "기술",
       "N운용"
     ],
-    "imageKey": "n_kobold_trapper_01",
+    "imageKey": "n_kobold_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "함정을 찾는 방식이 너무 직접적임",
@@ -6055,7 +6055,7 @@
       "던전",
       "굴착"
     ],
-    "imageKey": "n_kobold_mapper_01",
+    "imageKey": "n_kobold_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "지도를 그리다 자기 길도 잃음",
@@ -6094,7 +6094,7 @@
       "잡역",
       "N운용"
     ],
-    "imageKey": "n_kobold_worker_01",
+    "imageKey": "n_kobold_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "수레보다 본인이 더 자주 굴러감",
@@ -6133,7 +6133,7 @@
       "잠입",
       "첩보"
     ],
-    "imageKey": "n_catkin_sneak_01",
+    "imageKey": "n_catkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "임무보다 호기심이 먼저 움직임",
@@ -6172,7 +6172,7 @@
       "정찰",
       "N운용"
     ],
-    "imageKey": "n_catkin_courier_01",
+    "imageKey": "n_catkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "보고서를 전달하다 지붕 위에서 낮잠을 잠",
@@ -6211,7 +6211,7 @@
       "방어",
       "N운용"
     ],
-    "imageKey": "n_undead_guard_01",
+    "imageKey": "n_undead_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "낮에는 거의 장식품임",
@@ -6250,7 +6250,7 @@
       "장기전",
       "N운용"
     ],
-    "imageKey": "n_undead_worker_01",
+    "imageKey": "n_undead_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "근태는 좋은데 민원이 많음",
@@ -6289,7 +6289,7 @@
       "경비",
       "N운용"
     ],
-    "imageKey": "n_bearkin_guard_01",
+    "imageKey": "n_bearkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "문보다 먼저 졸 수 있음",
@@ -6328,7 +6328,7 @@
       "보급",
       "N운용"
     ],
-    "imageKey": "n_bearkin_carrier_01",
+    "imageKey": "n_bearkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "상자와 사람을 같은 방식으로 듦",
@@ -6367,7 +6367,7 @@
       "정찰",
       "기동"
     ],
-    "imageKey": "n_harpy_messenger_01",
+    "imageKey": "n_harpy_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "착지가 의뢰보다 위험함",
@@ -6406,7 +6406,7 @@
       "후열",
       "N운용"
     ],
-    "imageKey": "n_harpy_scout_01",
+    "imageKey": "n_harpy_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "실내 의뢰에서는 깃털 청소비가 더 나옴",
@@ -6445,7 +6445,7 @@
       "야외",
       "N운용"
     ],
-    "imageKey": "n_centaur_escort_01",
+    "imageKey": "n_centaur_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "실내로 들어가면 바로 민원 발생",
@@ -6484,7 +6484,7 @@
       "야외",
       "호송"
     ],
-    "imageKey": "n_centaur_runner_01",
+    "imageKey": "n_centaur_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "좁은 길을 보면 우울해짐",
@@ -6523,7 +6523,7 @@
       "전열",
       "N운용"
     ],
-    "imageKey": "n_lionkin_guard_01",
+    "imageKey": "n_lionkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "울음소리는 큰데 보고서는 작음",
@@ -6562,7 +6562,7 @@
       "지휘보조",
       "N운용"
     ],
-    "imageKey": "n_lionkin_morale_01",
+    "imageKey": "n_lionkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "고함이 작전보다 먼저 나감",
@@ -6601,7 +6601,7 @@
       "근접",
       "N운용"
     ],
-    "imageKey": "n_oni_demolition_01",
+    "imageKey": "n_oni_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "철거와 정리를 구분하지 못함",
@@ -6640,7 +6640,7 @@
       "광전",
       "N운용"
     ],
-    "imageKey": "n_oni_club_01",
+    "imageKey": "n_oni_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "작전 설명을 듣기 전에 뛰어나감",
@@ -6679,7 +6679,7 @@
       "던전",
       "N운용"
     ],
-    "imageKey": "n_mimic_luggage_01",
+    "imageKey": "n_mimic_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "가끔 자기 짐도 삼킴",
@@ -6718,7 +6718,7 @@
       "전리품",
       "N운용"
     ],
-    "imageKey": "n_mimic_chest_01",
+    "imageKey": "n_mimic_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "장비를 지키다 장비를 먹음",
@@ -6757,7 +6757,7 @@
       "계약",
       "N운용"
     ],
-    "imageKey": "n_vampire_clerk_01",
+    "imageKey": "n_vampire_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "낮 근무표를 보면 관에 들어감",
@@ -6796,7 +6796,7 @@
       "야간",
       "계약"
     ],
-    "imageKey": "n_vampire_runner_01",
+    "imageKey": "n_vampire_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "돈 냄새보다 피 냄새에 더 민감함",
@@ -6835,7 +6835,7 @@
       "응급",
       "N운용"
     ],
-    "imageKey": "n_rabbitkin_runner_01",
+    "imageKey": "n_rabbitkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "너무 빨라서 목적지를 지나침",
@@ -6874,7 +6874,7 @@
       "응급",
       "N운용"
     ],
-    "imageKey": "n_rabbitkin_medic_01",
+    "imageKey": "n_rabbitkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "부상자를 들고 먼저 울 수 있음",
@@ -6913,7 +6913,7 @@
       "오염",
       "N운용"
     ],
-    "imageKey": "n_lizardkin_poison_01",
+    "imageKey": "n_lizardkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "추운 곳에서는 움직임이 느려짐",
@@ -6952,7 +6952,7 @@
       "오염",
       "N운용"
     ],
-    "imageKey": "n_lizardkin_guard_01",
+    "imageKey": "n_lizardkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "건조한 사무소를 싫어함",
@@ -6991,7 +6991,7 @@
       "회복",
       "N운용"
     ],
-    "imageKey": "n_sheepkin_sleep_01",
+    "imageKey": "n_sheepkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "상담하다 같이 잠들 수 있음",
@@ -7030,7 +7030,7 @@
       "장기임무",
       "N운용"
     ],
-    "imageKey": "n_sheepkin_calm_01",
+    "imageKey": "n_sheepkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "급한 상황에서도 너무 느긋함",
@@ -7069,7 +7069,7 @@
       "호송",
       "N운용"
     ],
-    "imageKey": "n_minotaur_guard_01",
+    "imageKey": "n_minotaur_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "통로가 좁으면 벽이 먼저 양보함",
@@ -7108,7 +7108,7 @@
       "호송",
       "N운용"
     ],
-    "imageKey": "n_minotaur_carrier_01",
+    "imageKey": "n_minotaur_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "짐을 내려놓을 때 바닥이 운다",
@@ -7147,7 +7147,7 @@
       "계약",
       "N운용"
     ],
-    "imageKey": "n_foxkin_clerk_01",
+    "imageKey": "n_foxkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "말은 잘하지만 신뢰도는 깎임",
@@ -7186,7 +7186,7 @@
       "은밀",
       "N운용"
     ],
-    "imageKey": "n_foxkin_rumor_01",
+    "imageKey": "n_foxkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "진짜 소문과 농담을 섞어서 가져옴",
@@ -7225,7 +7225,7 @@
       "안정",
       "N운용"
     ],
-    "imageKey": "n_deerkin_blessing_01",
+    "imageKey": "n_deerkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "축복 절차가 느려서 급한 의뢰와 안 맞음",
@@ -7264,7 +7264,7 @@
       "회복",
       "N운용"
     ],
-    "imageKey": "n_deerkin_herb_01",
+    "imageKey": "n_deerkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "약초 이름은 아는데 길은 자주 잃음",
@@ -7303,7 +7303,7 @@
       "잠입",
       "N운용"
     ],
-    "imageKey": "n_spiderkin_thread_01",
+    "imageKey": "n_spiderkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "실을 치우는 비용은 별도임",
@@ -7342,7 +7342,7 @@
       "속박",
       "N운용"
     ],
-    "imageKey": "n_spiderkin_poison_01",
+    "imageKey": "n_spiderkin_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "불 앞에서는 급격히 소심해짐",
@@ -7381,7 +7381,7 @@
       "수리",
       "N운용"
     ],
-    "imageKey": "n_golem_worker_01",
+    "imageKey": "n_golem_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "명령을 한 박자 늦게 이해함",
@@ -7420,7 +7420,7 @@
       "상태이상저항",
       "N운용"
     ],
-    "imageKey": "n_golem_shield_01",
+    "imageKey": "n_golem_common_01",
     "dedicatedIllustration": true,
     "obtainMethod": "N 일반 생성",
     "memo": "좁은 복도에서 모두를 막음",
@@ -7615,7 +7615,7 @@
       "훈련",
       "N운용"
     ],
-    "imageKey": "n_human_fighter_01",
+    "imageKey": "n_human_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "검보다 변명 속도가 빠름",
@@ -7654,7 +7654,7 @@
       "기동",
       "N운용"
     ],
-    "imageKey": "n_human_runner_01",
+    "imageKey": "n_human_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "길은 잘 찾지만 자주 샛길로 빠짐",
@@ -7693,7 +7693,7 @@
       "장비",
       "N운용"
     ],
-    "imageKey": "n_dwarf_guard_01",
+    "imageKey": "n_dwarf_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "좁은 길에서는 믿음직하지만 술집에서는 사라짐",
@@ -7732,7 +7732,7 @@
       "보급",
       "N운용"
     ],
-    "imageKey": "n_dwarf_carrier_01",
+    "imageKey": "n_dwarf_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "광차는 잘 밀지만 멈추는 법이 늦음",
@@ -7771,7 +7771,7 @@
       "정찰",
       "N운용"
     ],
-    "imageKey": "n_elf_herb_01",
+    "imageKey": "n_elf_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "약초 이름은 긴데 보고서는 짧음",
@@ -7810,7 +7810,7 @@
       "후열",
       "N운용"
     ],
-    "imageKey": "n_elf_archer_01",
+    "imageKey": "n_elf_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "표적보다 자존심을 더 크게 맞힘",
@@ -7849,7 +7849,7 @@
       "하수도",
       "N운용"
     ],
-    "imageKey": "n_goblin_porter_01",
+    "imageKey": "n_goblin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "짐과 전리품을 구분하지 못함",
@@ -7888,7 +7888,7 @@
       "보조",
       "N운용"
     ],
-    "imageKey": "n_goblin_bucket_01",
+    "imageKey": "n_goblin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "물보다 소란을 더 많이 뿌림",
@@ -7927,7 +7927,7 @@
       "전열",
       "N운용"
     ],
-    "imageKey": "n_orc_demolition_01",
+    "imageKey": "n_orc_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "철거 범위를 잘못 이해함",
@@ -7966,7 +7966,7 @@
       "노동",
       "N운용"
     ],
-    "imageKey": "n_orc_carrier_01",
+    "imageKey": "n_orc_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "짐과 의뢰인을 같은 자세로 듦",
@@ -8005,7 +8005,7 @@
       "전리품",
       "N운용"
     ],
-    "imageKey": "n_raccoonkin_salvage_01",
+    "imageKey": "n_raccoonkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "쓸모없는 것도 일단 주워옴",
@@ -8044,7 +8044,7 @@
       "회피",
       "N운용"
     ],
-    "imageKey": "n_raccoonkin_smoke_01",
+    "imageKey": "n_raccoonkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "심부름보다 도망 경로를 먼저 봄",
@@ -8083,7 +8083,7 @@
       "보급",
       "N운용"
     ],
-    "imageKey": "n_raccoonkin_laundry_01",
+    "imageKey": "n_raccoonkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "피 묻은 망토를 빨다 증거도 지움",
@@ -8122,7 +8122,7 @@
       "추적",
       "N운용"
     ],
-    "imageKey": "n_wolfkin_sniffer_01",
+    "imageKey": "n_wolfkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "냄새는 잘 맡지만 설명이 전부 으르렁임",
@@ -8161,7 +8161,7 @@
       "기동",
       "N운용"
     ],
-    "imageKey": "n_wolfkin_runner_01",
+    "imageKey": "n_wolfkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "혼자 보내면 외로워서 늦어짐",
@@ -8200,7 +8200,7 @@
       "근접",
       "N운용"
     ],
-    "imageKey": "n_wolfkin_tracker_01",
+    "imageKey": "n_wolfkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "대상은 찾는데 본인 위치는 모름",
@@ -8239,7 +8239,7 @@
       "오염",
       "N운용"
     ],
-    "imageKey": "n_slime_bucket_01",
+    "imageKey": "n_slime_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "양동이에 들어가 있으면 얌전함",
@@ -8278,7 +8278,7 @@
       "정찰",
       "N운용"
     ],
-    "imageKey": "n_kobold_candle_01",
+    "imageKey": "n_kobold_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "불을 들고 다니지만 겁먹으면 꺼버림",
@@ -8317,7 +8317,7 @@
       "은밀",
       "N운용"
     ],
-    "imageKey": "n_catkin_roof_01",
+    "imageKey": "n_catkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "높은 곳은 좋아하지만 내려오는 건 싫어함",
@@ -8356,7 +8356,7 @@
       "은밀",
       "N운용"
     ],
-    "imageKey": "n_catkin_lockpick_01",
+    "imageKey": "n_catkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "문은 따지만 규칙은 못 지킴",
@@ -8395,7 +8395,7 @@
       "잡역",
       "N운용"
     ],
-    "imageKey": "n_undead_carrier_01",
+    "imageKey": "n_undead_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "가끔 자기 부품도 같이 운반함",
@@ -8434,7 +8434,7 @@
       "묘지",
       "N운용"
     ],
-    "imageKey": "n_undead_lantern_01",
+    "imageKey": "n_undead_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "불빛보다 본인이 더 으스스함",
@@ -8473,7 +8473,7 @@
       "보급",
       "N운용"
     ],
-    "imageKey": "n_bearkin_warehouse_01",
+    "imageKey": "n_bearkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "자는 것처럼 보여도 대체로 감시 중임",
@@ -8512,7 +8512,7 @@
       "호송",
       "N운용"
     ],
-    "imageKey": "n_bearkin_log_01",
+    "imageKey": "n_bearkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "통나무와 기둥을 가끔 헷갈림",
@@ -8551,7 +8551,7 @@
       "전령",
       "N운용"
     ],
-    "imageKey": "n_harpy_rope_01",
+    "imageKey": "n_harpy_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "밧줄은 잘 던지는데 가끔 묶는 법을 잊음",
@@ -8590,7 +8590,7 @@
       "잠입",
       "N운용"
     ],
-    "imageKey": "n_harpy_window_01",
+    "imageKey": "n_harpy_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "정찰보다 엿들은 소문이 더 많음",
@@ -8629,7 +8629,7 @@
       "호송",
       "N운용"
     ],
-    "imageKey": "n_centaur_delivery_01",
+    "imageKey": "n_centaur_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "빠르지만 소포가 흔들려 항의가 옴",
@@ -8668,7 +8668,7 @@
       "야외",
       "N운용"
     ],
-    "imageKey": "n_centaur_blocker_01",
+    "imageKey": "n_centaur_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "길을 막으라면 너무 잘 막음",
@@ -8707,7 +8707,7 @@
       "전열",
       "N운용"
     ],
-    "imageKey": "n_lionkin_banner_01",
+    "imageKey": "n_lionkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "깃발보다 자존심이 더 높음",
@@ -8746,7 +8746,7 @@
       "호송",
       "N운용"
     ],
-    "imageKey": "n_lionkin_toll_01",
+    "imageKey": "n_lionkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "통행세와 의뢰비를 구분하지 못함",
@@ -8785,7 +8785,7 @@
       "근접",
       "N운용"
     ],
-    "imageKey": "n_oni_breaker_01",
+    "imageKey": "n_oni_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "막힌 길을 보면 참지 못함",
@@ -8824,7 +8824,7 @@
       "보급",
       "N운용"
     ],
-    "imageKey": "n_oni_kitchen_01",
+    "imageKey": "n_oni_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "국자도 무기로 씀",
@@ -8863,7 +8863,7 @@
       "기습",
       "N운용"
     ],
-    "imageKey": "n_mimic_mailbox_01",
+    "imageKey": "n_mimic_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "편지를 삼키고 나서 배달함",
@@ -8902,7 +8902,7 @@
       "보관",
       "N운용"
     ],
-    "imageKey": "n_mimic_toolbox_01",
+    "imageKey": "n_mimic_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "공구를 빌려주다 공구를 먹음",
@@ -8941,7 +8941,7 @@
       "기록",
       "N운용"
     ],
-    "imageKey": "n_vampire_candle_01",
+    "imageKey": "n_vampire_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "촛불은 잘 켜지만 낮에는 본인이 꺼짐",
@@ -8980,7 +8980,7 @@
       "회수",
       "N운용"
     ],
-    "imageKey": "n_vampire_sweeper_01",
+    "imageKey": "n_vampire_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "먼지보다 피 얼룩에 민감함",
@@ -9019,7 +9019,7 @@
       "정찰",
       "N운용"
     ],
-    "imageKey": "n_rabbitkin_messenger_01",
+    "imageKey": "n_rabbitkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "급보를 전하다 본인이 더 놀람",
@@ -9058,7 +9058,7 @@
       "응급",
       "N운용"
     ],
-    "imageKey": "n_rabbitkin_bandage_01",
+    "imageKey": "n_rabbitkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "붕대를 너무 많이 감아 환자가 느려짐",
@@ -9097,7 +9097,7 @@
       "오염",
       "N운용"
     ],
-    "imageKey": "n_lizardkin_drain_01",
+    "imageKey": "n_lizardkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "축축한 곳에서는 말이 많아짐",
@@ -9136,7 +9136,7 @@
       "독",
       "N운용"
     ],
-    "imageKey": "n_lizardkin_antidote_01",
+    "imageKey": "n_lizardkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "해독제를 맛으로 구분하려 함",
@@ -9175,7 +9175,7 @@
       "장기임무",
       "N운용"
     ],
-    "imageKey": "n_sheepkin_nap_01",
+    "imageKey": "n_sheepkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "지켜보다 먼저 잠듦",
@@ -9214,7 +9214,7 @@
       "안정",
       "N운용"
     ],
-    "imageKey": "n_sheepkin_tea_01",
+    "imageKey": "n_sheepkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "차를 우리다 회의도 늘어짐",
@@ -9253,7 +9253,7 @@
       "전열",
       "N운용"
     ],
-    "imageKey": "n_minotaur_door_01",
+    "imageKey": "n_minotaur_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "문짝이 방패인지 방패가 문짝인지 모름",
@@ -9292,7 +9292,7 @@
       "노동",
       "N운용"
     ],
-    "imageKey": "n_minotaur_cart_01",
+    "imageKey": "n_minotaur_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "수레보다 길이 먼저 망가짐",
@@ -9331,7 +9331,7 @@
       "계약",
       "N운용"
     ],
-    "imageKey": "n_foxkin_invoice_01",
+    "imageKey": "n_foxkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "청구 금액을 말로 부드럽게 키움",
@@ -9370,7 +9370,7 @@
       "소문",
       "N운용"
     ],
-    "imageKey": "n_foxkin_guide_01",
+    "imageKey": "n_foxkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "길은 틀려도 변명은 맞아 보임",
@@ -9409,7 +9409,7 @@
       "회복",
       "N운용"
     ],
-    "imageKey": "n_deerkin_calm_runner_01",
+    "imageKey": "n_deerkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "뛰어오면서도 예절을 지키느라 늦음",
@@ -9448,7 +9448,7 @@
       "안정",
       "N운용"
     ],
-    "imageKey": "n_deerkin_road_01",
+    "imageKey": "n_deerkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "길을 축복하다 길막을 함",
@@ -9487,7 +9487,7 @@
       "속박",
       "N운용"
     ],
-    "imageKey": "n_spiderkin_cleaner_01",
+    "imageKey": "n_spiderkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "치우는 속도보다 치는 속도가 빠름",
@@ -9526,7 +9526,7 @@
       "감시",
       "N운용"
     ],
-    "imageKey": "n_spiderkin_watch_01",
+    "imageKey": "n_spiderkin_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "구석에 너무 잘 숨어서 출석 확인이 어려움",
@@ -9565,7 +9565,7 @@
       "수리",
       "N운용"
     ],
-    "imageKey": "n_golem_crate_01",
+    "imageKey": "n_golem_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "상자를 너무 안전하게 들어 배송이 느림",
@@ -9604,7 +9604,7 @@
       "방어",
       "N운용"
     ],
-    "imageKey": "n_golem_doorstop_01",
+    "imageKey": "n_golem_common_01",
     "dedicatedIllustration": false,
     "obtainMethod": "N 일반 생성",
     "memo": "문을 열어두라 했더니 닫히지도 않게 막음",

@@ -1,6 +1,6 @@
 (function () {
   async function loadMercenaryMasterData() {
-    const response = await fetch('/data/mercenaries.master.json?v=206', {
+    const response = await fetch('/data/mercenaries.master.json?v=221', {
       cache: 'no-cache'
     });
     if (!response.ok) {
