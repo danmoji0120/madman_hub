@@ -24,9 +24,23 @@ function handle(task) {
 
 router.get('/recruit-board', handle((req) => mercenarySystem.getRecruitBoard(req.user.id)));
 router.post('/recruit-board/refresh', handle((req) => mercenarySystem.refreshRecruitBoard(req.user.id)));
-router.post('/recruit-board/hire', handle((req) => (
-  mercenarySystem.hireRecruitCandidate(req.user.id, String(req.body?.mercenaryId || ''))
-)));
-router.get('/my', handle((req) => mercenarySystem.listMyMercenaries(req.user.id)));
+router.post('/recruit-board/hire', handle(async (req) => {
+  const userId = req.user?.id;
+  const mercenaryId = String(req.body?.mercenaryId || '');
+  console.log('[mercenary/hire] userId:', userId || null);
+  console.log('[mercenary/hire] cookie:', req.headers.cookie ? 'exists' : 'missing');
+  console.log('[mercenary/hire] mercenaryId:', mercenaryId || null);
+  const payload = await mercenarySystem.hireRecruitCandidate(userId, mercenaryId);
+  console.log('[mercenary/hire] savedMercenaryId:', payload.hired?.mercenaryId || payload.hired?.id || null);
+  return payload;
+}));
+router.get('/my', handle(async (req) => {
+  const userId = req.user?.id;
+  console.log('[mercenary/my] userId:', userId || null);
+  console.log('[mercenary/my] cookie:', req.headers.cookie ? 'exists' : 'missing');
+  const payload = await mercenarySystem.listMyMercenaries(userId);
+  console.log('[mercenary/my] rows:', payload.items?.length ?? 0);
+  return payload;
+}));
 
 module.exports = router;

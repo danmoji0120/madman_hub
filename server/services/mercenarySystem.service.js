@@ -298,6 +298,7 @@ async function listMyMercenaries(userId) {
 
   return {
     items,
+    mercenaries: items,
     gold: Number(account?.balance || 0),
     capacity: 40
   };

@@ -363,7 +363,9 @@ const rosterState = {
   position: '전체',
   status: '전체',
   species: '전체',
-  sort: 'power'
+  sort: 'power',
+  source: 'fallback',
+  errorMessage: ''
 };
 
 const rosterSortOptions = [
@@ -610,8 +612,8 @@ async function loadMercenaryMasterData() {
 }
 
 async function apiRequest(path, options = {}) {
-  if (!window.API?.request || !window.API?.token) return null;
-  return window.API.request(path, options);
+  if (!window.API?.request) return null;
+  return window.API.request(path, { credentials: 'include', ...options });
 }
 
 function applyRecruitBoardPayload(payload) {
@@ -642,10 +644,19 @@ async function loadOwnedMercenariesFromApi() {
   if (!payload) return false;
   const normalized = (payload.items || []).map(normalizeMercenaryForRoster).filter((item) => item.id && item.grade);
   mercenaryRosterData = normalized;
+  rosterState.source = 'owned';
+  rosterState.errorMessage = '';
   mercenaryLobbyState.gold = Number(payload.gold ?? mercenaryLobbyState.gold);
   renderTopActions(mercenaryLobbyState);
   rosterState.selectedId = mercenaryRosterData[0]?.id || '';
   return true;
+}
+
+function setRosterErrorState(message, source = 'error') {
+  mercenaryRosterData = [];
+  rosterState.selectedId = '';
+  rosterState.source = source;
+  rosterState.errorMessage = message;
 }
 
 function showReadyNotice(message = '준비 중입니다.') {
@@ -866,9 +877,11 @@ function renderMercenaryCard(mercenary) {
 function renderMercenaryList(items) {
   const root = document.querySelector('#mercenary-list');
   if (!root) return;
-  root.innerHTML = items.length
-    ? items.map(renderMercenaryCard).join('')
-    : '<p class="roster-empty">보유 중인 용병이 없습니다. 채용 게시판에서 싸구려 계약서를 먼저 찾아보세요.</p>';
+  if (!items.length) {
+    root.innerHTML = `<p class="roster-empty">${escapeHtml(rosterState.errorMessage || '보유 중인 용병이 없습니다. 채용 게시판에서 싸구려 계약서를 먼저 찾아보세요.')}</p>`;
+  } else {
+    root.innerHTML = items.map(renderMercenaryCard).join('');
+  }
 
   root.querySelectorAll('[data-merc-id]').forEach((button) => {
     button.addEventListener('click', () => selectMercenary(button.dataset.mercId));
@@ -997,7 +1010,11 @@ function renderMercenaryRoster() {
   }
   const selected = mercenaryRosterData.find((item) => item.id === rosterState.selectedId) || items[0] || mercenaryRosterData[0];
   const count = document.querySelector('#roster-count');
-  if (count) count.textContent = `보유 용병 ${mercenaryRosterData.length}/40 · 표시 ${items.length}명`;
+  if (count) {
+    count.textContent = rosterState.source === 'owned'
+      ? `보유 용병 ${mercenaryRosterData.length}/40 · 표시 ${items.length}명`
+      : `보유 용병 확인 필요 · 표시 ${items.length}명`;
+  }
   renderMercenaryList(items);
   if (selected) {
     renderMercenaryDetail(selected);
@@ -1049,9 +1066,21 @@ async function openMercenaryRoster() {
     loadedFromApi = await loadOwnedMercenariesFromApi();
   } catch (error) {
     console.warn('[mercenary] owned roster API unavailable, using master fallback', error);
-    showReadyNotice(error.status === 401 ? '로그인 후 보유 용병 목록을 확인할 수 있습니다.' : '보유 용병 API 연결 실패: 임시 목록을 표시합니다.');
+    if (error.status === 401) {
+      setRosterErrorState('로그인 후 보유 용병 목록을 확인할 수 있습니다.', 'unauthorized');
+      setupRosterFilters();
+      bindRosterControls();
+      renderMercenaryRoster();
+      showReadyNotice('로그인 세션이 없어 보유 용병 목록을 불러오지 못했습니다.');
+      return;
+    }
+    showReadyNotice('보유 용병 API 연결 실패: 임시 목록을 표시합니다.');
   }
-  if (!loadedFromApi) await loadMercenaryMasterData();
+  if (!loadedFromApi) {
+    await loadMercenaryMasterData();
+    rosterState.source = 'fallback';
+    rosterState.errorMessage = '보유 용병 API 연결 실패: 임시 마스터 목록을 표시합니다.';
+  }
   setupRosterFilters();
   bindRosterControls();
   rosterState.selectedId = getFilteredMercenaries()[0]?.id || mercenaryRosterData[0]?.id || '';

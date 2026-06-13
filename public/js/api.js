@@ -24,6 +24,7 @@ const API = {
     let response;
     try {
       response = await fetch(path, {
+        credentials: 'include',
         ...fetchOptions,
         headers
       });
