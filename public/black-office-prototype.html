@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#090610" />
+  <title>BLACK OFFICE Prototype</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/app.css" />
+  <link rel="stylesheet" href="/css/black-office-prototype.css" />
+</head>
+<body class="black-office-body game-home-mode">
+  <main class="game-shell">
+    <header class="game-hud">
+      <a class="hud-logo" href="/">MADMEN HUB</a>
+      <div class="hud-office">
+        <span>제13격리구역</span>
+        <strong>정상인 폐급용병사무소</strong>
+      </div>
+      <div class="hud-currencies" aria-label="보유 자원">
+        <span>2,480P</span>
+        <span>공격권 3/5</span>
+        <span>복수 1</span>
+      </div>
+    </header>
+
+    <section class="game-stage" data-tab-panel="home">
+      <div class="stage-bg-label">SECTION-13 / BLACK OFFICE / SANJAE PROCESSING</div>
+
+      <section class="stage-left-ui">
+        <span class="office-kicker">D급 블랙업체</span>
+        <h1>오늘도 살아 돌아오면<br />그건 복지입니다.</h1>
+        <p>포인트로 문제 있는 직원을 굴리고, 남의 사무소를 털고, 치료비 영수증까지 받아내는 지하 사무소 운영 놀이.</p>
+        <div class="stage-quick-actions">
+          <button class="office-button danger" type="button" data-action="raid">사무소 털기</button>
+          <button class="office-button" type="button" data-action="contract">암시장 면접</button>
+          <button class="office-button ghost" type="button" data-action="treat">산재 처리실</button>
+        </div>
+      </section>
+
+      <section class="character-stand" aria-label="대표 직원 리아">
+        <div class="character-aura"></div>
+        <div class="character-card-large">
+          <span class="character-rarity">C</span>
+          <div class="character-face"></div>
+          <div class="character-body"></div>
+          <div class="character-weapon"></div>
+        </div>
+        <div class="character-nameplate">
+          <span>대표 직원</span>
+          <strong>리아 · 저임금 돌격 직원</strong>
+          <small>“저 이번엔 안 다치죠? 저번에도 그렇게 말했잖아요.”</small>
+        </div>
+      </section>
+
+      <aside class="stage-right-ui">
+        <article class="mini-terminal urgent-terminal">
+          <span>긴급 보고</span>
+          <p id="urgent-report">철수 사무소가 야간 당직조를 박살냈습니다. 리아가 산재 처리실로 이송되었습니다.</p>
+          <button class="terminal-link" type="button" data-action="revenge">복수 요청서 열기</button>
+        </article>
+        <article class="mini-terminal receipt-terminal">
+          <span>오늘의 정산</span>
+          <strong id="office-balance">2,480P</strong>
+          <small>치료비 예약 420P · 미납 1건</small>
+        </article>
+        <article class="mini-terminal feed-terminal">
+          <span>BB 채널 속보</span>
+          <div class="office-feed compact-feed" id="office-feed"></div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="game-stage sub-stage" data-tab-panel="staff" hidden>
+      <div class="sub-stage-header">
+        <span class="office-kicker">직원 명부</span>
+        <h2>문제 있는 직원들</h2>
+        <p>일러스트 자리는 처음부터 고정. 지금은 실루엣이지만, 나중엔 여기서 애착이 생깁니다. 아마도요.</p>
+      </div>
+      <div class="merc-card-grid" id="merc-card-grid"></div>
+    </section>
+
+    <section class="game-stage sub-stage" data-tab-panel="raid" hidden>
+      <div class="sub-stage-header">
+        <span class="office-kicker">사무소 털기</span>
+        <h2>오늘의 추천 피해자: 철수 사무소</h2>
+        <p>방어 평점: 허술함 · 최근 방어 3연패 · 비고: 문단속이라는 개념이 없음</p>
+      </div>
+      <div class="raid-screen-grid">
+        <article class="target-card big-target">
+          <div>
+            <span class="office-kicker">대상 사무소</span>
+            <h3>철수 사무소</h3>
+            <p>야간 당직조 3명 배치. 에이스는 강하지만, 나머지는 책상만도 못합니다.</p>
+          </div>
+          <button class="office-button danger" type="button" data-action="raid">습격 개시</button>
+        </article>
+        <ol class="battle-log" id="battle-log">
+          <li>대기 중입니다. 선배가 또 무리한 지시를 내리면 사고 보고서가 작성됩니다.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="game-stage sub-stage" data-tab-panel="clinic" hidden>
+      <div class="sub-stage-header">
+        <span class="office-kicker">산재 처리실</span>
+        <h2>돈을 내면 치료, 안 내면 인테리어</h2>
+        <p>용병은 죽지 않습니다. 대신 치료비가 선배를 죽입니다♡</p>
+      </div>
+      <div class="clinic-bed" id="clinic-bed">
+        <div class="clinic-portrait">리아</div>
+        <div>
+          <span class="office-kicker">응급 격리</span>
+          <h3>리아 · C급 돌격 직원</h3>
+          <p>원인: 철수 사무소 습격 중 복도에서 과잉진압당함.</p>
+          <strong>청구 예정 치료비: <span id="clinic-cost">420P</span></strong>
+          <div class="clinic-actions">
+            <button class="office-button danger" type="button" data-action="treat">420P 내고 살려내기</button>
+            <button class="office-button ghost" type="button" data-action="ignore">돈 없으니 눕혀두기</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="game-stage sub-stage" data-tab-panel="office" hidden>
+      <div class="sub-stage-header">
+        <span class="office-kicker">사무소 관리</span>
+        <h2>정상인 폐급용병사무소</h2>
+        <p>아직 기능은 없지만, 나중엔 시설·야간 당직조·악덕 사장 순위가 여기로 들어옵니다.</p>
+      </div>
+      <div class="office-stat-grid game-stat-grid">
+        <div class="office-stat danger"><small>사무소 등급</small><strong>D급 블랙업체</strong></div>
+        <div class="office-stat"><small>악덕 사장 순위</small><strong>7위</strong></div>
+        <div class="office-stat hot"><small>오늘 털어온 사무소</small><strong id="raid-count">2곳</strong></div>
+        <div class="office-stat sick"><small>산재 처리실</small><strong id="injury-count">1명 입원</strong></div>
+      </div>
+    </section>
+
+    <nav class="game-bottom-nav" aria-label="블랙 오피스 탭">
+      <button class="active" type="button" data-tab="home"><span>⌂</span>홈</button>
+      <button type="button" data-tab="staff"><span>◆</span>직원</button>
+      <button type="button" data-tab="raid"><span>⚔</span>털기</button>
+      <button type="button" data-tab="clinic"><span>✚</span>산재</button>
+      <button type="button" data-tab="office"><span>▣</span>사무소</button>
+    </nav>
+  </main>
+
+  <div class="office-toast" id="office-toast" role="status" aria-live="polite"></div>
+  <script src="/js/black-office-prototype.js"></script>
+</body>
+</html>
