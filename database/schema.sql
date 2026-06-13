@@ -364,6 +364,11 @@ CREATE TABLE IF NOT EXISTS user_mercenaries (
   exp INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT '대기 중',
   locked INTEGER NOT NULL DEFAULT 0,
+  operational_status TEXT NOT NULL DEFAULT 'idle',
+  current_activity_type TEXT,
+  current_activity_id TEXT,
+  is_locked INTEGER NOT NULL DEFAULT 0,
+  status_updated_at TEXT,
   hired_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -376,6 +381,19 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   office_level INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_squads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  slot_index INTEGER NOT NULL,
+  owned_mercenary_ids TEXT NOT NULL DEFAULT '[]',
+  leader_owned_mercenary_id TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, slot_index),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -659,6 +677,7 @@ CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments
 CREATE INDEX IF NOT EXISTS idx_user_mercenaries_user_status ON user_mercenaries(user_id, status, hired_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenaries_mercenary_id ON user_mercenaries(mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_profiles_gold ON user_mercenary_profiles(gold);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_squads_user_slot ON user_mercenary_squads(user_id, slot_index);
 CREATE INDEX IF NOT EXISTS idx_mercenary_recruit_logs_user_created ON mercenary_recruit_logs(user_id, created_at);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = 1;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at, ends_at);

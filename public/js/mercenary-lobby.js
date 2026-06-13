@@ -74,7 +74,7 @@ const mercenaryLobbyState = {
   quickNav: [
     { label: '용병 목록', icon: 'group', action: 'roster' },
     { label: '의뢰 목록', icon: 'scroll', action: 'ready' },
-    { label: '편성/파견', icon: 'crossedSwords', action: 'ready' },
+    { label: '편성/파견', icon: 'crossedSwords', action: 'squads' },
     { label: '의무실', icon: 'medicalCross', action: 'ready' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
@@ -359,6 +359,12 @@ let mercenaryMasterLoaded = false;
 let mercenaryGold = mercenaryLobbyState.gold;
 let communityPoints = mercenaryLobbyState.points;
 
+const mercenaryAuthState = {
+  checked: false,
+  authenticated: false,
+  user: null
+};
+
 const rosterState = {
   selectedId: '',
   search: '',
@@ -393,9 +399,20 @@ const recruitmentState = {
   pendingConfirm: null
 };
 
+const squadState = {
+  slots: [],
+  owned: [],
+  selectedSlotIndex: 1,
+  draft: null,
+  loading: false,
+  errorMessage: ''
+};
+
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 4;
+const SQUAD_SLOT_LIMIT = 3;
+const SQUAD_MEMBER_LIMIT = 3;
 const RECRUIT_GRADE_RATES = [
   { grade: 'N', rate: 94.9 },
   { grade: 'R', rate: 5.0 },
@@ -550,6 +567,7 @@ function normalizeStats(item) {
 
 function normalizeMercenaryForRoster(item) {
   const id = String(item.id || '').trim();
+  const ownedId = item.ownedId !== undefined ? String(item.ownedId) : '';
   const maxLevel = Number(item.maxLevel || 20) || 20;
   const level = Number(item.level) || deterministicNumber(id, 1, Math.max(1, maxLevel), 'level');
   const nextExp = Number(item.nextExp) || Math.max(100, maxLevel * 40);
@@ -557,6 +575,8 @@ function normalizeMercenaryForRoster(item) {
   const combatSkill = item.combatSkill || (item.skill ? `${item.skill.name}: ${item.skill.effect}` : '');
   const normalized = {
     id,
+    ownedId,
+    rosterId: ownedId || id,
     imageKey: String(item.imageKey || item.illustrationFileName || '').replace(/\.png$/i, '').trim(),
     grade: String(item.grade || 'N').trim(),
     name: String(item.name || '이름 없는 용병').trim(),
@@ -568,7 +588,12 @@ function normalizeMercenaryForRoster(item) {
     maxLevel,
     exp,
     nextExp,
-    status: item.status || deterministicStatus(id),
+    operationalStatus: item.operationalStatus || 'idle',
+    statusLabel: item.statusLabel || item.status || deterministicStatus(id),
+    status: item.statusLabel || item.status || deterministicStatus(id),
+    available: item.available !== undefined ? Boolean(item.available) : (item.operationalStatus || 'idle') === 'idle',
+    currentActivityType: item.currentActivityType || '',
+    currentActivityId: item.currentActivityId || '',
     hireMethod: item.obtainMethod || item.hireMethod || '마스터 데이터',
     contractDate: item.contractDate || `2025-${String(deterministicNumber(id, 1, 12, 'month')).padStart(2, '0')}-${String(deterministicNumber(id, 1, 28, 'day')).padStart(2, '0')}`,
     flaw: item.memo || item.flaw || '특이사항 없음',
@@ -587,8 +612,9 @@ function normalizeMercenaryForRoster(item) {
   };
   if (item.recruitCost !== undefined) normalized.recruitCost = Number(item.recruitCost) || 0;
   if (item.hired !== undefined) normalized.hired = Boolean(item.hired);
-  if (item.ownedId !== undefined) normalized.ownedId = item.ownedId;
   if (item.locked !== undefined) normalized.locked = Boolean(item.locked);
+  if (item.isLocked !== undefined) normalized.locked = Boolean(item.isLocked);
+  normalized.isLocked = Boolean(normalized.locked);
   normalized.equipment = Array.isArray(item.equipment) ? item.equipment : makeDummyEquipment(normalized);
   return normalized;
 }
@@ -641,6 +667,75 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+function redirectToLoginWithReturnUrl() {
+  const returnUrl = `${window.location.pathname}${window.location.search || ''}`;
+  window.location.href = `/login.html?redirect=${encodeURIComponent(returnUrl)}`;
+}
+
+function showMercenaryLoginRequiredModal() {
+  const overlay = document.querySelector('#mercenary-auth-overlay');
+  if (!overlay) return;
+  overlay.hidden = false;
+  document.body.classList.add('mercenary-auth-required');
+  document.querySelector('#mercenary-auth-login')?.focus?.();
+}
+
+function hideMercenaryLoginRequiredModal() {
+  if (!mercenaryAuthState.authenticated) {
+    showMercenaryLoginRequiredModal();
+    return;
+  }
+  document.querySelector('#mercenary-auth-overlay')?.setAttribute('hidden', '');
+  document.body.classList.remove('mercenary-auth-required');
+}
+
+function requireMercenaryAuth() {
+  if (mercenaryAuthState.authenticated) return true;
+  showMercenaryLoginRequiredModal();
+  return false;
+}
+
+async function checkMercenaryAuth() {
+  try {
+    const payload = await apiRequest('/api/me', { perfScope: 'mercenary-auth' });
+    mercenaryAuthState.checked = true;
+    mercenaryAuthState.authenticated = true;
+    mercenaryAuthState.user = payload?.user || payload?.me || payload || null;
+    hideMercenaryLoginRequiredModal();
+    return true;
+  } catch (error) {
+    mercenaryAuthState.checked = true;
+    mercenaryAuthState.authenticated = false;
+    mercenaryAuthState.user = null;
+    if (error.status === 401) {
+      showMercenaryLoginRequiredModal();
+      return false;
+    }
+    showReadyNotice('로그인 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    return false;
+  }
+}
+
+function bindMercenaryAuthOverlay() {
+  const loginButton = document.querySelector('#mercenary-auth-login');
+  const homeButton = document.querySelector('#mercenary-auth-home');
+  const closeButton = document.querySelector('#mercenary-auth-close');
+  if (loginButton && loginButton.dataset.bound !== 'true') {
+    loginButton.dataset.bound = 'true';
+    loginButton.addEventListener('click', redirectToLoginWithReturnUrl);
+  }
+  if (homeButton && homeButton.dataset.bound !== 'true') {
+    homeButton.dataset.bound = 'true';
+    homeButton.addEventListener('click', () => {
+      window.location.href = '/';
+    });
+  }
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', showMercenaryLoginRequiredModal);
+  }
+}
+
 function applyRecruitBoardPayload(payload) {
   const board = payload?.board;
   if (!board) return false;
@@ -682,6 +777,425 @@ async function loadOwnedMercenariesFromApi() {
   updateMercenaryCurrencyDisplay(payload);
   rosterState.selectedId = ownedMercenaryRoster[0]?.id || '';
   return true;
+}
+
+function getOwnedRosterKey(mercenary) {
+  return String(mercenary?.ownedId || mercenary?.rosterId || '').trim();
+}
+
+function calculateBaseWorkPower(mercenary) {
+  const stats = mercenary?.stats || {};
+  return Number(mercenary?.workPower || 0) || Number(stats.TEC || 0) + Number(stats.SUP || 0) + Number(stats.SPD || 0);
+}
+
+function summarizeSquadMembers(members) {
+  const safeMembers = Array.isArray(members) ? members.filter(Boolean) : [];
+  const tagCounts = new Map();
+  safeMembers.forEach((member) => {
+    (member.tags || []).forEach((tag) => {
+      const key = String(tag || '').trim();
+      if (!key) return;
+      tagCounts.set(key, (tagCounts.get(key) || 0) + 1);
+    });
+  });
+  const mainTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'))
+    .slice(0, 4)
+    .map(([tag]) => tag);
+
+  return {
+    memberCount: safeMembers.length,
+    totalWorkPower: safeMembers.reduce((sum, member) => sum + calculateBaseWorkPower(member), 0),
+    averageLevel: safeMembers.length
+      ? Math.round((safeMembers.reduce((sum, member) => sum + Number(member.level || 0), 0) / safeMembers.length) * 10) / 10
+      : 0,
+    availableCount: safeMembers.filter((member) => member.available).length,
+    mainTags
+  };
+}
+
+function normalizeSquadSlot(slot, slotIndex) {
+  const ownedMercenaryIds = Array.isArray(slot?.ownedMercenaryIds)
+    ? slot.ownedMercenaryIds.map((id) => String(id))
+    : [];
+  const members = Array.isArray(slot?.members)
+    ? slot.members.map(normalizeMercenaryForRoster)
+    : [];
+  return {
+    id: slot?.id || null,
+    name: slot?.name || `파견조 ${slotIndex}`,
+    slotIndex: Number(slot?.slotIndex || slotIndex),
+    ownedMercenaryIds,
+    leaderOwnedMercenaryId: slot?.leaderOwnedMercenaryId ? String(slot.leaderOwnedMercenaryId) : ownedMercenaryIds[0] || null,
+    members,
+    summary: slot?.summary || summarizeSquadMembers(members),
+    empty: Boolean(slot?.empty || !slot?.id)
+  };
+}
+
+function makeSquadDraft(slot) {
+  const normalized = normalizeSquadSlot(slot, slot?.slotIndex || squadState.selectedSlotIndex || 1);
+  return {
+    id: normalized.id,
+    name: normalized.name,
+    slotIndex: normalized.slotIndex,
+    ownedMercenaryIds: [...normalized.ownedMercenaryIds],
+    leaderOwnedMercenaryId: normalized.leaderOwnedMercenaryId || normalized.ownedMercenaryIds[0] || null
+  };
+}
+
+function getSquadDraftMembers() {
+  const ownedById = new Map(squadState.owned.map((item) => [getOwnedRosterKey(item), item]));
+  return (squadState.draft?.ownedMercenaryIds || []).map((id) => ownedById.get(String(id))).filter(Boolean);
+}
+
+async function loadSquadData() {
+  console.log('[mercenary/squads] request /api/mercenary/squads');
+  const [squadPayload] = await Promise.all([
+    apiRequest('/api/mercenary/squads', { perfScope: 'mercenary-squads' }),
+    loadOwnedMercenariesFromApi()
+  ]);
+  console.log('[mercenary/squads] raw result:', squadPayload);
+  updateMercenaryCurrencyDisplay(squadPayload);
+  const slotsSource = Array.isArray(squadPayload?.slots) ? squadPayload.slots : [];
+  squadState.slots = Array.from({ length: SQUAD_SLOT_LIMIT }, (_, index) => {
+    const slotIndex = index + 1;
+    const source = slotsSource.find((slot) => Number(slot.slotIndex) === slotIndex);
+    return normalizeSquadSlot(source, slotIndex);
+  });
+  squadState.owned = [...ownedMercenaryRoster];
+  const selected = squadState.slots.find((slot) => slot.slotIndex === squadState.selectedSlotIndex) || squadState.slots[0];
+  squadState.selectedSlotIndex = selected?.slotIndex || 1;
+  squadState.draft = makeSquadDraft(selected || { slotIndex: 1 });
+  squadState.errorMessage = '';
+}
+
+async function openSquadView() {
+  if (!requireMercenaryAuth()) return;
+  const screen = document.querySelector('#mercenary-squad-view');
+  if (!screen) return;
+  screen.hidden = false;
+  document.body.classList.add('squad-open');
+  squadState.loading = true;
+  squadState.errorMessage = '';
+  renderSquadLoading();
+
+  let authFailed = false;
+  try {
+    await loadSquadData();
+  } catch (error) {
+    console.warn('[mercenary/squads] load failed', error);
+    if (error.status === 401) {
+      authFailed = true;
+      closeSquadView();
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    squadState.errorMessage = '편성 정보를 불러오지 못했습니다.';
+  } finally {
+    squadState.loading = false;
+    if (authFailed) return;
+    bindSquadControls();
+    renderSquadView();
+  }
+}
+
+function closeSquadView() {
+  document.querySelector('#mercenary-squad-view')?.setAttribute('hidden', '');
+  document.body.classList.remove('squad-open');
+}
+
+function renderSquadLoading() {
+  const list = document.querySelector('#squad-slot-list');
+  const detail = document.querySelector('#squad-member-grid');
+  const roster = document.querySelector('#squad-roster-grid');
+  if (list) list.innerHTML = '<p class="squad-empty">편성 슬롯을 불러오는 중입니다.</p>';
+  if (detail) detail.innerHTML = '<p class="squad-empty">작전 테이블을 정리하는 중입니다.</p>';
+  if (roster) roster.innerHTML = '<p class="squad-empty">보유 용병 목록을 확인하는 중입니다.</p>';
+}
+
+function renderSquadView() {
+  if (squadState.errorMessage) {
+    renderSquadError(squadState.errorMessage);
+    return;
+  }
+  renderSquadSlots();
+  renderSquadDetail();
+  renderSquadOwnedRoster();
+}
+
+function renderSquadError(message) {
+  const list = document.querySelector('#squad-slot-list');
+  const detail = document.querySelector('#squad-member-grid');
+  const roster = document.querySelector('#squad-roster-grid');
+  if (list) list.innerHTML = '<p class="squad-empty">편성 슬롯 없음</p>';
+  if (detail) detail.innerHTML = `<p class="squad-empty">${escapeHtml(message)}</p>`;
+  if (roster) roster.innerHTML = '<p class="squad-empty">보유 용병 목록을 표시할 수 없습니다.</p>';
+}
+
+function renderSquadSlots() {
+  const list = document.querySelector('#squad-slot-list');
+  const count = document.querySelector('#squad-slot-count');
+  if (!list) return;
+  if (count) count.textContent = `${SQUAD_SLOT_LIMIT}/${SQUAD_SLOT_LIMIT}`;
+
+  list.innerHTML = squadState.slots.map((slot) => {
+    const selected = slot.slotIndex === squadState.selectedSlotIndex;
+    const summary = slot.slotIndex === squadState.selectedSlotIndex && squadState.draft
+      ? summarizeSquadMembers(getSquadDraftMembers())
+      : slot.summary || summarizeSquadMembers(slot.members || []);
+    const portraits = (slot.members || []).slice(0, 3).map((member) => `
+      <span class="squad-slot-portrait">${renderImageWithPlaceholder(member, 'squad-mini-portrait')}</span>
+    `).join('');
+    return `
+      <button class="squad-slot-card ${selected ? 'is-selected' : ''} ${slot.empty ? 'is-empty' : ''}" type="button" data-squad-slot="${slot.slotIndex}">
+        <span class="squad-slot-number">#${slot.slotIndex}</span>
+        <strong>${escapeHtml(slot.name)}</strong>
+        <span class="squad-slot-portraits">${portraits || '<em>빈 슬롯</em>'}</span>
+        <span>총 작업력 ${formatNumber(summary.totalWorkPower)}</span>
+        ${slot.slotIndex === 1 ? '<small>기본 편성</small>' : ''}
+      </button>
+    `;
+  }).join('');
+
+  list.querySelectorAll('[data-squad-slot]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const slotIndex = Number(button.dataset.squadSlot);
+      const slot = squadState.slots.find((item) => item.slotIndex === slotIndex);
+      squadState.selectedSlotIndex = slotIndex;
+      squadState.draft = makeSquadDraft(slot || { slotIndex });
+      renderSquadView();
+    });
+  });
+}
+
+function renderSquadDetail() {
+  const title = document.querySelector('#squad-detail-name');
+  const subtitle = document.querySelector('#squad-detail-subtitle');
+  const grid = document.querySelector('#squad-member-grid');
+  const summaryPanel = document.querySelector('#squad-summary-panel');
+  const deleteButton = document.querySelector('#squad-delete-button');
+  if (!squadState.draft || !grid || !summaryPanel) return;
+
+  const members = getSquadDraftMembers();
+  const summary = summarizeSquadMembers(members);
+  if (title) title.textContent = squadState.draft.name;
+  if (subtitle) {
+    subtitle.textContent = `${members.length}/${SQUAD_MEMBER_LIMIT} · ${summary.mainTags.length ? summary.mainTags.join(', ') : '주요 태그 없음'}`;
+  }
+  if (deleteButton) deleteButton.disabled = !squadState.draft.id;
+
+  const cards = members.map((member) => {
+    const ownedId = getOwnedRosterKey(member);
+    const isLeader = squadState.draft.leaderOwnedMercenaryId === ownedId;
+    return `
+      <article class="squad-member-card ${getGradeClass(member.grade)} ${isLeader ? 'is-leader' : ''}">
+        <div class="squad-member-portrait">${renderImageWithPlaceholder(member, 'squad-card-portrait')}</div>
+        <div class="squad-member-info">
+          <span class="merc-grade-badge ${getGradeClass(member.grade)}">${escapeHtml(member.grade)}</span>
+          <h4>${escapeHtml(member.name)}</h4>
+          <p>Lv. ${formatNumber(member.level)} · ${escapeHtml(member.statusLabel || member.status)}</p>
+          <p>작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
+          <p>${(member.tags || []).slice(0, 3).map(escapeHtml).join(' · ') || '태그 없음'}</p>
+        </div>
+        <div class="squad-member-actions">
+          <button type="button" data-squad-leader="${escapeHtml(ownedId)}">${isLeader ? '리더' : '리더 지정'}</button>
+          <button type="button" data-squad-remove="${escapeHtml(ownedId)}">제거</button>
+        </div>
+      </article>
+    `;
+  });
+  while (cards.length < SQUAD_MEMBER_LIMIT) {
+    cards.push('<div class="squad-empty-member">보유 용병 목록에서 추가하세요</div>');
+  }
+  grid.innerHTML = cards.join('');
+  summaryPanel.innerHTML = `
+    <div><span>총 작업력</span><strong>${formatNumber(summary.totalWorkPower)}</strong></div>
+    <div><span>평균 레벨</span><strong>${summary.averageLevel}</strong></div>
+    <div><span>사용 가능 인원</span><strong>${summary.availableCount}/${members.length}</strong></div>
+    <div><span>주요 태그</span><strong>${summary.mainTags.join(', ') || '없음'}</strong></div>
+    <div class="squad-bonus-note"><span>편성 보너스</span><strong>0.1 기준 미적용</strong></div>
+  `;
+
+  grid.querySelectorAll('[data-squad-remove]').forEach((button) => {
+    button.addEventListener('click', () => removeSquadMember(button.dataset.squadRemove));
+  });
+  grid.querySelectorAll('[data-squad-leader]').forEach((button) => {
+    button.addEventListener('click', () => setSquadLeader(button.dataset.squadLeader));
+  });
+}
+
+function renderSquadOwnedRoster() {
+  const roster = document.querySelector('#squad-roster-grid');
+  const count = document.querySelector('#squad-roster-count');
+  if (!roster) return;
+  if (count) count.textContent = `${squadState.owned.length}명`;
+  if (!squadState.owned.length) {
+    roster.innerHTML = '<p class="squad-empty">아직 보유한 용병이 없습니다. 채용 게시판에서 용병을 영입해 보세요.</p>';
+    return;
+  }
+
+  const selectedIds = new Set(squadState.draft?.ownedMercenaryIds || []);
+  roster.innerHTML = squadState.owned.map((member) => {
+    const ownedId = getOwnedRosterKey(member);
+    const selected = selectedIds.has(ownedId);
+    const unavailable = member.available === false;
+    return `
+      <article class="squad-roster-card ${getGradeClass(member.grade)} ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}" data-owned-id="${escapeHtml(ownedId)}">
+        <button type="button" class="squad-add-button" data-squad-add="${escapeHtml(ownedId)}" ${selected || unavailable ? 'disabled' : ''}>${selected ? '✓' : '+'}</button>
+        <div class="squad-roster-portrait">${renderImageWithPlaceholder(member, 'squad-roster-portrait-img')}</div>
+        <div>
+          <span class="merc-grade-badge ${getGradeClass(member.grade)}">${escapeHtml(member.grade)}</span>
+          <h4>${escapeHtml(member.name)}</h4>
+          <p>Lv. ${formatNumber(member.level)} · 작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
+          <p><span class="squad-status-badge status-${escapeHtml(member.operationalStatus || 'idle')}">${escapeHtml(member.statusLabel || member.status)}</span>${member.isLocked ? '<span class="squad-lock-mark">잠금</span>' : ''}</p>
+          ${selected ? '<em>현재 편성됨</em>' : unavailable ? '<em>사용 불가</em>' : ''}
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  roster.querySelectorAll('[data-squad-add]').forEach((button) => {
+    button.addEventListener('click', () => addSquadMember(button.dataset.squadAdd));
+  });
+}
+
+function addSquadMember(ownedId) {
+  if (!squadState.draft) return;
+  const id = String(ownedId || '').trim();
+  const member = squadState.owned.find((item) => getOwnedRosterKey(item) === id);
+  if (!member) {
+    showReadyNotice('보유 용병 목록에서 찾을 수 없습니다.');
+    return;
+  }
+  if (member.available === false) {
+    showReadyNotice('파견할 수 없는 상태의 용병입니다.');
+    return;
+  }
+  if (squadState.draft.ownedMercenaryIds.includes(id)) {
+    showReadyNotice('이미 현재 편성에 포함된 용병입니다.');
+    return;
+  }
+  if (squadState.draft.ownedMercenaryIds.length >= SQUAD_MEMBER_LIMIT) {
+    showReadyNotice('편성은 최대 3명까지 가능합니다.');
+    return;
+  }
+  squadState.draft.ownedMercenaryIds.push(id);
+  if (!squadState.draft.leaderOwnedMercenaryId) squadState.draft.leaderOwnedMercenaryId = id;
+  renderSquadView();
+}
+
+function removeSquadMember(ownedId) {
+  if (!squadState.draft) return;
+  const id = String(ownedId || '').trim();
+  squadState.draft.ownedMercenaryIds = squadState.draft.ownedMercenaryIds.filter((item) => item !== id);
+  if (squadState.draft.leaderOwnedMercenaryId === id) {
+    squadState.draft.leaderOwnedMercenaryId = squadState.draft.ownedMercenaryIds[0] || null;
+  }
+  renderSquadView();
+}
+
+function setSquadLeader(ownedId) {
+  if (!squadState.draft) return;
+  const id = String(ownedId || '').trim();
+  if (!squadState.draft.ownedMercenaryIds.includes(id)) return;
+  squadState.draft.leaderOwnedMercenaryId = id;
+  renderSquadView();
+}
+
+function renameCurrentSquad() {
+  if (!squadState.draft) return;
+  const nextName = window.prompt('편성 이름을 입력하세요.', squadState.draft.name);
+  if (nextName === null) return;
+  const trimmed = nextName.trim();
+  squadState.draft.name = trimmed || `파견조 ${squadState.draft.slotIndex}`;
+  renderSquadView();
+}
+
+async function saveCurrentSquad() {
+  if (!squadState.draft) return;
+  if (!squadState.draft.ownedMercenaryIds.length) {
+    showReadyNotice('편성에는 최소 1명의 용병이 필요합니다.');
+    return;
+  }
+  const payload = {
+    name: squadState.draft.name,
+    slotIndex: squadState.draft.slotIndex,
+    ownedMercenaryIds: squadState.draft.ownedMercenaryIds,
+    leaderOwnedMercenaryId: squadState.draft.leaderOwnedMercenaryId || squadState.draft.ownedMercenaryIds[0]
+  };
+  const path = squadState.draft.id
+    ? `/api/mercenary/squads/${encodeURIComponent(squadState.draft.id)}`
+    : '/api/mercenary/squads';
+  const method = squadState.draft.id ? 'PATCH' : 'POST';
+
+  try {
+    const result = await apiRequest(path, {
+      method,
+      body: JSON.stringify(payload),
+      perfScope: 'mercenary-squads-save'
+    });
+    updateMercenaryCurrencyDisplay(result);
+    await loadSquadData();
+    renderSquadView();
+    showReadyNotice('편성이 저장되었습니다.');
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '편성 저장에 실패했습니다.');
+  }
+}
+
+async function deleteCurrentSquad() {
+  if (!squadState.draft?.id) {
+    showReadyNotice('삭제할 저장 편성이 없습니다.');
+    return;
+  }
+  if (!window.confirm('이 편성을 삭제하시겠습니까?')) return;
+  try {
+    const result = await apiRequest(`/api/mercenary/squads/${encodeURIComponent(squadState.draft.id)}`, {
+      method: 'DELETE',
+      perfScope: 'mercenary-squads-delete'
+    });
+    updateMercenaryCurrencyDisplay(result);
+    await loadSquadData();
+    renderSquadView();
+    showReadyNotice('편성이 삭제되었습니다.');
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '편성 삭제에 실패했습니다.');
+  }
+}
+
+function bindSquadControls() {
+  const closeButton = document.querySelector('#squad-close-button');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeSquadView);
+  }
+  const saveButton = document.querySelector('#squad-save-button');
+  if (saveButton && saveButton.dataset.bound !== 'true') {
+    saveButton.dataset.bound = 'true';
+    saveButton.addEventListener('click', saveCurrentSquad);
+  }
+  const renameButton = document.querySelector('#squad-rename-button');
+  if (renameButton && renameButton.dataset.bound !== 'true') {
+    renameButton.dataset.bound = 'true';
+    renameButton.addEventListener('click', renameCurrentSquad);
+  }
+  const deleteButton = document.querySelector('#squad-delete-button');
+  if (deleteButton && deleteButton.dataset.bound !== 'true') {
+    deleteButton.dataset.bound = 'true';
+    deleteButton.addEventListener('click', deleteCurrentSquad);
+  }
+  const expandButton = document.querySelector('#squad-expand-button');
+  if (expandButton && expandButton.dataset.bound !== 'true') {
+    expandButton.dataset.bound = 'true';
+    expandButton.addEventListener('click', () => showReadyNotice('슬롯 확장 기능은 준비 중입니다.'));
+  }
+  const filterButton = document.querySelector('#squad-filter-button');
+  if (filterButton && filterButton.dataset.bound !== 'true') {
+    filterButton.dataset.bound = 'true';
+    filterButton.addEventListener('click', () => showReadyNotice('편성 필터는 준비 중입니다.'));
+  }
 }
 
 function setRosterErrorState(message, source = 'error') {
@@ -816,6 +1330,10 @@ function renderQuickNav(items) {
         openMercenaryRoster();
         return;
       }
+      if (button.dataset.quickAction === 'squads') {
+        openSquadView();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -904,16 +1422,19 @@ function getFilteredMercenaries() {
 }
 
 function renderMercenaryCard(mercenary) {
-  const selected = mercenary.id === rosterState.selectedId ? 'is-selected' : '';
+  const selected = mercenary.rosterId === rosterState.selectedId ? 'is-selected' : '';
+  const unavailable = mercenary.available ? '' : 'is-unavailable';
+  const locked = mercenary.isLocked ? 'is-locked' : '';
   return `
-    <button class="merc-card ${getGradeClass(mercenary.grade)} ${selected}" type="button" data-merc-id="${escapeHtml(mercenary.id)}">
+    <button class="merc-card ${getGradeClass(mercenary.grade)} ${selected} ${unavailable} ${locked}" type="button" data-merc-id="${escapeHtml(mercenary.rosterId)}" data-owned-id="${escapeHtml(mercenary.ownedId)}" data-master-id="${escapeHtml(mercenary.id)}" data-operational-status="${escapeHtml(mercenary.operationalStatus)}">
       ${renderImageWithPlaceholder(mercenary, 'merc-card-portrait')}
       <span class="merc-card-body">
         <span class="merc-card-name"><em>${escapeHtml(mercenary.grade)}</em> ${escapeHtml(mercenary.name)}</span>
         <span class="merc-card-line">Lv. ${escapeHtml(mercenary.level)}</span>
         <span class="merc-card-line">${escapeHtml(mercenary.position)} / ${escapeHtml(mercenary.role)}</span>
         <span class="merc-card-meta">
-          <span>${escapeHtml(mercenary.status)}</span>
+          <span class="merc-status-badge status-${escapeHtml(mercenary.operationalStatus)}">${escapeHtml(mercenary.statusLabel || mercenary.status)}</span>
+          ${mercenary.isLocked ? '<span class="merc-lock-badge">잠금</span>' : ''}
           <strong>전투력 ${formatNumber(mercenary.power)}</strong>
         </span>
       </span>
@@ -968,7 +1489,7 @@ function renderMercenaryDetail(mercenary) {
 
     <div class="detail-meta-grid">
       <div><span>레벨</span><strong>Lv. ${escapeHtml(mercenary.level)} / ${escapeHtml(mercenary.maxLevel)}</strong></div>
-      <div><span>상태</span><strong>${escapeHtml(mercenary.status)}</strong></div>
+      <div><span>상태</span><strong>${escapeHtml(mercenary.statusLabel || mercenary.status)}${mercenary.isLocked ? ' · 잠금' : ''}</strong></div>
       <div><span>직군</span><strong>${escapeHtml(mercenary.job)}</strong></div>
       <div><span>역할</span><strong>${escapeHtml(mercenary.role)}</strong></div>
       <div><span>고용 방식</span><strong>${escapeHtml(mercenary.hireMethod)}</strong></div>
@@ -1073,12 +1594,12 @@ function renderMercenaryRoster(list = ownedMercenaryRoster, options = {}) {
   }
   console.log('[mercenary/roster] render source:', source);
   console.log('[mercenary/roster] render count:', ownedMercenaryRoster.length);
-  console.log('[mercenary/roster] first id:', ownedMercenaryRoster[0]?.id || ownedMercenaryRoster[0]?.mercenaryId);
+  console.log('[mercenary/roster] first id:', ownedMercenaryRoster[0]?.rosterId || ownedMercenaryRoster[0]?.id || ownedMercenaryRoster[0]?.mercenaryId);
   const items = getFilteredMercenaries();
-  if (!items.some((item) => item.id === rosterState.selectedId) && items[0]) {
-    rosterState.selectedId = items[0].id;
+  if (!items.some((item) => item.rosterId === rosterState.selectedId) && items[0]) {
+    rosterState.selectedId = items[0].rosterId;
   }
-  const selected = ownedMercenaryRoster.find((item) => item.id === rosterState.selectedId) || items[0] || ownedMercenaryRoster[0];
+  const selected = ownedMercenaryRoster.find((item) => item.rosterId === rosterState.selectedId) || items[0] || ownedMercenaryRoster[0];
   const count = document.querySelector('#roster-count');
   if (count) {
     count.textContent = `보유 용병 ${ownedMercenaryRoster.length}/40 · 표시 ${items.length}명`;
@@ -1096,7 +1617,7 @@ function renderMercenaryRoster(list = ownedMercenaryRoster, options = {}) {
 }
 
 function selectMercenary(id) {
-  if (!ownedMercenaryRoster.some((item) => item.id === id)) return;
+  if (!ownedMercenaryRoster.some((item) => item.rosterId === id)) return;
   rosterState.selectedId = id;
   renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
 }
@@ -1123,6 +1644,7 @@ function bindRosterControls() {
 }
 
 async function openMercenaryRoster() {
+  if (!requireMercenaryAuth()) return;
   const screen = document.querySelector('#mercenary-roster-screen');
   if (!screen) return;
   screen.hidden = false;
@@ -1135,6 +1657,9 @@ async function openMercenaryRoster() {
   } catch (error) {
     console.warn('[mercenary] owned roster API unavailable', error);
     if (error.status === 401) {
+      closeMercenaryRoster();
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
       setRosterErrorState('로그인 후 보유 용병 목록을 확인할 수 있습니다.', 'unauthorized');
       setupRosterFilters();
       bindRosterControls();
@@ -1273,6 +1798,7 @@ function renderRecruitmentBoard() {
 }
 
 async function openRecruitmentBoard() {
+  if (!requireMercenaryAuth()) return;
   const screen = document.querySelector('#recruitment-board-screen');
   if (!screen) return;
   screen.hidden = false;
@@ -1284,8 +1810,14 @@ async function openRecruitmentBoard() {
   try {
     loadedFromApi = await loadRecruitBoardFromApi();
   } catch (error) {
+    if (error.status === 401) {
+      closeRecruitmentBoard();
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
     console.warn('[mercenary] recruit board API unavailable, using local fallback', error);
-    showReadyNotice(error.status === 401 ? '로그인하면 채용 게시판 후보와 골드 차감이 저장됩니다.' : '채용 게시판 API 연결 실패: 임시 게시판을 표시합니다.');
+    showReadyNotice('채용 게시판 API 연결 실패: 임시 게시판을 표시합니다.');
   }
   if (!loadedFromApi) {
     recruitmentState.serverMode = false;
@@ -1514,6 +2046,12 @@ function renderLobby(state) {
   renderQuickNav(state.quickNav);
 }
 
-renderLobby(mercenaryLobbyState);
-document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
-bindRecruitmentBoard();
+async function initializeMercenaryLobby() {
+  bindMercenaryAuthOverlay();
+  renderLobby(mercenaryLobbyState);
+  document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
+  bindRecruitmentBoard();
+  await checkMercenaryAuth();
+}
+
+initializeMercenaryLobby();

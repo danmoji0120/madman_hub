@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=223" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=226" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -107,6 +107,74 @@
       </div>
     </section>
 
+    <section class="mercenary-squad-view" id="mercenary-squad-view" aria-label="용병단 편성" hidden>
+      <div class="squad-background-scrim" aria-hidden="true"></div>
+      <div class="squad-shell">
+        <header class="squad-topbar">
+          <div class="squad-title-block">
+            <span class="squad-kicker">비전투 의뢰용 파견조 저장</span>
+            <h2>용병단 편성</h2>
+            <p>작전 테이블 · 파견조 관리</p>
+          </div>
+          <button class="squad-close-button" id="squad-close-button" type="button">닫기</button>
+        </header>
+
+        <div class="squad-layout">
+          <aside class="squad-slots-panel" aria-label="편성 슬롯">
+            <div class="squad-panel-heading">
+              <h3>편성 슬롯</h3>
+              <span id="squad-slot-count">3/3</span>
+            </div>
+            <div class="squad-slot-list" id="squad-slot-list"></div>
+            <div class="squad-locked-slot">
+              <strong>잠긴 슬롯</strong>
+              <p>사무소 레벨 5 달성 시 슬롯 확장 가능</p>
+              <button type="button" id="squad-expand-button">슬롯 확장</button>
+            </div>
+          </aside>
+
+          <section class="squad-detail-panel" aria-label="선택 편성 상세">
+            <div class="squad-detail-header">
+              <div>
+                <span class="squad-kicker">선택 편성</span>
+                <h3 id="squad-detail-name">파견조 1</h3>
+                <p id="squad-detail-subtitle">0/3 · 주요 태그 없음</p>
+              </div>
+              <div class="squad-detail-actions">
+                <button type="button" id="squad-rename-button">이름 변경</button>
+                <button type="button" id="squad-delete-button">삭제</button>
+              </div>
+            </div>
+            <div class="squad-member-grid" id="squad-member-grid"></div>
+            <div class="squad-summary-panel" id="squad-summary-panel"></div>
+            <div class="squad-save-row">
+              <button type="button" id="squad-save-button">편성 저장</button>
+              <p id="squad-save-note">편성 저장은 용병 상태를 변경하지 않습니다.</p>
+            </div>
+          </section>
+
+          <aside class="squad-roster-panel" aria-label="보유 용병 목록">
+            <div class="squad-panel-heading">
+              <h3>보유 용병 목록</h3>
+              <span id="squad-roster-count">0명</span>
+            </div>
+            <div class="squad-roster-tools">
+              <button type="button" id="squad-filter-button">필터 준비 중</button>
+            </div>
+            <div class="squad-roster-grid" id="squad-roster-grid"></div>
+          </aside>
+        </div>
+
+        <footer class="squad-status-legend">
+          <span class="legend-dot is-idle"></span><b>초록</b> 대기 중 / 사용 가능
+          <span class="legend-dot is-dispatched"></span><b>빨강</b> 파견 중 / 사용 불가
+          <span class="legend-dot is-treating"></span><b>노랑</b> 치료 중 / 사용 불가
+          <span class="legend-dot is-locked"></span><b>회색</b> 잠금 / 보호 표시
+          <em>편성은 용병의 상태를 변경하지 않습니다. 의뢰 파견 시에만 상태가 변경됩니다.</em>
+        </footer>
+      </div>
+    </section>
+
     <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
       <div class="recruitment-background-scrim" aria-hidden="true"></div>
       <div class="recruitment-shell">
@@ -176,10 +244,26 @@
         </article>
       </div>
     </section>
+
+    <section class="mercenary-auth-overlay" id="mercenary-auth-overlay" aria-labelledby="mercenary-auth-title" aria-modal="true" role="dialog" hidden>
+      <div class="mercenary-auth-modal">
+        <button class="mercenary-auth-close" id="mercenary-auth-close" type="button" aria-label="로그인 안내 닫기">×</button>
+        <span class="mercenary-auth-kicker">계정 장부 확인 실패</span>
+        <h2 class="mercenary-auth-title" id="mercenary-auth-title">로그인이 필요합니다</h2>
+        <p class="mercenary-auth-message">
+          용병단 사무소는 로그인 후 이용할 수 있습니다.<br />
+          채용, 보유 용병, 편성, 의뢰 기록은 계정에 저장됩니다.
+        </p>
+        <div class="mercenary-auth-actions">
+          <button class="mercenary-auth-button" id="mercenary-auth-login" type="button">로그인하러 가기</button>
+          <button class="mercenary-auth-button secondary" id="mercenary-auth-home" type="button">허브로 돌아가기</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=223"></script>
+  <script src="/js/mercenary-lobby.js?v=226"></script>
 </body>
 </html>

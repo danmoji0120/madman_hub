@@ -846,13 +846,54 @@ body.recruitment-open {
 
 .merc-card-meta {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .merc-card-meta strong {
   color: #ffe4a4;
   white-space: nowrap;
+}
+
+.merc-status-badge,
+.merc-lock-badge {
+  display: inline-grid;
+  place-items: center;
+  min-height: 20px;
+  border: 1px solid rgba(214, 171, 82, 0.28);
+  padding: 1px 7px;
+  color: #f1d59d;
+  background: rgba(35, 24, 13, 0.62);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.merc-status-badge.status-dispatched {
+  border-color: rgba(90, 142, 206, 0.42);
+  color: #b9d9ff;
+}
+
+.merc-status-badge.status-injured {
+  border-color: rgba(177, 58, 46, 0.48);
+  color: #ffb7aa;
+}
+
+.merc-status-badge.status-treating {
+  border-color: rgba(104, 181, 137, 0.42);
+  color: #bff1cd;
+}
+
+.merc-lock-badge {
+  border-color: rgba(185, 185, 185, 0.32);
+  color: rgba(240, 232, 213, 0.78);
+}
+
+.merc-card.is-unavailable {
+  background:
+    linear-gradient(90deg, rgba(72, 56, 40, 0.18), transparent 44%),
+    rgba(13, 9, 6, 0.68);
 }
 
 .merc-image-wrap {
@@ -1794,6 +1835,564 @@ body.recruitment-open {
   text-align: right;
 }
 
+.mercenary-squad-view {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+}
+
+.mercenary-squad-view[hidden] {
+  display: none;
+}
+
+.squad-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(120, 78, 32, 0.18), transparent 44%),
+    rgba(2, 2, 2, 0.62);
+  backdrop-filter: blur(3px);
+}
+
+.squad-shell {
+  position: relative;
+  width: min(98vw, 1680px);
+  height: min(94vh, 940px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(214, 168, 93, 0.46);
+  background:
+    linear-gradient(180deg, rgba(28, 18, 10, 0.95), rgba(8, 7, 6, 0.96)),
+    radial-gradient(circle at 50% 0, rgba(145, 89, 38, 0.24), transparent 52%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 231, 174, 0.07),
+    0 28px 60px rgba(0, 0, 0, 0.62);
+}
+
+.squad-topbar,
+.squad-detail-header,
+.squad-panel-heading,
+.squad-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.squad-title-block h2,
+.squad-detail-header h3,
+.squad-panel-heading h3 {
+  margin: 0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  color: #ffe2a2;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.92);
+}
+
+.squad-title-block h2 {
+  font-size: 34px;
+}
+
+.squad-title-block p,
+.squad-kicker,
+.squad-detail-header p,
+.squad-save-row p,
+.squad-status-legend {
+  margin: 0;
+  color: rgba(237, 216, 176, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.squad-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(210, 161, 91, 0.88);
+  letter-spacing: 0.04em;
+}
+
+.squad-close-button,
+.squad-detail-actions button,
+.squad-save-row button,
+.squad-locked-slot button,
+.squad-roster-tools button,
+.squad-member-actions button,
+.squad-add-button {
+  border: 1px solid rgba(214, 168, 93, 0.4);
+  background: linear-gradient(180deg, rgba(68, 43, 20, 0.9), rgba(23, 15, 9, 0.95));
+  color: #f6d89e;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.squad-close-button,
+.squad-detail-actions button,
+.squad-save-row button,
+.squad-roster-tools button,
+.squad-locked-slot button {
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.squad-close-button:hover,
+.squad-detail-actions button:hover,
+.squad-save-row button:hover,
+.squad-locked-slot button:hover,
+.squad-roster-tools button:hover,
+.squad-member-actions button:hover,
+.squad-add-button:hover:not(:disabled) {
+  color: #ffe8b5;
+  box-shadow: 0 0 14px rgba(219, 163, 78, 0.28);
+}
+
+.squad-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(440px, 1fr) 390px;
+  gap: 12px;
+}
+
+.squad-slots-panel,
+.squad-detail-panel,
+.squad-roster-panel,
+.squad-locked-slot {
+  border: 1px solid rgba(151, 111, 59, 0.48);
+  background:
+    linear-gradient(180deg, rgba(20, 13, 8, 0.9), rgba(7, 6, 5, 0.9)),
+    radial-gradient(circle at 50% 0, rgba(114, 73, 35, 0.16), transparent 55%);
+  box-shadow:
+    inset 0 0 22px rgba(0, 0, 0, 0.52),
+    0 12px 26px rgba(0, 0, 0, 0.34);
+}
+
+.squad-slots-panel,
+.squad-detail-panel,
+.squad-roster-panel {
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.squad-slots-panel,
+.squad-roster-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.squad-slots-panel {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.squad-roster-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.squad-slot-list,
+.squad-roster-grid {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.squad-slot-card {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(155, 112, 62, 0.38);
+  background: linear-gradient(180deg, rgba(36, 25, 15, 0.92), rgba(14, 10, 7, 0.95));
+  color: rgba(244, 222, 181, 0.88);
+  text-align: left;
+  cursor: pointer;
+}
+
+.squad-slot-card.is-selected {
+  border-color: rgba(239, 190, 96, 0.82);
+  box-shadow: 0 0 18px rgba(221, 160, 67, 0.28);
+}
+
+.squad-slot-card strong {
+  color: #ffe6ae;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 17px;
+}
+
+.squad-slot-number,
+.squad-slot-card small {
+  color: rgba(208, 158, 88, 0.9);
+}
+
+.squad-slot-portraits {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+}
+
+.squad-slot-portraits em {
+  color: rgba(214, 197, 164, 0.6);
+  font-style: normal;
+}
+
+.squad-slot-portrait {
+  width: 42px;
+  height: 42px;
+  margin-right: -8px;
+  border: 1px solid rgba(230, 183, 103, 0.44);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.squad-mini-portrait {
+  width: 100%;
+  height: 100%;
+}
+
+.squad-mini-portrait img,
+.squad-card-portrait img,
+.squad-roster-portrait-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.squad-locked-slot {
+  padding: 12px;
+  color: rgba(234, 213, 177, 0.72);
+}
+
+.squad-locked-slot strong {
+  color: #d8a15c;
+}
+
+.squad-detail-panel {
+  display: grid;
+  grid-template-rows: auto minmax(250px, 1fr) auto auto;
+  gap: 12px;
+}
+
+.squad-member-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.squad-member-card,
+.squad-empty-member,
+.squad-roster-card {
+  position: relative;
+  border: 1px solid rgba(139, 101, 55, 0.46);
+  background: linear-gradient(180deg, rgba(31, 22, 14, 0.94), rgba(9, 7, 5, 0.94));
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.4);
+}
+
+.squad-member-card {
+  display: grid;
+  grid-template-rows: minmax(170px, 1fr) auto auto;
+  gap: 8px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.squad-member-card.is-leader {
+  border-color: rgba(245, 197, 93, 0.82);
+  box-shadow:
+    inset 0 0 18px rgba(0, 0, 0, 0.44),
+    0 0 18px rgba(229, 172, 67, 0.28);
+}
+
+.squad-member-card.is-leader::before {
+  content: "LEADER";
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 2;
+  padding: 3px 7px;
+  background: rgba(95, 56, 13, 0.9);
+  color: #ffe3a3;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.squad-member-portrait,
+.squad-roster-portrait {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(180, 137, 70, 0.18), transparent 56%),
+    rgba(5, 5, 4, 0.82);
+}
+
+.squad-card-portrait {
+  width: 100%;
+  height: 100%;
+}
+
+.squad-member-info h4,
+.squad-roster-card h4 {
+  margin: 5px 0;
+  color: #fff0bd;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 17px;
+}
+
+.squad-member-info p,
+.squad-roster-card p,
+.squad-empty,
+.squad-empty-member {
+  margin: 0;
+  color: rgba(238, 219, 185, 0.75);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 13px;
+}
+
+.squad-member-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.squad-member-actions button {
+  min-height: 30px;
+}
+
+.squad-empty-member {
+  display: grid;
+  place-items: center;
+  min-height: 290px;
+  padding: 16px;
+  border-style: dashed;
+  text-align: center;
+}
+
+.squad-summary-panel {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.squad-summary-panel div {
+  padding: 9px;
+  border: 1px solid rgba(151, 111, 59, 0.36);
+  background: rgba(11, 8, 5, 0.58);
+}
+
+.squad-summary-panel span {
+  display: block;
+  color: rgba(231, 209, 171, 0.68);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.squad-summary-panel strong {
+  display: block;
+  margin-top: 3px;
+  color: #ffe5aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.squad-bonus-note {
+  grid-column: span 1;
+}
+
+.squad-roster-card {
+  min-height: 104px;
+  display: grid;
+  grid-template-columns: 34px 72px 1fr;
+  gap: 9px;
+  align-items: center;
+  padding: 9px;
+}
+
+.squad-roster-card.is-selected {
+  border-color: rgba(234, 184, 87, 0.78);
+}
+
+.squad-roster-card.is-unavailable {
+  opacity: 0.58;
+  background:
+    repeating-linear-gradient(135deg, rgba(130, 27, 22, 0.16) 0 7px, transparent 7px 14px),
+    linear-gradient(180deg, rgba(31, 22, 14, 0.94), rgba(9, 7, 5, 0.94));
+}
+
+.squad-add-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 18px;
+}
+
+.squad-add-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.squad-roster-portrait {
+  width: 72px;
+  height: 86px;
+}
+
+.squad-status-badge,
+.squad-lock-mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-right: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.squad-status-badge.status-idle {
+  background: rgba(44, 111, 59, 0.78);
+  color: #c8ffd0;
+}
+
+.squad-status-badge.status-dispatched,
+.squad-status-badge.status-injured {
+  background: rgba(132, 35, 28, 0.82);
+  color: #ffd4ca;
+}
+
+.squad-status-badge.status-treating {
+  background: rgba(142, 105, 32, 0.86);
+  color: #fff0b7;
+}
+
+.squad-lock-mark {
+  background: rgba(96, 96, 96, 0.78);
+  color: #f1f1f1;
+}
+
+.squad-status-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid rgba(151, 111, 59, 0.34);
+  background: rgba(7, 5, 4, 0.72);
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.legend-dot.is-idle { background: #54bd6b; }
+.legend-dot.is-dispatched { background: #b84a3f; }
+.legend-dot.is-treating { background: #d3a845; }
+.legend-dot.is-locked { background: #8d8d8d; }
+
+.squad-status-legend em {
+  flex-basis: 100%;
+  color: rgba(255, 229, 177, 0.82);
+  font-style: normal;
+}
+
+.mercenary-auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at center, rgba(124, 74, 24, 0.18), transparent 45%),
+    rgba(0, 0, 0, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+.mercenary-auth-overlay[hidden] {
+  display: none;
+}
+
+.mercenary-auth-modal {
+  position: relative;
+  width: min(92vw, 520px);
+  padding: 30px 28px 26px;
+  border: 1px solid rgba(214, 168, 93, 0.52);
+  background:
+    linear-gradient(180deg, rgba(28, 18, 10, 0.96), rgba(7, 6, 5, 0.98)),
+    radial-gradient(circle at 50% 0, rgba(164, 98, 33, 0.24), transparent 55%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 233, 185, 0.06),
+    0 26px 60px rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+.mercenary-auth-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(214, 168, 93, 0.32);
+  background: rgba(6, 5, 4, 0.56);
+  color: rgba(255, 229, 185, 0.78);
+  cursor: pointer;
+}
+
+.mercenary-auth-kicker {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(214, 168, 93, 0.88);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 14px;
+}
+
+.mercenary-auth-title {
+  margin: 0;
+  color: #ffe3a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 34px;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.9);
+}
+
+.mercenary-auth-message {
+  margin: 16px 0 24px;
+  color: rgba(241, 220, 183, 0.86);
+  font-family: "MercText", "Malgun Gothic", serif;
+  line-height: 1.7;
+}
+
+.mercenary-auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mercenary-auth-button {
+  min-height: 42px;
+  border: 1px solid rgba(214, 168, 93, 0.48);
+  background: linear-gradient(180deg, rgba(117, 71, 24, 0.92), rgba(50, 29, 12, 0.96));
+  color: #ffe6ad;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.mercenary-auth-button.secondary {
+  background: linear-gradient(180deg, rgba(43, 36, 28, 0.92), rgba(13, 10, 7, 0.96));
+  color: rgba(241, 220, 183, 0.88);
+}
+
+.mercenary-auth-button:hover,
+.mercenary-auth-close:hover {
+  color: #fff1c8;
+  box-shadow: 0 0 16px rgba(229, 168, 76, 0.26);
+}
+
 @media (max-width: 1180px) {
   .lobby-stage {
     right: 320px;
@@ -1846,6 +2445,23 @@ body.recruitment-open {
   .flyer-list {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
     height: auto;
+  }
+
+  .squad-shell {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+  }
+
+  .squad-layout {
+    grid-template-columns: 260px minmax(420px, 1fr);
+  }
+
+  .squad-roster-panel {
+    grid-column: 1 / -1;
+  }
+
+  .squad-roster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1964,6 +2580,40 @@ body.recruitment-open {
   .recruit-mini-stat-grid,
   .recruit-detail-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mercenary-squad-view {
+    padding: 8px;
+  }
+
+  .squad-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .squad-layout,
+  .squad-member-grid,
+  .squad-summary-panel,
+  .squad-roster-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .squad-layout,
+  .squad-slots-panel,
+  .squad-detail-panel,
+  .squad-roster-panel {
+    overflow: visible;
+  }
+
+  .squad-topbar,
+  .squad-detail-header,
+  .squad-save-row {
+    display: grid;
+  }
+
+  .squad-status-legend {
+    align-items: flex-start;
   }
 }
 

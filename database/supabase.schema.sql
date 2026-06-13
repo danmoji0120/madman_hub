@@ -354,8 +354,20 @@ CREATE TABLE IF NOT EXISTS user_mercenaries (
   exp INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT '대기 중',
   locked BOOLEAN NOT NULL DEFAULT FALSE,
+  operational_status TEXT NOT NULL DEFAULT 'idle',
+  current_activity_type TEXT,
+  current_activity_id TEXT,
+  is_locked BOOLEAN NOT NULL DEFAULT FALSE,
+  status_updated_at TIMESTAMPTZ,
   hired_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS operational_status TEXT NOT NULL DEFAULT 'idle';
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_type TEXT;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_id TEXT;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMPTZ;
+UPDATE user_mercenaries SET is_locked = locked WHERE locked = TRUE AND is_locked = FALSE;
 
 CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -365,6 +377,18 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   office_level INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_squads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  slot_index INTEGER NOT NULL,
+  owned_mercenary_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+  leader_owned_mercenary_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, slot_index)
 );
 
 CREATE TABLE IF NOT EXISTS user_recruit_boards (
@@ -622,8 +646,10 @@ CREATE INDEX IF NOT EXISTS idx_mercenary_runs_user_status ON mercenary_runs(user
 CREATE INDEX IF NOT EXISTS idx_mercenary_runs_created ON mercenary_runs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mercenary_treatments_user ON mercenary_treatments(user_id, mercenary_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_mercenaries_user_status ON user_mercenaries(user_id, status, hired_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_mercenaries_user_operational_status ON user_mercenaries(user_id, operational_status, hired_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_mercenaries_mercenary_id ON user_mercenaries(mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_profiles_gold ON user_mercenary_profiles(gold);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_squads_user_slot ON user_mercenary_squads(user_id, slot_index);
 CREATE INDEX IF NOT EXISTS idx_mercenary_recruit_logs_user_created ON mercenary_recruit_logs(user_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);

@@ -34,6 +34,10 @@ router.post('/recruit-board/hire', handle(async (req) => {
   console.log('[mercenary/hire] savedMercenaryId:', payload.hired?.mercenaryId || payload.hired?.id || null);
   return payload;
 }));
+router.get('/squads', handle((req) => mercenarySystem.listSquads(req.user.id)));
+router.post('/squads', handle((req) => mercenarySystem.createSquad(req.user.id, req.body)));
+router.patch('/squads/:id', handle((req) => mercenarySystem.updateSquad(req.user.id, req.params.id, req.body)));
+router.delete('/squads/:id', handle((req) => mercenarySystem.deleteSquad(req.user.id, req.params.id)));
 router.get('/my', handle(async (req) => {
   const userId = req.user?.id;
   console.log('[mercenary/my] userId:', userId || null);
