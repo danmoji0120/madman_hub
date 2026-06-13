@@ -611,8 +611,32 @@ async function loadMercenaryMasterData() {
 }
 
 async function apiRequest(path, options = {}) {
-  if (!window.API?.request) return null;
-  return window.API.request(path, { credentials: 'include', ...options });
+  const apiClient = typeof API !== 'undefined' ? API : window.API;
+  if (apiClient?.request) {
+    return apiClient.request(path, { credentials: 'include', ...options });
+  }
+
+  const { perfScope, ...fetchOptions } = options;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(fetchOptions.headers || {})
+  };
+  const token = apiClient?.token || window.localStorage?.getItem?.('madmen_token') || '';
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(path, {
+    credentials: 'include',
+    ...fetchOptions,
+    headers
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || '요청 실패');
+    error.status = response.status;
+    error.data = data;
+    throw error;
+  }
+  return data;
 }
 
 function applyRecruitBoardPayload(payload) {
@@ -639,7 +663,9 @@ async function loadRecruitBoardFromApi() {
 }
 
 async function loadOwnedMercenariesFromApi() {
+  console.log('[mercenary/owned] request /api/mercenary/my');
   const payload = await apiRequest('/api/mercenary/my', { perfScope: 'mercenary-roster' });
+  console.log('[mercenary/owned] raw result:', payload);
   if (!payload) return false;
   const sourceItems = Array.isArray(payload.items)
     ? payload.items
