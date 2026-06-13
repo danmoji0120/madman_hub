@@ -188,6 +188,25 @@ async function listUserMercenaries(userId) {
   return rows.map(normalizeOwned);
 }
 
+async function hasOwnedMercenary(userId, mercenaryId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenaries')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('mercenary_id', mercenaryId)
+      .limit(1);
+    if (error) throw error;
+    return Boolean(data?.length);
+  }
+
+  const row = await get(
+    'SELECT id FROM user_mercenaries WHERE user_id = ? AND mercenary_id = ? LIMIT 1',
+    [userId, mercenaryId]
+  );
+  return Boolean(row);
+}
+
 async function createUserMercenary({ userId, mercenaryId, level = 1, exp = 0, status = '대기 중' }) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -242,6 +261,7 @@ module.exports = {
   getRecruitBoard,
   upsertRecruitBoard,
   listUserMercenaries,
+  hasOwnedMercenary,
   createUserMercenary,
   createRecruitLog
 };

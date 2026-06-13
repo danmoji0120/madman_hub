@@ -122,6 +122,18 @@ function weightedRecruitGrade(seed) {
   return 'N';
 }
 
+function isUniqueGrade(grade) {
+  return ['R', 'SR', 'SSR', 'EX'].includes(String(grade || '').toUpperCase());
+}
+
+async function ownedUniqueMercenaryIds(userId) {
+  const ownedRows = await repo.listUserMercenaries(userId);
+  const lookup = masterById();
+  return new Set(ownedRows
+    .filter((row) => isUniqueGrade(lookup.get(row.mercenaryId)?.grade))
+    .map((row) => row.mercenaryId));
+}
+
 function pickRecruitCandidate(pool, grade, usedIds, seed) {
   const gradeOrder = grade === 'SR' ? ['SR', 'R', 'N'] : grade === 'R' ? ['R', 'N'] : ['N'];
   for (const targetGrade of gradeOrder) {
@@ -131,8 +143,13 @@ function pickRecruitCandidate(pool, grade, usedIds, seed) {
   return pool.find((item) => !usedIds.has(item.id)) || null;
 }
 
-function generateCandidateIds(userId, boardDate, refreshCount) {
-  const pool = readMasterData().filter((item) => ['N', 'R', 'SR'].includes(item.grade));
+async function generateCandidateIds(userId, boardDate, refreshCount) {
+  const ownedUniqueIds = await ownedUniqueMercenaryIds(userId);
+  const pool = readMasterData().filter((item) => {
+    if (!['N', 'R', 'SR'].includes(item.grade)) return false;
+    if (item.grade === 'N') return true;
+    return !ownedUniqueIds.has(item.id);
+  });
   const usedIds = new Set();
   const ids = [];
   const seedBase = `${userId}:${boardDate}:recruitment:${refreshCount}`;
@@ -224,7 +241,7 @@ async function ensureTodayBoard(userId) {
     userId,
     boardDate,
     refreshCount: 0,
-    candidateIds: generateCandidateIds(userId, boardDate, 0),
+    candidateIds: await generateCandidateIds(userId, boardDate, 0),
     hiredCandidateIds: []
   });
 }
@@ -251,7 +268,7 @@ async function refreshRecruitBoard(userId) {
       userId,
       boardDate: board.boardDate,
       refreshCount: nextCount,
-      candidateIds: generateCandidateIds(userId, board.boardDate, nextCount),
+      candidateIds: await generateCandidateIds(userId, board.boardDate, nextCount),
       hiredCandidateIds: []
     });
     await repo.createRecruitLog({
@@ -270,15 +287,18 @@ async function refreshRecruitBoard(userId) {
 async function hireRecruitCandidate(userId, mercenaryId) {
   const board = await ensureTodayBoard(userId);
   if (!board.candidateIds.includes(mercenaryId)) {
-    throw httpError(400, '현재 게시 중인 후보만 영입할 수 있습니다.', 'invalid_candidate');
+    throw httpError(400, '이 후보는 현재 게시판에 없습니다.', 'CANDIDATE_NOT_FOUND');
   }
   if (board.hiredCandidateIds.includes(mercenaryId)) {
-    throw httpError(409, '이미 계약 완료된 후보입니다.', 'candidate_already_hired');
+    throw httpError(409, '오늘 게시판의 이 전단은 이미 계약되었습니다.', 'ALREADY_HIRED');
   }
 
   const mercenary = masterById().get(mercenaryId);
   if (!mercenary || !['N', 'R', 'SR'].includes(mercenary.grade)) {
-    throw httpError(404, '영입 가능한 후보를 찾을 수 없습니다.', 'candidate_not_found');
+    throw httpError(404, '이 후보는 현재 게시판에 없습니다.', 'CANDIDATE_NOT_FOUND');
+  }
+  if (isUniqueGrade(mercenary.grade) && await repo.hasOwnedMercenary(userId, mercenary.id)) {
+    throw httpError(409, '이미 보유 중인 고유 용병입니다.', 'ALREADY_OWNED');
   }
 
   const hireCost = getRecruitCost(mercenary);

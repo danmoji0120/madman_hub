@@ -1421,6 +1421,15 @@ function closeRecruitConfirm() {
   recruitmentState.pendingConfirm = null;
 }
 
+function recruitErrorMessage(error) {
+  const code = error?.data?.code || error?.code;
+  if (code === 'ALREADY_HIRED') return '오늘 게시판의 이 전단은 이미 계약되었습니다.';
+  if (code === 'ALREADY_OWNED') return '이미 보유 중인 고유 용병입니다.';
+  if (code === 'CANDIDATE_NOT_FOUND') return '이 후보는 현재 게시판에 없습니다.';
+  if (code === 'NOT_ENOUGH_GOLD') return '용병단 골드가 부족합니다.';
+  return error?.message || '영입 처리에 실패했습니다.';
+}
+
 async function recruitCandidate(candidate) {
   if (!recruitmentState.serverMode) {
     showReadyNotice(`${candidate.name} 영입 기능은 로그인 API 연결 후 사용할 수 있습니다.`);
@@ -1447,7 +1456,7 @@ async function handleRecruitConfirmPrimary() {
       closeRecruitConfirm();
       closeRecruitDetail();
     } catch (error) {
-      showReadyNotice(error.message || '영입 처리에 실패했습니다.');
+      showReadyNotice(recruitErrorMessage(error));
     }
     return;
   }
@@ -1464,7 +1473,7 @@ async function handleRecruitConfirmPrimary() {
         renderRecruitmentBoard();
         showReadyNotice('20,000G를 지불하고 게시판을 새로 붙였습니다.');
       } catch (error) {
-        showReadyNotice(error.message || '게시판 갱신에 실패했습니다.');
+        showReadyNotice(recruitErrorMessage(error) || '게시판 갱신에 실패했습니다.');
       }
       return;
     }
