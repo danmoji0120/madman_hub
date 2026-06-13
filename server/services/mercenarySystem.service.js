@@ -15,12 +15,28 @@ const RECRUIT_GRADE_RATES = [
 ];
 const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;
+const MAX_OFFICE_LEVEL = 50;
+const BASE_OFFICE_EXP = 150;
 const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating']);
 const OPERATIONAL_STATUS_LABELS = {
   idle: '대기 중',
   dispatched: '파견 중',
   injured: '부상',
   treating: '치료 중'
+};
+const GRADE_GROWTH_RATES = {
+  N: 0.45,
+  R: 0.65,
+  SR: 0.9,
+  SSR: 1.2,
+  EX: 1
+};
+const BASE_EXP_BY_GRADE = {
+  N: 100,
+  R: 140,
+  SR: 210,
+  SSR: 320,
+  EX: 260
 };
 const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 50000) || 0;
 
@@ -31,12 +47,84 @@ function httpError(status, message, code) {
 }
 
 function publicMercenaryProfile(profile) {
+  const officeProgress = normalizeOfficeProgress(profile);
+  const unlocks = calculateOfficeUnlocks(officeProgress.officeLevel);
   return {
     gold: Number(profile?.gold || 0),
+    mercenaryGold: Number(profile?.gold || 0),
     reputation: Number(profile?.reputation || 0),
     rank: profile?.rank || 'D',
-    officeLevel: Number(profile?.officeLevel || 1)
+    officeLevel: officeProgress.officeLevel,
+    officeExp: officeProgress.officeExp,
+    officeMaxLevel: MAX_OFFICE_LEVEL,
+    officeExpToNext: officeProgress.officeExpToNext,
+    officeExpProgress: officeProgress.officeExpProgress,
+    isOfficeMaxLevel: officeProgress.isOfficeMaxLevel,
+    officeReputation: officeProgress.officeReputation,
+    maxSquadSlots: unlocks.maxSquadSlots,
+    maxActiveRuns: unlocks.maxActiveRuns,
+    missionTier: unlocks.missionTier
   };
+}
+
+function calculateOfficeExpToNext(officeLevel, maxOfficeLevel = MAX_OFFICE_LEVEL) {
+  const safeMaxLevel = Math.max(1, Number(maxOfficeLevel) || MAX_OFFICE_LEVEL);
+  const safeLevel = Math.max(1, Math.min(Number(officeLevel) || 1, safeMaxLevel));
+  if (safeLevel >= safeMaxLevel) return 0;
+  const levelOffset = safeLevel - 1;
+  const growth = 1 + levelOffset * 0.28 + Math.pow(levelOffset, 2) * 0.022;
+  return Math.floor(BASE_OFFICE_EXP * growth);
+}
+
+function calculateOfficeExpProgress(officeExp, officeExpToNext, isOfficeMaxLevel) {
+  if (isOfficeMaxLevel) return 1;
+  const required = Number(officeExpToNext || 0);
+  if (required <= 0) return 0;
+  return Math.max(0, Math.min(1, (Number(officeExp || 0) || 0) / required));
+}
+
+function calculateOfficeUnlocks(officeLevel) {
+  const level = Math.max(1, Number(officeLevel) || 1);
+  return {
+    maxSquadSlots: level >= 10 ? 5 : level >= 5 ? 4 : 3,
+    maxActiveRuns: level >= 15 ? 3 : level >= 6 ? 2 : 1,
+    missionTier: level >= 10 ? 3 : level >= 3 ? 2 : 1
+  };
+}
+
+function applyOfficeExpProgress(profile, gainedOfficeExp = 0, maxOfficeLevel = MAX_OFFICE_LEVEL) {
+  const safeMaxLevel = Math.max(1, Number(maxOfficeLevel) || MAX_OFFICE_LEVEL);
+  let officeLevel = Math.max(1, Math.min(Number(profile?.officeLevel ?? profile?.office_level ?? 1) || 1, safeMaxLevel));
+  officeLevel = Math.floor(officeLevel);
+  let officeExp = Math.max(0, Number(profile?.officeExp ?? profile?.office_exp ?? 0) || 0);
+  officeExp += Math.max(0, Number(gainedOfficeExp || 0) || 0);
+
+  while (officeLevel < safeMaxLevel) {
+    const required = calculateOfficeExpToNext(officeLevel, safeMaxLevel);
+    if (required <= 0 || officeExp < required) break;
+    officeExp -= required;
+    officeLevel += 1;
+  }
+
+  if (officeLevel >= safeMaxLevel) {
+    officeLevel = safeMaxLevel;
+    officeExp = 0;
+  }
+
+  const officeExpToNext = calculateOfficeExpToNext(officeLevel, safeMaxLevel);
+  const isOfficeMaxLevel = officeLevel >= safeMaxLevel;
+  return {
+    officeLevel,
+    officeExp,
+    officeExpToNext,
+    officeExpProgress: calculateOfficeExpProgress(officeExp, officeExpToNext, isOfficeMaxLevel),
+    isOfficeMaxLevel,
+    officeReputation: profile?.officeReputation || profile?.office_reputation || profile?.rank || 'D'
+  };
+}
+
+function normalizeOfficeProgress(profile) {
+  return applyOfficeExpProgress(profile, 0, MAX_OFFICE_LEVEL);
 }
 
 function getOperationalStatusLabel(status) {
@@ -48,20 +136,138 @@ function normalizeOperationalStatus(status) {
   return ALLOWED_OPERATIONAL_STATUSES.has(normalized) ? normalized : '';
 }
 
+function normalizeBaseStats(masterStats = {}) {
+  return {
+    hp: Number(masterStats.hp ?? masterStats.HP ?? 0) || 0,
+    atk: Number(masterStats.atk ?? masterStats.ATK ?? 0) || 0,
+    def: Number(masterStats.def ?? masterStats.DEF ?? 0) || 0,
+    spd: Number(masterStats.spd ?? masterStats.SPD ?? 0) || 0,
+    tec: Number(masterStats.tec ?? masterStats.TEC ?? 0) || 0,
+    sup: Number(masterStats.sup ?? masterStats.SUP ?? 0) || 0
+  };
+}
+
+function getBaseExpByGrade(grade) {
+  return BASE_EXP_BY_GRADE[String(grade || 'N').toUpperCase()] || BASE_EXP_BY_GRADE.N;
+}
+
+function calculateExpToNext(currentLevel, grade, maxLevel) {
+  const safeMaxLevel = Math.max(1, Number(maxLevel) || 1);
+  const safeLevel = Math.max(1, Math.min(Number(currentLevel) || 1, safeMaxLevel));
+  if (safeLevel >= safeMaxLevel) return 0;
+  const base = getBaseExpByGrade(grade);
+  const levelOffset = safeLevel - 1;
+  const growth = 1 + levelOffset * 0.22 + Math.pow(levelOffset, 2) * 0.018;
+  return Math.floor(base * growth);
+}
+
+function calculateExpProgress(currentExp, expToNext, isMaxLevel) {
+  if (isMaxLevel) return 1;
+  const required = Number(expToNext || 0);
+  if (required <= 0) return 0;
+  return Math.max(0, Math.min(1, (Number(currentExp || 0) || 0) / required));
+}
+
+function applyMercenaryExpProgress(owned, gainedExp, master) {
+  const maxLevel = Math.max(1, Number(master?.maxLevel || 1) || 1);
+  let currentLevel = Math.max(1, Math.min(Number(owned?.currentLevel ?? owned?.level ?? 1) || 1, maxLevel));
+  currentLevel = Math.floor(currentLevel);
+  let currentExp = Math.max(0, Number(owned?.currentExp ?? owned?.exp ?? 0) || 0);
+  currentExp += Math.max(0, Number(gainedExp || 0) || 0);
+  const grade = master?.grade || 'N';
+
+  while (currentLevel < maxLevel) {
+    const required = calculateExpToNext(currentLevel, grade, maxLevel);
+    if (required <= 0 || currentExp < required) break;
+    currentExp -= required;
+    currentLevel += 1;
+  }
+
+  if (currentLevel >= maxLevel) {
+    currentLevel = maxLevel;
+    currentExp = 0;
+  }
+
+  const expToNext = calculateExpToNext(currentLevel, grade, maxLevel);
+  const isMaxLevel = currentLevel >= maxLevel;
+  return {
+    currentLevel,
+    currentExp,
+    maxLevel,
+    expToNext,
+    expProgress: calculateExpProgress(currentExp, expToNext, isMaxLevel),
+    isMaxLevel
+  };
+}
+
+function normalizeOwnedProgress(owned, master) {
+  return applyMercenaryExpProgress(owned, 0, master);
+}
+
+function calculateEffectiveStat(baseStat, currentLevel, maxLevel, grade) {
+  const base = Number(baseStat || 0) || 0;
+  const safeMax = Math.max(1, Number(maxLevel || 1) || 1);
+  const safeLevel = Math.min(safeMax, Math.max(1, Number(currentLevel || 1) || 1));
+  const levelRatio = safeMax <= 1 ? 0 : (safeLevel - 1) / (safeMax - 1);
+  const rate = GRADE_GROWTH_RATES[String(grade || 'N').toUpperCase()] ?? GRADE_GROWTH_RATES.N;
+  return Math.floor(base * (1 + rate * levelRatio));
+}
+
+function calculateEffectiveStats(masterStats, currentLevel, maxLevel, grade) {
+  const baseStats = normalizeBaseStats(masterStats);
+  return Object.fromEntries(Object.entries(baseStats).map(([key, value]) => [
+    key,
+    calculateEffectiveStat(value, currentLevel, maxLevel, grade)
+  ]));
+}
+
+function calculateCombatPowerFromStats(stats = {}) {
+  const normalized = normalizeBaseStats(stats);
+  return Math.round(
+    normalized.hp * 0.25
+    + normalized.atk * 1.2
+    + normalized.def * 1
+    + normalized.spd * 0.8
+    + normalized.tec * 0.8
+    + normalized.sup * 0.6
+  );
+}
+
+function calculateBaseWorkPowerFromStats(stats = {}) {
+  const normalized = normalizeBaseStats(stats);
+  return Number(normalized.tec || 0) + Number(normalized.sup || 0) + Number(normalized.spd || 0);
+}
+
 function calculateBaseWorkPower(mercenary) {
-  const stats = mercenary?.baseStats || {};
-  return Number(stats.tec || 0) + Number(stats.sup || 0) + Number(stats.spd || 0);
+  return calculateBaseWorkPowerFromStats(mercenary?.effectiveStats || mercenary?.baseStats || {});
 }
 
 function buildOwnedMercenaryItem(row, master) {
   if (!row || !master) return null;
   const operationalStatus = normalizeOperationalStatus(row.operationalStatus) || 'idle';
   const statusLabel = getOperationalStatusLabel(operationalStatus);
+  const progress = normalizeOwnedProgress(row, master);
+  const baseStats = normalizeBaseStats(master.baseStats || master.stats);
+  const effectiveStats = calculateEffectiveStats(baseStats, progress.currentLevel, progress.maxLevel, master.grade);
+  const workPower = calculateBaseWorkPowerFromStats(effectiveStats);
+  const combatPower = calculateCombatPowerFromStats(effectiveStats);
   const item = {
     ...master,
+    baseStats,
+    effectiveStats,
     ownedId: row.id,
-    level: row.level,
-    exp: row.exp,
+    level: progress.currentLevel,
+    exp: progress.currentExp,
+    currentLevel: progress.currentLevel,
+    currentExp: progress.currentExp,
+    maxLevel: progress.maxLevel,
+    expToNext: progress.expToNext,
+    expProgress: progress.expProgress,
+    isMaxLevel: progress.isMaxLevel,
+    baseCombatPower: Number(master.baseCombatPower || 0) || 0,
+    combatPower,
+    power: combatPower,
+    workPower,
     status: statusLabel,
     operationalStatus,
     statusLabel,
@@ -74,10 +280,7 @@ function buildOwnedMercenaryItem(row, master) {
     hiredAt: row.hiredAt,
     obtainMethod: master.obtainMethod || '채용 게시판'
   };
-  return {
-    ...item,
-    workPower: calculateBaseWorkPower(item)
-  };
+  return item;
 }
 
 function summarizeSquad(members) {
@@ -255,17 +458,6 @@ function getRecruitCost(mercenary) {
   return Math.round(raw / 100) * 100;
 }
 
-function deterministicInstanceState(mercenaryId, maxLevel) {
-  const safeMax = Math.max(1, Number(maxLevel || 20));
-  const level = deterministicNumber(mercenaryId, 1, safeMax, 'owned-level');
-  const nextExp = Math.max(100, safeMax * 40);
-  return {
-    level,
-    exp: deterministicNumber(mercenaryId, 0, nextExp - 1, 'owned-exp'),
-    status: '대기 중'
-  };
-}
-
 function attachCandidate(master, hiredIds = []) {
   if (!master) return null;
   return {
@@ -383,13 +575,12 @@ async function hireRecruitCandidate(userId, mercenaryId) {
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
     const spent = await spendMercenaryGold(userId, hireCost, `용병 영입: ${mercenary.name}`);
-    const instance = deterministicInstanceState(mercenary.id, mercenary.maxLevel);
     const owned = await repo.createUserMercenary({
       userId,
       mercenaryId: mercenary.id,
-      level: instance.level,
-      exp: instance.exp,
-      status: instance.status
+      currentLevel: 1,
+      currentExp: 0,
+      status: '대기 중'
     });
     const updated = await repo.upsertRecruitBoard({
       userId,
@@ -676,6 +867,20 @@ module.exports = {
   addMercenaryGold,
   setOwnedMercenaryStatus,
   assertOwnedMercenariesAvailable,
+  getBaseExpByGrade,
+  calculateExpToNext,
+  calculateExpProgress,
+  calculateOfficeExpToNext,
+  calculateOfficeExpProgress,
+  calculateOfficeUnlocks,
+  normalizeOfficeProgress,
+  applyOfficeExpProgress,
+  normalizeOwnedProgress,
+  applyMercenaryExpProgress,
+  calculateEffectiveStat,
+  calculateEffectiveStats,
+  calculateCombatPowerFromStats,
+  calculateBaseWorkPowerFromStats,
   calculateBaseWorkPower,
   summarizeSquad,
   listSquads,

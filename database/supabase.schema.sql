@@ -352,6 +352,8 @@ CREATE TABLE IF NOT EXISTS user_mercenaries (
   mercenary_id TEXT NOT NULL,
   level INTEGER NOT NULL DEFAULT 1,
   exp INTEGER NOT NULL DEFAULT 0,
+  current_level INTEGER NOT NULL DEFAULT 1,
+  current_exp INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT '대기 중',
   locked BOOLEAN NOT NULL DEFAULT FALSE,
   operational_status TEXT NOT NULL DEFAULT 'idle',
@@ -367,7 +369,11 @@ ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_type TEXT
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_id TEXT;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMPTZ;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_level INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_exp INTEGER NOT NULL DEFAULT 0;
 UPDATE user_mercenaries SET is_locked = locked WHERE locked = TRUE AND is_locked = FALSE;
+UPDATE user_mercenaries SET current_level = 1 WHERE current_level IS NULL OR current_level < 1;
+UPDATE user_mercenaries SET current_exp = 0 WHERE current_exp IS NULL OR current_exp < 0;
 
 CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -375,9 +381,17 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   reputation INTEGER NOT NULL DEFAULT 0,
   rank TEXT NOT NULL DEFAULT 'D',
   office_level INTEGER NOT NULL DEFAULT 1,
+  office_exp INTEGER NOT NULL DEFAULT 0,
+  office_reputation TEXT NOT NULL DEFAULT 'D',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_exp INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_reputation TEXT NOT NULL DEFAULT 'D';
+UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1;
+UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0;
+UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D');
 
 CREATE TABLE IF NOT EXISTS user_mercenary_squads (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

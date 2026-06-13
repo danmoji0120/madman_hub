@@ -30,8 +30,10 @@ function normalizeOwned(row) {
     id: row.id,
     userId: row.user_id,
     mercenaryId: row.mercenary_id,
-    level: Number(row.level || 1),
-    exp: Number(row.exp || 0),
+    level: Number(row.current_level ?? 1) || 1,
+    exp: Number(row.current_exp ?? 0) || 0,
+    currentLevel: Number(row.current_level ?? 1) || 1,
+    currentExp: Number(row.current_exp ?? 0) || 0,
     status: row.status || '대기 중',
     locked: Boolean(row.is_locked ?? row.locked),
     operationalStatus: row.operational_status || 'idle',
@@ -51,6 +53,8 @@ function normalizeMercenaryProfile(row) {
     reputation: Number(row.reputation || 0),
     rank: row.rank || 'D',
     officeLevel: Number(row.office_level || 1),
+    officeExp: Number(row.office_exp || 0),
+    officeReputation: row.office_reputation || row.rank || 'D',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -93,7 +97,9 @@ async function createMercenaryProfile({ userId, gold = 0 }) {
         gold,
         reputation: 0,
         rank: 'D',
-        office_level: 1
+        office_level: 1,
+        office_exp: 0,
+        office_reputation: 'D'
       })
       .select()
       .single();
@@ -106,8 +112,8 @@ async function createMercenaryProfile({ userId, gold = 0 }) {
 
   await run(
     `INSERT OR IGNORE INTO user_mercenary_profiles
-     (user_id, gold, reputation, rank, office_level)
-     VALUES (?, ?, 0, 'D', 1)`,
+     (user_id, gold, reputation, rank, office_level, office_exp, office_reputation)
+     VALUES (?, ?, 0, 'D', 1, 0, 'D')`,
     [userId, gold]
   );
   return getMercenaryProfile(userId);
@@ -244,15 +250,19 @@ async function hasOwnedMercenary(userId, mercenaryId) {
   return Boolean(row);
 }
 
-async function createUserMercenary({ userId, mercenaryId, level = 1, exp = 0, status = '대기 중' }) {
+async function createUserMercenary({ userId, mercenaryId, currentLevel = 1, currentExp = 0, status = '대기 중' }) {
+  const safeLevel = Math.max(1, Number(currentLevel || 1) || 1);
+  const safeExp = Math.max(0, Number(currentExp || 0) || 0);
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
       .from('user_mercenaries')
       .insert({
         user_id: userId,
         mercenary_id: mercenaryId,
-        level,
-        exp,
+        level: safeLevel,
+        exp: safeExp,
+        current_level: safeLevel,
+        current_exp: safeExp,
         status,
         locked: false,
         operational_status: 'idle',
@@ -269,9 +279,9 @@ async function createUserMercenary({ userId, mercenaryId, level = 1, exp = 0, st
 
   const result = await run(
     `INSERT INTO user_mercenaries
-     (user_id, mercenary_id, level, exp, status, locked, operational_status, current_activity_type, current_activity_id, is_locked, status_updated_at)
-     VALUES (?, ?, ?, ?, ?, 0, 'idle', NULL, NULL, 0, CURRENT_TIMESTAMP)`,
-    [userId, mercenaryId, level, exp, status]
+     (user_id, mercenary_id, level, exp, current_level, current_exp, status, locked, operational_status, current_activity_type, current_activity_id, is_locked, status_updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'idle', NULL, NULL, 0, CURRENT_TIMESTAMP)`,
+    [userId, mercenaryId, safeLevel, safeExp, safeLevel, safeExp, status]
   );
   return normalizeOwned(await get('SELECT * FROM user_mercenaries WHERE id = ?', [result.id]));
 }

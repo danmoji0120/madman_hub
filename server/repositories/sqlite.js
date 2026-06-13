@@ -264,6 +264,8 @@ async function runMigrations() {
        mercenary_id TEXT NOT NULL,
        level INTEGER NOT NULL DEFAULT 1,
        exp INTEGER NOT NULL DEFAULT 0,
+       current_level INTEGER NOT NULL DEFAULT 1,
+       current_exp INTEGER NOT NULL DEFAULT 0,
        status TEXT NOT NULL DEFAULT '대기 중',
        locked INTEGER NOT NULL DEFAULT 0,
        operational_status TEXT NOT NULL DEFAULT 'idle',
@@ -280,7 +282,11 @@ async function runMigrations() {
   await ensureColumn('user_mercenaries', 'current_activity_id', 'TEXT');
   await ensureColumn('user_mercenaries', 'is_locked', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('user_mercenaries', 'status_updated_at', 'TEXT');
+  await ensureColumn('user_mercenaries', 'current_level', 'INTEGER NOT NULL DEFAULT 1');
+  await ensureColumn('user_mercenaries', 'current_exp', 'INTEGER NOT NULL DEFAULT 0');
   await run('UPDATE user_mercenaries SET is_locked = locked WHERE locked = 1 AND is_locked = 0');
+  await run('UPDATE user_mercenaries SET current_level = 1 WHERE current_level IS NULL OR current_level < 1');
+  await run('UPDATE user_mercenaries SET current_exp = 0 WHERE current_exp IS NULL OR current_exp < 0');
   await run(
     `CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
        user_id INTEGER PRIMARY KEY,
@@ -288,11 +294,18 @@ async function runMigrations() {
        reputation INTEGER NOT NULL DEFAULT 0,
        rank TEXT NOT NULL DEFAULT 'D',
        office_level INTEGER NOT NULL DEFAULT 1,
+       office_exp INTEGER NOT NULL DEFAULT 0,
+       office_reputation TEXT NOT NULL DEFAULT 'D',
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
      )`
   );
+  await ensureColumn('user_mercenary_profiles', 'office_exp', 'INTEGER NOT NULL DEFAULT 0');
+  await ensureColumn('user_mercenary_profiles', 'office_reputation', "TEXT NOT NULL DEFAULT 'D'");
+  await run('UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1');
+  await run('UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0');
+  await run("UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D')");
   await run(
     `CREATE TABLE IF NOT EXISTS user_mercenary_squads (
        id INTEGER PRIMARY KEY AUTOINCREMENT,

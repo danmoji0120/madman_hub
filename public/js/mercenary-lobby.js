@@ -22,11 +22,15 @@ const mercenaryIcons = {
 
 const mercenaryLobbyState = {
   officeName: '폐급 용병단 사무소',
-  level: 12,
+  level: 1,
   reputation: 'D급',
-  expPercent: 68,
-  gold: 18420,
-  points: 12840,
+  expPercent: 0,
+  officeExp: 0,
+  officeExpToNext: 150,
+  officeMaxLevel: 50,
+  isOfficeMaxLevel: false,
+  gold: 0,
+  points: 0,
   mailCount: 0,
   alertCount: 4,
   summary: {
@@ -553,7 +557,7 @@ function writeRecruitmentStorage(count) {
 }
 
 function normalizeStats(item) {
-  const baseStats = item.baseStats || {};
+  const baseStats = item.effectiveStats || item.baseStats || {};
   const oldStats = item.stats || {};
   return {
     HP: Number(baseStats.hp ?? oldStats.HP ?? 0) || 0,
@@ -565,13 +569,28 @@ function normalizeStats(item) {
   };
 }
 
+function normalizeLowerStats(value = {}) {
+  return {
+    hp: Number(value.hp ?? value.HP ?? 0) || 0,
+    atk: Number(value.atk ?? value.ATK ?? 0) || 0,
+    def: Number(value.def ?? value.DEF ?? 0) || 0,
+    spd: Number(value.spd ?? value.SPD ?? 0) || 0,
+    tec: Number(value.tec ?? value.TEC ?? 0) || 0,
+    sup: Number(value.sup ?? value.SUP ?? 0) || 0
+  };
+}
+
 function normalizeMercenaryForRoster(item) {
   const id = String(item.id || '').trim();
   const ownedId = item.ownedId !== undefined ? String(item.ownedId) : '';
   const maxLevel = Number(item.maxLevel || 20) || 20;
-  const level = Number(item.level) || deterministicNumber(id, 1, Math.max(1, maxLevel), 'level');
-  const nextExp = Number(item.nextExp) || Math.max(100, maxLevel * 40);
-  const exp = Number(item.exp) || deterministicNumber(id, 0, Math.max(0, nextExp - 1), 'exp');
+  const level = Math.max(1, Number(item.currentLevel ?? item.current_level ?? item.level ?? 1) || 1);
+  const exp = Math.max(0, Number(item.currentExp ?? item.current_exp ?? item.exp ?? 0) || 0);
+  const isMaxLevel = Boolean(item.isMaxLevel || level >= maxLevel);
+  const expToNext = isMaxLevel ? 0 : Math.max(0, Number(item.expToNext ?? item.nextExp ?? Math.max(100, maxLevel * 40)) || 0);
+  const expProgress = isMaxLevel
+    ? 1
+    : Math.max(0, Math.min(1, Number(item.expProgress ?? (expToNext > 0 ? exp / expToNext : 0)) || 0));
   const combatSkill = item.combatSkill || (item.skill ? `${item.skill.name}: ${item.skill.effect}` : '');
   const normalized = {
     id,
@@ -585,9 +604,14 @@ function normalizeMercenaryForRoster(item) {
     role: String(item.role || item.job || '미분류').trim(),
     position: String(item.position || '특수').trim(),
     level,
+    currentLevel: level,
     maxLevel,
     exp,
-    nextExp,
+    currentExp: exp,
+    expToNext,
+    expProgress,
+    isMaxLevel,
+    nextExp: expToNext,
     operationalStatus: item.operationalStatus || 'idle',
     statusLabel: item.statusLabel || item.status || deterministicStatus(id),
     status: item.statusLabel || item.status || deterministicStatus(id),
@@ -597,8 +621,12 @@ function normalizeMercenaryForRoster(item) {
     hireMethod: item.obtainMethod || item.hireMethod || '마스터 데이터',
     contractDate: item.contractDate || `2025-${String(deterministicNumber(id, 1, 12, 'month')).padStart(2, '0')}-${String(deterministicNumber(id, 1, 28, 'day')).padStart(2, '0')}`,
     flaw: item.memo || item.flaw || '특이사항 없음',
+    baseStats: normalizeLowerStats(item.baseStats || item.stats),
+    effectiveStats: normalizeLowerStats(item.effectiveStats || item.baseStats || item.stats),
     stats: normalizeStats(item),
-    power: Number(item.baseCombatPower ?? item.power ?? 0) || 0,
+    workPower: Number(item.workPower || 0) || 0,
+    combatPower: Number(item.combatPower ?? item.power ?? item.baseCombatPower ?? 0) || 0,
+    power: Number(item.combatPower ?? item.power ?? item.baseCombatPower ?? 0) || 0,
     skill: splitSkill(combatSkill),
     requestBonus: item.missionBonus || item.requestBonus || '의뢰 보너스 미등록',
     adminBonus: item.adminBonus || '행정 보너스 미등록',
@@ -716,6 +744,23 @@ async function checkMercenaryAuth() {
   }
 }
 
+async function hydrateMercenaryOfficeProfile() {
+  try {
+    const payload = await apiRequest('/api/mercenary/my', { perfScope: 'mercenary-office-profile' });
+    updateMercenaryCurrencyDisplay(payload);
+    return true;
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return false;
+    }
+    console.warn('[mercenary/office] profile load failed:', error);
+    showReadyNotice('용병단 장부를 불러오지 못했습니다.');
+    return false;
+  }
+}
+
 function bindMercenaryAuthOverlay() {
   const loginButton = document.querySelector('#mercenary-auth-login');
   const homeButton = document.querySelector('#mercenary-auth-home');
@@ -785,7 +830,10 @@ function getOwnedRosterKey(mercenary) {
 
 function calculateBaseWorkPower(mercenary) {
   const stats = mercenary?.stats || {};
-  return Number(mercenary?.workPower || 0) || Number(stats.TEC || 0) + Number(stats.SUP || 0) + Number(stats.SPD || 0);
+  const effective = mercenary?.effectiveStats || {};
+  return Number(mercenary?.workPower || 0)
+    || Number(effective.tec || 0) + Number(effective.sup || 0) + Number(effective.spd || 0)
+    || Number(stats.TEC || 0) + Number(stats.SUP || 0) + Number(stats.SPD || 0);
 }
 
 function summarizeSquadMembers(members) {
@@ -995,7 +1043,7 @@ function renderSquadDetail() {
         <div class="squad-member-info">
           <span class="merc-grade-badge ${getGradeClass(member.grade)}">${escapeHtml(member.grade)}</span>
           <h4>${escapeHtml(member.name)}</h4>
-          <p>Lv. ${formatNumber(member.level)} · ${escapeHtml(member.statusLabel || member.status)}</p>
+          <p>${member.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(member.level)} / ${formatNumber(member.maxLevel)}`} · ${escapeHtml(member.statusLabel || member.status)}</p>
           <p>작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
           <p>${(member.tags || []).slice(0, 3).map(escapeHtml).join(' · ') || '태그 없음'}</p>
         </div>
@@ -1048,7 +1096,7 @@ function renderSquadOwnedRoster() {
         <div>
           <span class="merc-grade-badge ${getGradeClass(member.grade)}">${escapeHtml(member.grade)}</span>
           <h4>${escapeHtml(member.name)}</h4>
-          <p>Lv. ${formatNumber(member.level)} · 작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
+          <p>${member.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(member.level)} / ${formatNumber(member.maxLevel)}`} · 작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
           <p><span class="squad-status-badge status-${escapeHtml(member.operationalStatus || 'idle')}">${escapeHtml(member.statusLabel || member.status)}</span>${member.isLocked ? '<span class="squad-lock-mark">잠금</span>' : ''}</p>
           ${selected ? '<em>현재 편성됨</em>' : unavailable ? '<em>사용 불가</em>' : ''}
         </div>
@@ -1242,8 +1290,16 @@ function renderTopActions(state) {
 }
 
 function updateMercenaryCurrencyDisplay(payload = {}) {
-  const nextMercenaryGold = payload.mercenaryGold ?? payload.gold ?? payload.mercenaryProfile?.gold;
+  const profile = payload.mercenaryProfile || payload.officeProfile || {};
+  const nextMercenaryGold = payload.mercenaryGold ?? profile.mercenaryGold ?? payload.gold ?? profile.gold;
   const nextCommunityPoints = payload.communityPoints;
+  const nextOfficeLevel = profile.officeLevel ?? payload.officeLevel;
+  const nextOfficeExp = profile.officeExp ?? payload.officeExp;
+  const nextOfficeExpToNext = profile.officeExpToNext ?? payload.officeExpToNext;
+  const nextOfficeExpProgress = profile.officeExpProgress ?? payload.officeExpProgress;
+  const nextOfficeReputation = profile.officeReputation ?? payload.officeReputation ?? profile.rank;
+  const nextOfficeMaxLevel = profile.officeMaxLevel ?? payload.officeMaxLevel;
+  const nextIsOfficeMaxLevel = profile.isOfficeMaxLevel ?? payload.isOfficeMaxLevel;
   if (nextMercenaryGold !== undefined && nextMercenaryGold !== null) {
     mercenaryGold = Number(nextMercenaryGold) || 0;
     mercenaryLobbyState.gold = mercenaryGold;
@@ -1253,7 +1309,37 @@ function updateMercenaryCurrencyDisplay(payload = {}) {
     communityPoints = Number(nextCommunityPoints) || 0;
     mercenaryLobbyState.points = communityPoints;
   }
+  if (nextOfficeLevel !== undefined && nextOfficeLevel !== null) {
+    mercenaryLobbyState.level = Math.max(1, Number(nextOfficeLevel) || 1);
+  }
+  if (nextOfficeExp !== undefined && nextOfficeExp !== null) {
+    mercenaryLobbyState.officeExp = Math.max(0, Number(nextOfficeExp) || 0);
+  }
+  if (nextOfficeExpToNext !== undefined && nextOfficeExpToNext !== null) {
+    mercenaryLobbyState.officeExpToNext = Math.max(0, Number(nextOfficeExpToNext) || 0);
+  }
+  if (nextOfficeMaxLevel !== undefined && nextOfficeMaxLevel !== null) {
+    mercenaryLobbyState.officeMaxLevel = Math.max(1, Number(nextOfficeMaxLevel) || 50);
+  }
+  if (nextOfficeExpProgress !== undefined && nextOfficeExpProgress !== null) {
+    const progress = Math.max(0, Math.min(1, Number(nextOfficeExpProgress) || 0));
+    mercenaryLobbyState.expPercent = Math.round(progress * 100);
+  } else if (mercenaryLobbyState.officeExpToNext > 0) {
+    const progress = Math.max(0, Math.min(1, mercenaryLobbyState.officeExp / mercenaryLobbyState.officeExpToNext));
+    mercenaryLobbyState.expPercent = Math.round(progress * 100);
+  }
+  if (nextOfficeReputation) {
+    const reputation = String(nextOfficeReputation);
+    mercenaryLobbyState.reputation = reputation.endsWith('급') ? reputation : `${reputation}급`;
+  }
+  if (nextIsOfficeMaxLevel !== undefined && nextIsOfficeMaxLevel !== null) {
+    mercenaryLobbyState.isOfficeMaxLevel = Boolean(nextIsOfficeMaxLevel);
+    if (mercenaryLobbyState.isOfficeMaxLevel) {
+      mercenaryLobbyState.expPercent = 100;
+    }
+  }
   renderTopActions(mercenaryLobbyState);
+  renderLobbyProgress(mercenaryLobbyState);
 }
 
 function renderStatusPanel(summary) {
@@ -1430,7 +1516,9 @@ function renderMercenaryCard(mercenary) {
       ${renderImageWithPlaceholder(mercenary, 'merc-card-portrait')}
       <span class="merc-card-body">
         <span class="merc-card-name"><em>${escapeHtml(mercenary.grade)}</em> ${escapeHtml(mercenary.name)}</span>
-        <span class="merc-card-line">Lv. ${escapeHtml(mercenary.level)}</span>
+        <span class="merc-card-line">${mercenary.isMaxLevel ? 'Lv.MAX' : `Lv. ${escapeHtml(mercenary.level)} / ${escapeHtml(mercenary.maxLevel)}`}</span>
+        <span class="merc-card-exp">${mercenary.isMaxLevel ? 'EXP MAX' : `${formatNumber(mercenary.exp)} / ${formatNumber(mercenary.expToNext)} EXP`}</span>
+        <span class="merc-card-expbar"><i style="width: ${Math.round((mercenary.expProgress || 0) * 100)}%"></i></span>
         <span class="merc-card-line">${escapeHtml(mercenary.position)} / ${escapeHtml(mercenary.role)}</span>
         <span class="merc-card-meta">
           <span class="merc-status-badge status-${escapeHtml(mercenary.operationalStatus)}">${escapeHtml(mercenary.statusLabel || mercenary.status)}</span>
@@ -1477,7 +1565,7 @@ function renderBonusBox(title, text) {
 function renderMercenaryDetail(mercenary) {
   const root = document.querySelector('#mercenary-detail');
   if (!root) return;
-  const expPercent = Math.min(100, Math.round((mercenary.exp / mercenary.nextExp) * 100));
+  const expPercent = Math.min(100, Math.round((mercenary.expProgress || 0) * 100));
   root.innerHTML = `
     <div class="detail-heading ${getGradeClass(mercenary.grade)}">
       <span class="grade-badge">${escapeHtml(mercenary.grade)}</span>
@@ -1488,7 +1576,7 @@ function renderMercenaryDetail(mercenary) {
     </div>
 
     <div class="detail-meta-grid">
-      <div><span>레벨</span><strong>Lv. ${escapeHtml(mercenary.level)} / ${escapeHtml(mercenary.maxLevel)}</strong></div>
+      <div><span>레벨</span><strong>${mercenary.isMaxLevel ? 'Lv.MAX' : `Lv. ${escapeHtml(mercenary.level)} / ${escapeHtml(mercenary.maxLevel)}`}</strong></div>
       <div><span>상태</span><strong>${escapeHtml(mercenary.statusLabel || mercenary.status)}${mercenary.isLocked ? ' · 잠금' : ''}</strong></div>
       <div><span>직군</span><strong>${escapeHtml(mercenary.job)}</strong></div>
       <div><span>역할</span><strong>${escapeHtml(mercenary.role)}</strong></div>
@@ -1497,7 +1585,7 @@ function renderMercenaryDetail(mercenary) {
     </div>
 
     <div class="detail-exp">
-      <span>EXP ${formatNumber(mercenary.exp)} / ${formatNumber(mercenary.nextExp)}</span>
+      <span>${mercenary.isMaxLevel ? 'EXP MAX' : `EXP ${formatNumber(mercenary.exp)} / ${formatNumber(mercenary.expToNext)}`}</span>
       <div><i style="width: ${expPercent}%"></i></div>
     </div>
 
@@ -2032,10 +2120,28 @@ function bindRecruitmentBoard() {
   document.querySelector('#recruit-confirm-primary')?.addEventListener('click', handleRecruitConfirmPrimary);
 }
 
+function renderLobbyProgress(state) {
+  const levelLine = document.querySelector('#level-line');
+  const expFill = document.querySelector('#exp-fill');
+  const expBar = document.querySelector('.lobby-exp-bar');
+  if (!levelLine || !expFill) return;
+
+  const safePercent = Math.max(0, Math.min(100, Number(state.expPercent) || 0));
+  const expText = state.isOfficeMaxLevel
+    ? 'EXP MAX'
+    : `${formatNumber(state.officeExp || 0)} / ${formatNumber(state.officeExpToNext || 0)} EXP`;
+  const progressText = state.isOfficeMaxLevel
+    ? 'MAX'
+    : `다음 레벨까지 ${safePercent}%`;
+
+  levelLine.textContent = `사무소 Lv.${state.isOfficeMaxLevel ? 'MAX' : state.level} · 평판 ${state.reputation} · ${progressText} · ${expText}`;
+  expFill.style.width = `${state.isOfficeMaxLevel ? 100 : safePercent}%`;
+  expBar?.setAttribute('aria-label', `${progressText} (${expText})`);
+}
+
 function renderLobby(state) {
   document.querySelector('#office-name').textContent = state.officeName;
-  document.querySelector('#level-line').textContent = `Lv. ${state.level} · 평판 ${state.reputation} · 다음 등급까지 ${state.expPercent}%`;
-  document.querySelector('#exp-fill').style.width = `${state.expPercent}%`;
+  renderLobbyProgress(state);
   document.querySelector('#assistant-panel-title').textContent = state.assistant.name;
   document.querySelector('#assistant-line').textContent = state.assistant.line;
 
@@ -2051,7 +2157,10 @@ async function initializeMercenaryLobby() {
   renderLobby(mercenaryLobbyState);
   document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
   bindRecruitmentBoard();
-  await checkMercenaryAuth();
+  const authenticated = await checkMercenaryAuth();
+  if (authenticated) {
+    await hydrateMercenaryOfficeProfile();
+  }
 }
 
 initializeMercenaryLobby();
