@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { provider, run } = require('../db');
+const { ensurePointAccount } = require('./points.service');
 const repo = require('../repositories/mercenarySystem.repo');
 
 const MASTER_PATH = path.join(__dirname, '../../public/data/mercenaries.master.json');
@@ -38,6 +39,11 @@ async function getOrCreateMercenaryProfile(userId) {
 async function getMercenaryGold(userId) {
   const profile = await getOrCreateMercenaryProfile(userId);
   return Number(profile.gold || 0);
+}
+
+async function getCommunityPoints(userId) {
+  const account = await ensurePointAccount(userId);
+  return Number(account?.balance || 0);
 }
 
 async function spendMercenaryGold(userId, amount, reason = '') {
@@ -174,10 +180,11 @@ function attachCandidate(master, hiredIds = []) {
   };
 }
 
-function serializeBoard(board, profile) {
+async function serializeBoard(userId, board, profile) {
   const lookup = masterById();
   const hiredIds = board.hiredCandidateIds || [];
   const mercenaryProfile = publicMercenaryProfile(profile);
+  const communityPoints = await getCommunityPoints(userId);
   return {
     ok: true,
     board: {
@@ -201,6 +208,8 @@ function serializeBoard(board, profile) {
     refreshCost: RECRUIT_REFRESH_COST,
     rates: RECRUIT_GRADE_RATES.reduce((acc, item) => ({ ...acc, [item.grade]: item.rate }), {}),
     gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
     mercenaryProfile
   };
 }
@@ -225,7 +234,7 @@ async function getRecruitBoard(userId) {
     ensureTodayBoard(userId),
     getOrCreateMercenaryProfile(userId)
   ]);
-  return serializeBoard(board, profile);
+  return serializeBoard(userId, board, profile);
 }
 
 async function refreshRecruitBoard(userId) {
@@ -251,7 +260,7 @@ async function refreshRecruitBoard(userId) {
       goldDelta: -RECRUIT_REFRESH_COST
     });
     if (provider === 'sqlite') await run('COMMIT');
-    return serializeBoard(updated, spent.profile);
+    return serializeBoard(userId, updated, spent.profile);
   } catch (error) {
     if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
     throw error;
@@ -299,7 +308,7 @@ async function hireRecruitCandidate(userId, mercenaryId) {
     });
     if (provider === 'sqlite') await run('COMMIT');
     return {
-      ...serializeBoard(updated, spent.profile),
+      ...(await serializeBoard(userId, updated, spent.profile)),
       hired: { ...mercenary, ...owned, recruitCost: hireCost },
       hiredMercenary: { ...mercenary, ...owned, recruitCost: hireCost },
       hiredCandidateIds: updated.hiredCandidateIds,
@@ -312,10 +321,12 @@ async function hireRecruitCandidate(userId, mercenaryId) {
 }
 
 async function listMyMercenaries(userId) {
-  const [ownedRows, profile] = await Promise.all([
+  const [ownedRows, profile, communityPoints] = await Promise.all([
     repo.listUserMercenaries(userId),
-    getOrCreateMercenaryProfile(userId)
+    getOrCreateMercenaryProfile(userId),
+    getCommunityPoints(userId)
   ]);
+  const mercenaryProfile = publicMercenaryProfile(profile);
   const lookup = masterById();
   const items = ownedRows.map((row) => {
     const master = lookup.get(row.mercenaryId);
@@ -337,8 +348,10 @@ async function listMyMercenaries(userId) {
     ok: true,
     items,
     mercenaries: items,
-    gold: Number(profile?.gold || 0),
-    mercenaryProfile: publicMercenaryProfile(profile),
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile,
     capacity: 40
   };
 }
@@ -351,6 +364,7 @@ module.exports = {
   getRecruitCost,
   getOrCreateMercenaryProfile,
   getMercenaryGold,
+  getCommunityPoints,
   spendMercenaryGold,
   addMercenaryGold
 };

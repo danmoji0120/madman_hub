@@ -356,6 +356,8 @@ const fallbackMercenaryRosterData = [
 let mercenaryMasterData = fallbackMercenaryRosterData.map(normalizeMercenaryForRoster);
 let ownedMercenaryRoster = [];
 let mercenaryMasterLoaded = false;
+let mercenaryGold = mercenaryLobbyState.gold;
+let communityPoints = mercenaryLobbyState.points;
 
 const rosterState = {
   selectedId: '',
@@ -648,11 +650,10 @@ function applyRecruitBoardPayload(payload) {
   recruitmentState.refreshRemaining = Number(board.refreshRemaining ?? Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - recruitmentState.refreshCount));
   recruitmentState.maxRefresh = Number(board.maxRefresh || RECRUIT_DAILY_REFRESH_LIMIT);
   recruitmentState.refreshCost = Number(board.refreshCost || RECRUIT_REFRESH_COST);
-  recruitmentState.gold = Number(payload.gold ?? payload.mercenaryProfile?.gold ?? mercenaryLobbyState.gold);
+  updateMercenaryCurrencyDisplay(payload);
+  recruitmentState.gold = mercenaryGold;
   recruitmentState.hiredCandidateIds = Array.isArray(board.hiredCandidateIds) ? board.hiredCandidateIds : [];
   recruitmentState.candidates = (board.candidates || []).map(normalizeMercenaryForRoster);
-  mercenaryLobbyState.gold = recruitmentState.gold;
-  renderTopActions(mercenaryLobbyState);
   return true;
 }
 
@@ -678,8 +679,7 @@ async function loadOwnedMercenariesFromApi() {
   rosterState.errorMessage = normalized.length
     ? ''
     : '아직 보유한 용병이 없습니다. 채용 게시판에서 용병을 영입해 보세요.';
-  mercenaryLobbyState.gold = Number(payload.gold ?? payload.mercenaryProfile?.gold ?? mercenaryLobbyState.gold);
-  renderTopActions(mercenaryLobbyState);
+  updateMercenaryCurrencyDisplay(payload);
   rosterState.selectedId = ownedMercenaryRoster[0]?.id || '';
   return true;
 }
@@ -725,6 +725,21 @@ function renderTopActions(state) {
   topActions.querySelectorAll('button').forEach((button) => {
     button.addEventListener('click', showReadyNotice);
   });
+}
+
+function updateMercenaryCurrencyDisplay(payload = {}) {
+  const nextMercenaryGold = payload.mercenaryGold ?? payload.gold ?? payload.mercenaryProfile?.gold;
+  const nextCommunityPoints = payload.communityPoints;
+  if (nextMercenaryGold !== undefined && nextMercenaryGold !== null) {
+    mercenaryGold = Number(nextMercenaryGold) || 0;
+    mercenaryLobbyState.gold = mercenaryGold;
+    recruitmentState.gold = mercenaryGold;
+  }
+  if (nextCommunityPoints !== undefined && nextCommunityPoints !== null) {
+    communityPoints = Number(nextCommunityPoints) || 0;
+    mercenaryLobbyState.points = communityPoints;
+  }
+  renderTopActions(mercenaryLobbyState);
 }
 
 function renderStatusPanel(summary) {
@@ -1274,7 +1289,7 @@ async function openRecruitmentBoard() {
   }
   if (!loadedFromApi) {
     recruitmentState.serverMode = false;
-    recruitmentState.gold = mercenaryLobbyState.gold;
+    recruitmentState.gold = mercenaryGold;
     recruitmentState.hiredCandidateIds = [];
     readRecruitmentStorage();
   }
