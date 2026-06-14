@@ -415,12 +415,15 @@ const squadState = {
 const missionState = {
   missions: [],
   offers: [],
+  lockedMissions: [],
+  officeGrowth: null,
   board: null,
   squads: [],
   owned: [],
   runs: [],
   selectedMissionId: '',
   selectedOfferId: '',
+  selectedLockedMissionId: '',
   selectedSquadId: '',
   activeRunCount: 0,
   maxActiveRuns: 1,
@@ -1354,6 +1357,10 @@ function normalizeMissionRun(run) {
 }
 
 function selectedMission() {
+  if (missionState.selectedLockedMissionId) {
+    return missionState.lockedMissions.find((mission) => mission.missionId === missionState.selectedLockedMissionId)
+      || null;
+  }
   return missionState.offers.find((offer) => offer.offerId === missionState.selectedOfferId)
     || missionState.offers[0]
     || null;
@@ -1382,6 +1389,8 @@ async function loadMissionData() {
       : [];
   missionState.offers = offers;
   missionState.missions = offers;
+  missionState.lockedMissions = Array.isArray(missionPayload?.lockedMissions) ? missionPayload.lockedMissions : [];
+  missionState.officeGrowth = missionPayload?.officeGrowth || null;
   missionState.board = missionPayload?.board || null;
   missionState.owned = Array.isArray(myPayload?.items)
     ? myPayload.items.map(normalizeMercenaryForRoster)
@@ -1396,6 +1405,9 @@ async function loadMissionData() {
 
   if (!missionState.selectedOfferId || !missionState.offers.some((offer) => offer.offerId === missionState.selectedOfferId)) {
     missionState.selectedOfferId = missionState.offers[0]?.offerId || '';
+  }
+  if (missionState.selectedLockedMissionId && !missionState.lockedMissions.some((mission) => mission.missionId === missionState.selectedLockedMissionId)) {
+    missionState.selectedLockedMissionId = '';
   }
   missionState.selectedMissionId = selectedMission()?.missionId || '';
   if (!missionState.selectedSquadId || !missionState.squads.some((squad) => String(squad.id) === String(missionState.selectedSquadId))) {
@@ -1468,6 +1480,43 @@ function renderMissionError(message) {
   document.querySelector('#mission-run-list') && (document.querySelector('#mission-run-list').innerHTML = '<p class="mission-empty">진행 중 의뢰를 표시할 수 없습니다.</p>');
 }
 
+function renderMissionOfficeGrowth() {
+  const growth = missionState.officeGrowth || {};
+  const effects = growth.currentEffects || {};
+  const nextUnlock = growth.nextUnlock;
+  const milestones = Array.isArray(growth.milestones) ? growth.milestones : [];
+  const level = Number(mercenaryLobbyState.level || 1) || 1;
+  const exp = Number(mercenaryLobbyState.officeExp || 0) || 0;
+  const expToNext = Number(mercenaryLobbyState.officeExpToNext || 0) || 0;
+  const expText = mercenaryLobbyState.isOfficeMaxLevel ? 'MAX' : `${formatNumber(exp)} / ${formatNumber(expToNext)} EXP`;
+  return `
+    <section class="mission-office-growth">
+      <div>
+        <span>사무소 Lv.${formatNumber(level)}</span>
+        <strong>${expText}</strong>
+      </div>
+      <p>${nextUnlock ? `다음 해금: Lv.${formatNumber(nextUnlock.level)} ${escapeHtml(nextUnlock.title)}` : '모든 0.1 해금 효과를 달성했습니다.'}</p>
+      <ul>
+        <li>게시판 ${formatNumber(effects.maxMissionOffers || missionState.board?.maxMissionOffers || 0)}칸</li>
+        <li>동시 파견 ${formatNumber(effects.maxActiveRuns || missionState.maxActiveRuns || 0)}개</li>
+        <li>편성 슬롯 ${formatNumber(effects.maxSquadSlots || 0)}개</li>
+        <li>${(effects.unlockedRiskLevels || ['낮음']).map(escapeHtml).join(', ')} 위험도</li>
+      </ul>
+      <details class="mission-growth-milestones">
+        <summary>사무소 성장표 보기</summary>
+        <div>
+          ${milestones.map((item) => `
+            <p class="${item.unlocked ? 'is-unlocked' : 'is-locked'}">
+              <strong>Lv.${formatNumber(item.level)} ${escapeHtml(item.title)}</strong>
+              <span>${escapeHtml(item.description)}</span>
+            </p>
+          `).join('')}
+        </div>
+      </details>
+    </section>
+  `;
+}
+
 function renderMissionList() {
   const list = document.querySelector('#mission-list');
   const count = document.querySelector('#mission-count');
@@ -1477,17 +1526,15 @@ function renderMissionList() {
   const maxOffers = Number(board.maxMissionOffers || activeCount || 0) || 0;
   if (count) count.textContent = maxOffers ? `${activeCount}/${maxOffers}` : `${missionState.offers.length}건`;
   const boardHtml = `
+    ${renderMissionOfficeGrowth()}
     <div class="mission-board-state" id="mission-board-state">
       <strong>의뢰 게시판 ${formatNumber(activeCount)}${maxOffers ? ` / ${formatNumber(maxOffers)}` : ''}</strong>
       <span>빈 슬롯 ${formatNumber(board.emptySlots ?? Math.max(0, maxOffers - activeCount))}</span>
       <em>${activeCount >= maxOffers && maxOffers ? '게시판이 가득 찼습니다' : '다음 의뢰 대기 중'} · ${board.nextOfferAt ? `보충까지 ${formatMissionCountdown(board.secondsUntilNextOffer)}` : '보충 시간 계산 중'}</em>
     </div>
   `;
-  if (!missionState.offers.length) {
-    list.innerHTML = `${boardHtml}<p class="mission-empty">현재 게시판에 붙은 의뢰가 없습니다. 다음 보충 시간을 기다려 주세요.</p>`;
-    return;
-  }
-  list.innerHTML = boardHtml + missionState.offers.map((mission) => `
+  const offerHtml = missionState.offers.length
+    ? missionState.offers.map((mission) => `
     <button class="mission-card ${mission.offerId === missionState.selectedOfferId ? 'is-selected' : ''}" type="button" data-offer-id="${escapeHtml(mission.offerId)}">
       <span class="mission-badge">비전투</span>
       <strong>${escapeHtml(mission.title)}</strong>
@@ -1496,11 +1543,37 @@ function renderMissionList() {
       <span>보상 ${formatNumber(mission.rewardGold)}G · ${formatMissionDuration(mission.durationSeconds)}</span>
       <em>접수 ${mission.generatedAt ? new Date(mission.generatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-'}</em>
     </button>
-  `).join('');
+  `).join('')
+    : '<p class="mission-empty">현재 게시판에 붙은 의뢰가 없습니다. 다음 보충 시간을 기다려 주세요.</p>';
+  const lockedHtml = missionState.lockedMissions.length
+    ? `
+      <div class="mission-locked-section">
+        <strong>잠긴 의뢰</strong>
+        ${missionState.lockedMissions.map((mission) => `
+          <button class="mission-card mission-locked-card ${mission.missionId === missionState.selectedLockedMissionId ? 'is-selected' : ''}" type="button" data-locked-mission-id="${escapeHtml(mission.missionId)}">
+            <span class="mission-badge is-locked">잠김</span>
+            <strong>${escapeHtml(mission.title)}</strong>
+            <small>${escapeHtml(mission.risk)} · 보상 ${formatNumber(mission.rewardGold)}G</small>
+            <span>해금 조건: ${escapeHtml(mission.lockedReason || '해금 조건 미충족')}</span>
+          </button>
+        `).join('')}
+      </div>
+    `
+    : '';
+  list.innerHTML = boardHtml + offerHtml + lockedHtml;
 
   list.querySelectorAll('[data-offer-id]').forEach((button) => {
     button.addEventListener('click', () => {
       missionState.selectedOfferId = button.dataset.offerId;
+      missionState.selectedLockedMissionId = '';
+      missionState.selectedMissionId = selectedMission()?.missionId || '';
+      renderMissionView();
+    });
+  });
+  list.querySelectorAll('[data-locked-mission-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      missionState.selectedLockedMissionId = button.dataset.lockedMissionId;
+      missionState.selectedOfferId = '';
       missionState.selectedMissionId = selectedMission()?.missionId || '';
       renderMissionView();
     });
@@ -1519,6 +1592,7 @@ function missionStartBlockReason() {
   const mission = selectedMission();
   const squad = selectedMissionSquad();
   if (!mission) return '의뢰를 선택하세요.';
+  if (!mission.offerId || mission.locked) return mission.lockedReason || '해금이 필요한 의뢰입니다.';
   if (!squad) return '파견할 편성을 선택하세요.';
   const members = squad.members || [];
   if (members.length < Number(mission.minMembers || 1)) return `최소 ${mission.minMembers}명이 필요합니다.`;
@@ -1537,11 +1611,12 @@ function renderMissionDetail() {
     return;
   }
   const preview = missionPreviewForSelection();
+  const locked = Boolean(mission.locked || !mission.offerId);
   root.innerHTML = `
     <div class="mission-detail-heading">
-      <span class="mission-badge">비전투 · ${escapeHtml(mission.type)}</span>
+      <span class="mission-badge ${locked ? 'is-locked' : ''}">${locked ? '잠김' : '비전투'} · ${escapeHtml(mission.type)}</span>
       <h3>${escapeHtml(mission.title)}</h3>
-      <p>${escapeHtml(mission.description)}</p>
+      <p>${escapeHtml(locked ? `${mission.description || ''} ${mission.lockedReason ? `(${mission.lockedReason})` : ''}`.trim() : mission.description)}</p>
     </div>
     <div class="mission-detail-grid">
       <div><span>위험도</span><strong>${escapeHtml(mission.risk)}</strong></div>
@@ -1549,7 +1624,7 @@ function renderMissionDetail() {
       <div><span>권장 작업력</span><strong>${formatNumber(mission.recommendedWorkPower)}</strong></div>
       <div><span>인원</span><strong>${mission.minMembers}~${mission.maxMembers}명</strong></div>
       <div><span>소요 시간</span><strong>${formatMissionDuration(mission.durationSeconds)}</strong></div>
-      <div><span>예상 성공률</span><strong>${preview ? `${preview.successRate}%` : '편성 선택 필요'}</strong></div>
+      <div><span>예상 성공률</span><strong>${locked ? '해금 필요' : preview ? `${preview.successRate}%` : '편성 선택 필요'}</strong></div>
     </div>
     <div class="mission-reward-grid">
       <article>
@@ -1562,13 +1637,18 @@ function renderMissionDetail() {
       </article>
     </div>
     <div class="mission-factor-box">
-      <strong>성공률 영향</strong>
-      <p>${preview ? `현재 작업력 ${formatNumber(preview.partyWorkPower)} / 태그 보너스 ${preview.matchedTagCount}개 / 포지션 보너스 ${preview.matchedPositionCount}개 / 위험도 보정 ${preview.riskPenalty}` : '편성을 선택하면 예상 성공률이 계산됩니다.'}</p>
+      <strong>${locked ? '해금 조건' : '성공률 영향'}</strong>
+      <p>${locked ? escapeHtml(mission.lockedReason || '해금 조건 미충족') : preview ? `현재 작업력 ${formatNumber(preview.partyWorkPower)} / 태그 보너스 ${preview.matchedTagCount}개 / 포지션 보너스 ${preview.matchedPositionCount}개 / 위험도 보정 ${preview.riskPenalty}` : '편성을 선택하면 예상 성공률이 계산됩니다.'}</p>
     </div>
-    <div class="mission-detail-actions">
+    ${locked ? `
+      <div class="mission-detail-actions is-locked">
+        <button class="mission-reject-button" type="button" disabled>해금 필요</button>
+        <span>잠긴 의뢰는 게시판 재고가 아니므로 시작하거나 거부할 수 없습니다.</span>
+      </div>
+    ` : `<div class="mission-detail-actions">
       <button class="mission-reject-button" type="button" data-mission-reject="${escapeHtml(mission.offerId)}">의뢰 거부</button>
       <span>거부한 의뢰는 즉시 보충되지 않습니다.</span>
-    </div>
+    </div>`}
   `;
   root.querySelector('[data-mission-reject]')?.addEventListener('click', () => rejectSelectedMissionOffer());
   renderMissionStartState();
@@ -1613,14 +1693,15 @@ function renderMissionStartState() {
   const runLimit = document.querySelector('#mission-run-limit');
   const mission = selectedMission();
   const squad = selectedMissionSquad();
-  const preview = missionPreviewForSelection();
+  const locked = Boolean(mission?.locked || (mission && !mission.offerId));
+  const preview = locked ? null : missionPreviewForSelection();
   const blockReason = missionStartBlockReason();
   if (runLimit) runLimit.textContent = `${missionState.activeRunCount}/${missionState.maxActiveRuns}`;
   if (summary) {
     summary.innerHTML = `
       <strong>${squad ? escapeHtml(squad.name) : '편성 미선택'}</strong>
       <p>${mission ? escapeHtml(mission.title) : '의뢰를 선택하세요.'}</p>
-      <p>${preview ? `예상 성공률 ${preview.successRate}% · 작업력 ${formatNumber(preview.partyWorkPower)}` : '편성을 선택하면 성공률이 표시됩니다.'}</p>
+      <p>${locked ? '잠긴 의뢰는 성장 목표로만 표시됩니다.' : preview ? `예상 성공률 ${preview.successRate}% · 작업력 ${formatNumber(preview.partyWorkPower)}` : '편성을 선택하면 성공률이 표시됩니다.'}</p>
       ${blockReason ? `<em>${escapeHtml(blockReason)}</em>` : '<em class="is-ready">파견 준비 완료</em>'}
     `;
   }

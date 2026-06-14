@@ -2491,6 +2491,76 @@ body.mission-open {
   box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.22);
 }
 
+.mission-office-growth {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(214, 168, 93, 0.3);
+  background:
+    radial-gradient(circle at top right, rgba(176, 117, 55, 0.16), transparent 46%),
+    linear-gradient(180deg, rgba(28, 18, 11, 0.82), rgba(9, 7, 5, 0.74));
+  color: rgba(244, 223, 180, 0.84);
+  padding: 12px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.28);
+}
+
+.mission-office-growth > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mission-office-growth span,
+.mission-office-growth p,
+.mission-office-growth li {
+  color: rgba(238, 209, 153, 0.78);
+  font-size: 12px;
+}
+
+.mission-office-growth strong {
+  color: #ffe0a4;
+}
+
+.mission-office-growth p {
+  margin: 0;
+}
+
+.mission-office-growth ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 10px;
+  list-style: none;
+}
+
+.mission-growth-milestones {
+  border-top: 1px solid rgba(214, 168, 93, 0.14);
+  padding-top: 7px;
+}
+
+.mission-growth-milestones summary {
+  color: #ffd899;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mission-growth-milestones p {
+  margin: 8px 0 0;
+  display: grid;
+  gap: 2px;
+  border-left: 2px solid rgba(128, 128, 128, 0.34);
+  padding-left: 8px;
+}
+
+.mission-growth-milestones p.is-unlocked {
+  border-left-color: rgba(126, 192, 111, 0.68);
+}
+
+.mission-growth-milestones p.is-locked {
+  opacity: 0.72;
+}
+
 .mission-board-state strong {
   color: #ffe0a4;
 }
@@ -2509,6 +2579,33 @@ body.mission-open {
   box-shadow: inset 0 0 0 1px rgba(255, 230, 170, 0.12), 0 0 18px rgba(214, 168, 93, 0.16);
 }
 
+.mission-locked-section {
+  display: grid;
+  gap: 9px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(214, 168, 93, 0.16);
+}
+
+.mission-locked-section > strong {
+  color: rgba(238, 209, 153, 0.72);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+}
+
+.mission-locked-card {
+  opacity: 0.72;
+  background:
+    repeating-linear-gradient(135deg, rgba(120, 120, 120, 0.08) 0 6px, transparent 6px 12px),
+    rgba(14, 13, 12, 0.76);
+  cursor: pointer;
+}
+
+.mission-locked-card.is-selected {
+  opacity: 0.9;
+  border-color: rgba(190, 178, 150, 0.64);
+}
+
 .mission-squad-card.is-unavailable {
   opacity: 0.58;
   background:
@@ -2524,6 +2621,12 @@ body.mission-open {
   padding: 2px 7px;
   font-size: 12px;
   font-weight: 900;
+}
+
+.mission-badge.is-locked {
+  border-color: rgba(165, 155, 134, 0.54);
+  background: rgba(51, 47, 39, 0.74);
+  color: #d7cab2;
 }
 
 .mission-detail-panel {
@@ -2617,6 +2720,14 @@ body.mission-open {
 .mission-reject-button:hover {
   border-color: rgba(245, 126, 92, 0.82);
   box-shadow: 0 0 14px rgba(170, 45, 30, 0.24);
+}
+
+.mission-reject-button:disabled {
+  border-color: rgba(128, 128, 128, 0.34);
+  background: rgba(40, 38, 34, 0.72);
+  color: rgba(222, 214, 196, 0.6);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .mission-squad-portraits,

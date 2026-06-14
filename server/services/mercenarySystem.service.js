@@ -41,6 +41,38 @@ const BASE_EXP_BY_GRADE = {
   SSR: 320,
   EX: 260
 };
+const OFFICE_UNLOCK_MILESTONES = [
+  {
+    level: 1,
+    title: '기본 사무소 운영',
+    description: '낮음 위험도 의뢰, 동시 파견 1개, 의뢰 게시판 3칸이 열립니다.'
+  },
+  {
+    level: 3,
+    title: '보통 위험도 의뢰 등장',
+    description: '보통 위험도 의뢰가 게시판 후보에 포함되고, 의뢰 게시판이 4칸으로 증가합니다.'
+  },
+  {
+    level: 5,
+    title: '편성 슬롯 4개',
+    description: '저장 가능한 편성 슬롯이 4개로 증가합니다.'
+  },
+  {
+    level: 6,
+    title: '동시 파견 2개',
+    description: '동시에 진행할 수 있는 의뢰가 2개로 증가하고, 의뢰 게시판이 5칸으로 증가합니다.'
+  },
+  {
+    level: 10,
+    title: '높음 위험도 의뢰 등장',
+    description: '높음 위험도 의뢰가 게시판 후보에 포함되고, 의뢰 게시판이 6칸으로 증가합니다.'
+  },
+  {
+    level: 15,
+    title: '동시 파견 3개',
+    description: '동시에 진행할 수 있는 의뢰가 3개로 증가합니다.'
+  }
+];
 const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 50000) || 0;
 
 let masterCache = null;
@@ -65,9 +97,11 @@ function publicMercenaryProfile(profile) {
     officeExpProgress: officeProgress.officeExpProgress,
     isOfficeMaxLevel: officeProgress.isOfficeMaxLevel,
     officeReputation: officeProgress.officeReputation,
+    maxMissionOffers: unlocks.maxMissionOffers,
     maxSquadSlots: unlocks.maxSquadSlots,
     maxActiveRuns: unlocks.maxActiveRuns,
-    missionTier: unlocks.missionTier
+    missionTier: unlocks.missionTier,
+    unlockedRiskLevels: unlocks.unlockedRiskLevels
   };
 }
 
@@ -90,10 +124,30 @@ function calculateOfficeExpProgress(officeExp, officeExpToNext, isOfficeMaxLevel
 function calculateOfficeUnlocks(officeLevel) {
   const level = Math.max(1, Number(officeLevel) || 1);
   return {
+    maxMissionOffers: getMissionOfferBoardLimit(level),
     maxSquadSlots: level >= 10 ? 5 : level >= 5 ? 4 : 3,
     maxActiveRuns: level >= 15 ? 3 : level >= 6 ? 2 : 1,
-    missionTier: level >= 10 ? 3 : level >= 3 ? 2 : 1
+    missionTier: level >= 10 ? 3 : level >= 3 ? 2 : 1,
+    unlockedRiskLevels: [
+      '낮음',
+      ...(level >= 3 ? ['보통'] : []),
+      ...(level >= 10 ? ['높음'] : [])
+    ]
   };
+}
+
+function getOfficeUnlockMilestones(officeLevel = 1) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  return OFFICE_UNLOCK_MILESTONES.map((milestone) => ({
+    ...milestone,
+    unlocked: level >= milestone.level
+  }));
+}
+
+function getNextOfficeUnlock(officeLevel) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  const next = OFFICE_UNLOCK_MILESTONES.find((milestone) => milestone.level > level);
+  return next ? { ...next } : null;
 }
 
 function applyOfficeExpProgress(profile, gainedOfficeExp = 0, maxOfficeLevel = MAX_OFFICE_LEVEL) {
@@ -515,18 +569,27 @@ function getMissionRiskPenalty(risk) {
 
 function getMissionUnlockState(mission, officeLevel) {
   const condition = String(mission?.unlockCondition || '').trim();
-  if (!condition || condition === '기본') return { unlocked: true, lockedReason: '' };
+  if (!condition || condition === '기본') return { unlocked: true, lockedReason: '', unlockLevel: 1 };
   if (condition.includes('소문망')) {
-    return { unlocked: false, lockedReason: '소문망 기능 개방 후 등장합니다.' };
+    return { unlocked: false, lockedReason: '소문망 기능 개방 후', unlockLevel: null };
   }
   const levelMatch = condition.match(/사무소\s*레벨\s*(\d+)\s*이상/);
   if (levelMatch) {
     const required = Number(levelMatch[1] || 0);
     return Number(officeLevel || 1) >= required
-      ? { unlocked: true, lockedReason: '' }
-      : { unlocked: false, lockedReason: `사무소 레벨 ${required} 이상 필요` };
+      ? { unlocked: true, lockedReason: '', unlockLevel: required }
+      : { unlocked: false, lockedReason: `사무소 Lv.${required} 이상 필요`, unlockLevel: required };
   }
-  return { unlocked: false, lockedReason: condition || '등장 조건을 만족하지 못했습니다.' };
+  return { unlocked: false, lockedReason: condition || '해금 조건 미충족', unlockLevel: null };
+}
+
+function getMissionLockedReason(mission, officeLevel) {
+  const unlock = getMissionUnlockState(mission, officeLevel);
+  if (unlock.unlocked) return { lockedReason: '', unlockLevel: unlock.unlockLevel || 1 };
+  return {
+    lockedReason: unlock.lockedReason || '해금 조건 미충족',
+    unlockLevel: unlock.unlockLevel || null
+  };
 }
 
 function publicMission(mission) {
@@ -626,6 +689,44 @@ function buildMissionOfferResponse(offer, mission) {
     rejectedAt: offer.rejectedAt,
     acceptedRunId: offer.acceptedRunId,
     ...publicMission(mission)
+  };
+}
+
+function buildLockedMissionResponse(mission, officeLevel) {
+  const lock = getMissionLockedReason(mission, officeLevel);
+  return {
+    ...publicMission(mission),
+    enabled: mission.enabled,
+    unlockLevel: lock.unlockLevel,
+    lockedReason: lock.lockedReason || '해금 조건 미충족',
+    locked: true
+  };
+}
+
+function listLockedMissionsForOffice(officeLevel) {
+  return readMissionData()
+    .map((mission, index) => ({ mission, index, lock: getMissionLockedReason(mission, officeLevel) }))
+    .filter(({ mission }) => mission.enabled && mission.category === 'non_combat')
+    .filter(({ mission }) => !getMissionUnlockState(mission, officeLevel).unlocked)
+    .sort((a, b) => {
+      const aHasLevel = Number.isFinite(Number(a.lock.unlockLevel));
+      const bHasLevel = Number.isFinite(Number(b.lock.unlockLevel));
+      if (aHasLevel !== bHasLevel) return aHasLevel ? -1 : 1;
+      return (Number(a.lock.unlockLevel || 999) - Number(b.lock.unlockLevel || 999))
+        || getMissionRiskRank(a.mission.risk) - getMissionRiskRank(b.mission.risk)
+        || a.index - b.index;
+    })
+    .slice(0, 3)
+    .map(({ mission }) => buildLockedMissionResponse(mission, officeLevel));
+}
+
+function buildOfficeGrowth(profile) {
+  const progress = normalizeOfficeProgress(profile);
+  const currentEffects = calculateOfficeUnlocks(progress.officeLevel);
+  return {
+    currentEffects,
+    nextUnlock: getNextOfficeUnlock(progress.officeLevel),
+    milestones: getOfficeUnlockMilestones(progress.officeLevel)
   };
 }
 
@@ -1201,12 +1302,16 @@ async function listMissions(userId) {
     .sort((a, b) => getMissionRiskRank(a.risk) - getMissionRiskRank(b.risk)
       || new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime());
   const board = buildMissionBoardState(ensured.profile, ensured.activeOffers);
+  const lockedMissions = listLockedMissionsForOffice(mercenaryProfile.officeLevel);
+  const officeGrowth = buildOfficeGrowth(ensured.profile);
 
   return {
     ok: true,
     offers,
     missions: offers,
+    lockedMissions,
     board,
+    officeGrowth,
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
     communityPoints,
@@ -1548,6 +1653,9 @@ module.exports = {
   calculateOfficeExpToNext,
   calculateOfficeExpProgress,
   calculateOfficeUnlocks,
+  getNextOfficeUnlock,
+  getOfficeUnlockMilestones,
+  getMissionLockedReason,
   normalizeOfficeProgress,
   applyOfficeExpProgress,
   normalizeOwnedProgress,
