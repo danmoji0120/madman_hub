@@ -77,6 +77,14 @@ const mercenaryLobbyState = {
       status: 'available',
       icon: 'settings',
       description: '책상에 사람을 앉히면 사무소가 조금 덜 망합니다.'
+    },
+    {
+      key: 'cases',
+      label: '사건 파일',
+      badge: 'CASE',
+      status: 'available',
+      icon: 'report',
+      description: '한 장으로 끝나지 않는 골치 아픈 의뢰 묶음입니다.'
     }
   ],
   logs: [
@@ -90,6 +98,7 @@ const mercenaryLobbyState = {
     { label: '편성/파견', icon: 'crossedSwords', action: 'squads' },
     { label: '의무실', icon: 'medicalCross', action: 'infirmary' },
     { label: '사무실', icon: 'settings', action: 'office' },
+    { label: '사건 파일', icon: 'report', action: 'cases' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
 };
@@ -459,6 +468,17 @@ const officeState = {
   loading: false,
   errorMessage: ''
 };
+
+const caseState = {
+  cases: [],
+  detail: null,
+  selectedCaseId: '',
+  selectedOwnedIds: [],
+  filter: '전체',
+  loading: false,
+  errorMessage: ''
+};
+let caseTimer = null;
 
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
@@ -933,20 +953,22 @@ function countMatchedMissionPositions(members, mission) {
   return [...preferred].filter((position) => positions.has(position)).length;
 }
 
-function calculateMissionSuccessRate(members, mission) {
+function calculateMissionSuccessRate(members, mission, officeEffects = null) {
   const recommended = Math.max(50, Number(mission?.recommendedWorkPower || 0) || 50);
   const partyWorkPower = calculateMissionWorkPower(members, mission);
   const baseRate = 45 + ((partyWorkPower - recommended) / recommended) * 35;
   const matchedTagCount = countMatchedMissionTags(members, mission);
   const matchedPositionCount = countMatchedMissionPositions(members, mission);
   const riskPenalty = getMissionRiskPenalty(mission?.risk);
-  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty);
+  const officeBonusPoints = Math.max(0, Math.min(5, Number(officeEffects?.missionSuccessBonusPoints || 0)));
+  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty + officeBonusPoints);
   return {
     partyWorkPower,
     recommendedWorkPower: recommended,
     matchedTagCount,
     matchedPositionCount,
     riskPenalty,
+    officeBonusPoints,
     successRate: Math.max(15, Math.min(95, successRate))
   };
 }
@@ -2335,6 +2357,396 @@ function bindOfficeControls() {
   }
 }
 
+function selectedCaseSummary() {
+  return caseState.cases.find((item) => item.caseId === caseState.selectedCaseId) || caseState.cases[0] || null;
+}
+
+function selectedCaseStep() {
+  const steps = caseState.detail?.steps || [];
+  return steps.find((step) => ['available', 'running'].includes(step.status))
+    || steps.find((step) => step.status === 'completed')
+    || steps[0]
+    || null;
+}
+
+function caseStatusLabel(status) {
+  return {
+    locked: '잠김',
+    available: '진행 가능',
+    in_progress: '진행 중',
+    completed: '완료',
+    reward_claimed: '보상 수령'
+  }[status] || '확인 필요';
+}
+
+async function loadCaseList() {
+  const payload = await apiRequest('/api/mercenary/cases', { perfScope: 'mercenary-cases' });
+  updateMercenaryCurrencyDisplay(payload);
+  caseState.cases = Array.isArray(payload.cases) ? payload.cases : [];
+  if (!caseState.selectedCaseId || !caseState.cases.some((item) => item.caseId === caseState.selectedCaseId)) {
+    caseState.selectedCaseId = caseState.cases[0]?.caseId || '';
+  }
+}
+
+async function loadCaseDetail(caseId = caseState.selectedCaseId) {
+  if (!caseId) {
+    caseState.detail = null;
+    return;
+  }
+  const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(caseId)}`, { perfScope: 'mercenary-case-detail' });
+  updateMercenaryCurrencyDisplay(payload);
+  caseState.detail = payload;
+  caseState.selectedCaseId = payload.case?.caseId || caseId;
+  const availableIds = new Set((payload.availableMercenaries || []).map((item) => String(item.ownedId)));
+  caseState.selectedOwnedIds = caseState.selectedOwnedIds.filter((id) => availableIds.has(String(id)));
+}
+
+async function openCaseView() {
+  const screen = document.querySelector('#mercenary-case-view');
+  if (!screen) return;
+  screen.removeAttribute('hidden');
+  caseState.loading = true;
+  caseState.errorMessage = '';
+  renderCaseView();
+  try {
+    await loadCaseList();
+    await loadCaseDetail();
+  } catch (error) {
+    if (error.status === 401 || error.data?.error === 'UNAUTHORIZED') {
+      showMercenaryLoginRequiredModal();
+      closeCaseView();
+      return;
+    }
+    caseState.errorMessage = error.data?.message || error.message || '사건 파일을 불러오지 못했습니다.';
+  } finally {
+    caseState.loading = false;
+    renderCaseView();
+    startCaseTimer();
+  }
+}
+
+function closeCaseView() {
+  document.querySelector('#mercenary-case-view')?.setAttribute('hidden', '');
+  stopCaseTimer();
+}
+
+function filteredCaseList() {
+  if (caseState.filter === '전체') return caseState.cases;
+  const map = {
+    '진행 가능': 'available',
+    '진행 중': 'in_progress',
+    '완료': 'completed',
+    '잠김': 'locked'
+  };
+  const status = map[caseState.filter] || '';
+  return caseState.cases.filter((item) => item.status === status || (caseState.filter === '완료' && item.status === 'reward_claimed'));
+}
+
+function renderCaseFilters() {
+  const root = document.querySelector('#case-filter-row');
+  if (!root) return;
+  const filters = ['전체', '진행 가능', '진행 중', '완료', '잠김'];
+  root.innerHTML = filters.map((filter) => `
+    <button type="button" class="${caseState.filter === filter ? 'is-active' : ''}" data-case-filter="${escapeHtml(filter)}">${escapeHtml(filter)}</button>
+  `).join('');
+  root.querySelectorAll('[data-case-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      caseState.filter = button.dataset.caseFilter;
+      renderCaseView();
+    });
+  });
+}
+
+function renderCaseList() {
+  const list = document.querySelector('#case-list');
+  const count = document.querySelector('#case-count');
+  if (!list) return;
+  const items = filteredCaseList();
+  if (count) count.textContent = `${formatNumber(items.length)}건`;
+  if (caseState.loading) {
+    list.innerHTML = '<p class="case-empty">사건 파일 장을 넘기는 중입니다.</p>';
+    return;
+  }
+  if (!items.length) {
+    list.innerHTML = '<p class="case-empty">표시할 사건 파일이 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = items.map((item) => `
+    <button class="case-card ${item.caseId === caseState.selectedCaseId ? 'is-selected' : ''} status-${escapeHtml(item.status)}" type="button" data-case-id="${escapeHtml(item.caseId)}">
+      <span>${escapeHtml(caseStatusLabel(item.status))} · 위험도 ${escapeHtml(item.risk)}</span>
+      <strong>${escapeHtml(item.title)}</strong>
+      <small>${escapeHtml(item.subtitle || '')}</small>
+      <em>${formatNumber(item.completedSteps || 0)} / ${formatNumber(item.totalSteps || 0)} 단계</em>
+      ${item.lockedReason ? `<i>${escapeHtml(item.lockedReason)}</i>` : ''}
+      <b>보상 ${formatNumber(item.finalRewards?.mercenaryGold || 0)}G · 사무소 EXP ${formatNumber(item.finalRewards?.officeExp || 0)}</b>
+    </button>
+  `).join('');
+  list.querySelectorAll('[data-case-id]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      caseState.selectedCaseId = button.dataset.caseId;
+      caseState.selectedOwnedIds = [];
+      caseState.loading = true;
+      renderCaseView();
+      try {
+        await loadCaseDetail(caseState.selectedCaseId);
+      } catch (error) {
+        caseState.errorMessage = error.data?.message || error.message || '사건 파일 상세를 불러오지 못했습니다.';
+      } finally {
+        caseState.loading = false;
+        renderCaseView();
+      }
+    });
+  });
+}
+
+function casePreviewForSelection() {
+  const step = selectedCaseStep();
+  const mission = step?.missionPreview;
+  if (!mission) return null;
+  const members = (caseState.detail?.availableMercenaries || []).filter((item) => caseState.selectedOwnedIds.includes(String(item.ownedId)));
+  return calculateMissionSuccessRate(members, mission, caseState.detail?.officeEffects);
+}
+
+function renderCaseDetail() {
+  const root = document.querySelector('#case-detail');
+  if (!root) return;
+  if (caseState.errorMessage) {
+    root.innerHTML = `<p class="case-empty">${escapeHtml(caseState.errorMessage)}</p>`;
+    return;
+  }
+  const detail = caseState.detail;
+  const caseFile = detail?.case || selectedCaseSummary();
+  if (!caseFile) {
+    root.innerHTML = '<p class="case-empty">사건 파일을 선택하세요.</p>';
+    return;
+  }
+  const steps = detail?.steps || [];
+  const currentStep = selectedCaseStep();
+  const preview = casePreviewForSelection();
+  root.innerHTML = `
+    <div class="case-detail-head">
+      <span class="case-kicker">연쇄 의뢰</span>
+      <h3>${escapeHtml(caseFile.title)}</h3>
+      <p>${escapeHtml(caseFile.description || caseFile.subtitle || '')}</p>
+    </div>
+    <div class="case-detail-grid">
+      <div><span>상태</span><strong>${escapeHtml(caseStatusLabel(caseFile.status))}</strong></div>
+      <div><span>위험도</span><strong>${escapeHtml(caseFile.risk)}</strong></div>
+      <div><span>필요 레벨</span><strong>사무소 Lv.${formatNumber(caseFile.requiredOfficeLevel)}</strong></div>
+      <div><span>진행도</span><strong>${formatNumber(caseFile.completedSteps || 0)} / ${formatNumber(caseFile.totalSteps || 0)}</strong></div>
+    </div>
+    <div class="case-tag-line">${(caseFile.recommendedTags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+    ${caseFile.lockedReason ? `<p class="case-lock-message">${escapeHtml(caseFile.lockedReason)}</p>` : ''}
+    <div class="case-step-timeline">
+      ${steps.map((step) => `
+        <article class="case-step-card status-${escapeHtml(step.status)}">
+          <span>${formatNumber(step.order)}단계 · ${escapeHtml(step.status === 'running' ? '파견 중' : step.status === 'completed' ? '완료' : step.status === 'available' ? '진행 가능' : '잠김')}</span>
+          <strong>${escapeHtml(step.title)}</strong>
+          <p>${escapeHtml(step.introText || '')}</p>
+          ${step.runningRun ? `<em>${step.runningRun.readyToClaim ? '결과 수령 가능' : `남은 시간 ${formatMissionDuration(step.runningRun.remainingSeconds)}`}</em>` : ''}
+        </article>
+      `).join('')}
+    </div>
+    <div class="case-current-panel">
+      <strong>${currentStep ? escapeHtml(currentStep.title) : '현재 단계 없음'}</strong>
+      <p>${currentStep?.missionPreview ? `권장 작업력 ${formatNumber(currentStep.missionPreview.recommendedWorkPower)} · ${formatNumber(currentStep.missionPreview.minMembers)}~${formatNumber(currentStep.missionPreview.maxMembers)}명 · 성공 보상 ${formatNumber(currentStep.missionPreview.rewardGold)}G` : '사건 파일을 시작하면 현재 단계가 표시됩니다.'}</p>
+      <p>${preview ? `예상 성공률 ${formatNumber(preview.successRate)}% · 작업력 ${formatNumber(preview.partyWorkPower)} · 사무실 보너스 +${Math.round((preview.officeBonusPoints || 0) * 10) / 10}%p` : '용병을 선택하면 예상 성공률이 표시됩니다.'}</p>
+      <div class="case-action-row">
+        ${caseFile.status === 'available' ? '<button type="button" id="case-start-button">사건 시작</button>' : ''}
+        ${currentStep?.status === 'available' ? '<button type="button" id="case-step-start-button">현재 단계 파견</button>' : ''}
+        ${currentStep?.status === 'running' ? `<button type="button" id="case-step-claim-button" ${currentStep.canClaim ? '' : 'disabled'}>${currentStep.canClaim ? '단계 결과 수령' : '진행 중'}</button>` : ''}
+        ${caseFile.status === 'completed' ? '<button type="button" id="case-reward-button">최종 보상 수령</button>' : ''}
+      </div>
+    </div>
+  `;
+  document.querySelector('#case-start-button')?.addEventListener('click', startSelectedCase);
+  document.querySelector('#case-step-start-button')?.addEventListener('click', startSelectedCaseStep);
+  document.querySelector('#case-step-claim-button')?.addEventListener('click', claimSelectedCaseStep);
+  document.querySelector('#case-reward-button')?.addEventListener('click', claimSelectedCaseReward);
+}
+
+function renderCaseDispatch() {
+  const summary = document.querySelector('#case-dispatch-summary');
+  const list = document.querySelector('#case-roster-list');
+  const count = document.querySelector('#case-member-count');
+  const step = selectedCaseStep();
+  const mission = step?.missionPreview;
+  const available = caseState.detail?.availableMercenaries || [];
+  const selected = available.filter((item) => caseState.selectedOwnedIds.includes(String(item.ownedId)));
+  const preview = casePreviewForSelection();
+  if (count) count.textContent = `${formatNumber(selected.length)}명`;
+  if (summary) {
+    summary.innerHTML = `
+      <strong>${step ? escapeHtml(step.title) : '단계 미선택'}</strong>
+      <p>${mission ? `${formatNumber(mission.minMembers)}~${formatNumber(mission.maxMembers)}명 필요` : '사건 진행 단계가 없습니다.'}</p>
+      <p>${preview ? `예상 성공률 ${formatNumber(preview.successRate)}%` : '대기 중 용병을 선택하세요.'}</p>
+    `;
+  }
+  if (!list) return;
+  if (!available.length) {
+    list.innerHTML = '<p class="case-empty">대기 중인 용병이 없습니다. 사무실 배치/부상/치료/파견 중인 용병은 사용할 수 없습니다.</p>';
+    return;
+  }
+  const maxMembers = Number(mission?.maxMembers || 3) || 3;
+  list.innerHTML = available.map((member) => {
+    const ownedId = String(member.ownedId);
+    const isSelected = caseState.selectedOwnedIds.includes(ownedId);
+    const disabled = !isSelected && caseState.selectedOwnedIds.length >= maxMembers;
+    return `
+      <button class="case-roster-card ${isSelected ? 'is-selected' : ''}" type="button" data-case-member="${escapeHtml(ownedId)}" ${disabled ? 'disabled' : ''}>
+        ${renderImageWithPlaceholder(member, 'case-roster-portrait')}
+        <span>
+          <b>${escapeHtml(member.grade)} · ${escapeHtml(member.name)}</b>
+          <em>${member.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(member.level)} / ${formatNumber(member.maxLevel)}`} · 작업력 ${formatNumber(member.workPower)}</em>
+          <small>${(member.tags || []).slice(0, 3).map(escapeHtml).join(' · ') || '태그 없음'}</small>
+        </span>
+        <strong>${isSelected ? '선택됨' : '선택'}</strong>
+      </button>
+    `;
+  }).join('');
+  list.querySelectorAll('[data-case-member]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const ownedId = button.dataset.caseMember;
+      if (caseState.selectedOwnedIds.includes(ownedId)) {
+        caseState.selectedOwnedIds = caseState.selectedOwnedIds.filter((id) => id !== ownedId);
+      } else {
+        caseState.selectedOwnedIds.push(ownedId);
+      }
+      renderCaseView();
+    });
+  });
+}
+
+function renderCaseView() {
+  renderCaseFilters();
+  renderCaseList();
+  renderCaseDetail();
+  renderCaseDispatch();
+}
+
+async function refreshSelectedCase() {
+  await loadCaseList();
+  await loadCaseDetail(caseState.selectedCaseId);
+  renderCaseView();
+}
+
+async function startSelectedCase() {
+  const item = selectedCaseSummary();
+  if (!item) return;
+  try {
+    await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/start`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+      perfScope: 'mercenary-case-start'
+    });
+    showReadyNotice('사건 파일을 시작했습니다.');
+    await refreshSelectedCase();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '사건 시작에 실패했습니다.');
+  }
+}
+
+async function startSelectedCaseStep() {
+  const item = selectedCaseSummary();
+  const step = selectedCaseStep();
+  if (!item || !step) return;
+  if (!caseState.selectedOwnedIds.length) {
+    showReadyNotice('파견할 용병을 선택하세요.');
+    return;
+  }
+  try {
+    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/start`, {
+      method: 'POST',
+      body: JSON.stringify({ ownedMercenaryIds: caseState.selectedOwnedIds }),
+      perfScope: 'mercenary-case-step-start'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    caseState.selectedOwnedIds = [];
+    showReadyNotice('사건 단계 의뢰를 시작했습니다.');
+    await refreshSelectedCase();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '사건 단계 시작에 실패했습니다.');
+  }
+}
+
+async function claimSelectedCaseStep() {
+  const item = selectedCaseSummary();
+  const step = selectedCaseStep();
+  if (!item || !step) return;
+  try {
+    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/claim`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+      perfScope: 'mercenary-case-step-claim'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    showReadyNotice(payload?.result?.status === 'success' ? '사건 단계 결과를 수령했습니다.' : '사건 단계는 실패했지만 다음 단서로 이어졌습니다.');
+    await refreshSelectedCase();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '사건 단계 결과 수령에 실패했습니다.');
+  }
+}
+
+async function claimSelectedCaseReward() {
+  const item = selectedCaseSummary();
+  if (!item) return;
+  try {
+    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/reward/claim`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+      perfScope: 'mercenary-case-reward'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    showReadyNotice(payload.completionText || '사건 최종 보상을 수령했습니다.');
+    await refreshSelectedCase();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '사건 최종 보상 수령에 실패했습니다.');
+  }
+}
+
+function startCaseTimer() {
+  stopCaseTimer();
+  caseTimer = window.setInterval(() => {
+    if (document.querySelector('#mercenary-case-view')?.hidden) {
+      stopCaseTimer();
+      return;
+    }
+    let changed = false;
+    if (caseState.detail?.steps) {
+      caseState.detail.steps = caseState.detail.steps.map((step) => {
+        if (!step.runningRun || step.runningRun.readyToClaim || step.runningRun.remainingSeconds <= 0) return step;
+        const remainingSeconds = Math.max(0, Number(step.runningRun.remainingSeconds || 0) - 1);
+        changed = true;
+        return {
+          ...step,
+          canClaim: remainingSeconds <= 0,
+          runningRun: {
+            ...step.runningRun,
+            remainingSeconds,
+            readyToClaim: remainingSeconds <= 0
+          }
+        };
+      });
+    }
+    if (changed) renderCaseView();
+  }, 1000);
+}
+
+function stopCaseTimer() {
+  if (caseTimer) {
+    window.clearInterval(caseTimer);
+    caseTimer = null;
+  }
+}
+
+function bindCaseControls() {
+  const closeButton = document.querySelector('#case-close-button');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeCaseView);
+  }
+}
+
 function startMissionTimer() {
   stopMissionTimer();
   missionTimer = window.setInterval(() => {
@@ -2546,6 +2958,10 @@ function renderHotspots(hotspots) {
         openOfficeView();
         return;
       }
+      if (button.classList.contains('hotspot-cases')) {
+        openCaseView();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -2587,6 +3003,10 @@ function renderQuickNav(items) {
       }
       if (button.dataset.quickAction === 'office') {
         openOfficeView();
+        return;
+      }
+      if (button.dataset.quickAction === 'cases') {
+        openCaseView();
         return;
       }
       showReadyNotice();
@@ -3448,6 +3868,7 @@ async function initializeMercenaryLobby() {
   bindMercenaryAuthOverlay();
   bindOfficeGrowthPopover();
   bindOfficeControls();
+  bindCaseControls();
   renderLobby(mercenaryLobbyState);
   document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
   bindRecruitmentBoard();

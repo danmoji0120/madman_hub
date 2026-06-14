@@ -448,6 +448,34 @@ CREATE TABLE IF NOT EXISTS user_mercenary_runs (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_mercenary_case_progress (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  case_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'available',
+  current_step_index INTEGER NOT NULL DEFAULT 0,
+  completed_step_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  reward_claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, case_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_case_step_runs (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  case_id TEXT NOT NULL,
+  step_id TEXT NOT NULL,
+  run_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'running',
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS user_mercenary_mission_offers (
   id TEXT PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -731,6 +759,11 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user ON user_mercenary_runs(u
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user ON user_mercenary_case_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_mercenary_case_progress(user_id, case_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_run ON user_mercenary_case_step_runs(run_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_running ON user_mercenary_case_step_runs(user_id, case_id, step_id, status);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_user ON user_mercenary_mission_offers(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_mercenary_mission_offers(user_id, accepted_at, rejected_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at DESC);

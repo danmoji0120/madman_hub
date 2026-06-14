@@ -412,6 +412,38 @@ async function runMigrations() {
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
      )`
   );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_case_progress (
+       id TEXT PRIMARY KEY,
+       user_id INTEGER NOT NULL,
+       case_id TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'available',
+       current_step_index INTEGER NOT NULL DEFAULT 0,
+       completed_step_ids TEXT NOT NULL DEFAULT '[]',
+       started_at TEXT,
+       completed_at TEXT,
+       reward_claimed_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       UNIQUE(user_id, case_id),
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_case_step_runs (
+       id TEXT PRIMARY KEY,
+       user_id INTEGER NOT NULL,
+       case_id TEXT NOT NULL,
+       step_id TEXT NOT NULL,
+       run_id TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'running',
+       started_at TEXT NOT NULL,
+       completed_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_user_id ON song_recommendations(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_hidden_created ON song_recommendations(is_hidden, created_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_song_recommendations_created_at ON song_recommendations(created_at)');
@@ -436,6 +468,11 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user ON user_mercenary_case_progress(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_mercenary_case_progress(user_id, case_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_run ON user_mercenary_case_step_runs(run_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_running ON user_mercenary_case_step_runs(user_id, case_id, step_id, status)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_user ON user_mercenary_mission_offers(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_mercenary_mission_offers(user_id, accepted_at, rejected_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at)');

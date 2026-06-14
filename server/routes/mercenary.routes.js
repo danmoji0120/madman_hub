@@ -49,6 +49,12 @@ router.post('/infirmary/treat/claim', handle((req) => mercenarySystem.claimTreat
 router.get('/office', handle((req) => mercenarySystem.buildMercenaryOfficeView(req.user.id)));
 router.post('/office/assign', handle((req) => mercenarySystem.assignMercenaryToOffice(req.user.id, req.body)));
 router.post('/office/unassign', handle((req) => mercenarySystem.unassignMercenaryFromOffice(req.user.id, req.body)));
+router.get('/cases', handle((req) => mercenarySystem.listCases(req.user.id)));
+router.get('/cases/:caseId', handle((req) => mercenarySystem.getCaseDetail(req.user.id, req.params.caseId)));
+router.post('/cases/:caseId/start', handle((req) => mercenarySystem.startCaseFile(req.user.id, req.params.caseId)));
+router.post('/cases/:caseId/steps/:stepId/start', handle((req) => mercenarySystem.startCaseStepRun(req.user.id, req.params.caseId, req.params.stepId, req.body)));
+router.post('/cases/:caseId/steps/:stepId/claim', handle((req) => mercenarySystem.claimCaseStepRun(req.user.id, req.params.caseId, req.params.stepId)));
+router.post('/cases/:caseId/reward/claim', handle((req) => mercenarySystem.claimCaseReward(req.user.id, req.params.caseId)));
 router.get('/my', handle(async (req) => {
   const userId = req.user?.id;
   console.log('[mercenary/my] userId:', userId || null);

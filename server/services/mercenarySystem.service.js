@@ -7,6 +7,7 @@ const repo = require('../repositories/mercenarySystem.repo');
 
 const MASTER_PATH = path.join(__dirname, '../../public/data/mercenaries.master.json');
 const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.missions.master.json');
+const CASE_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.cases.master.json');
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 4;
@@ -194,6 +195,7 @@ const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 5000
 
 let masterCache = null;
 let missionCache = null;
+let caseCache = null;
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { status, code });
@@ -794,6 +796,103 @@ function readMissionData() {
 
 function missionById() {
   return new Map(readMissionData().map((mission) => [mission.missionId, mission]));
+}
+
+function normalizeCaseStep(step = {}, fallbackRisk = '낮음') {
+  return {
+    ...step,
+    stepId: String(step.stepId || '').trim(),
+    order: Number(step.order || 0) || 0,
+    title: String(step.title || '').trim(),
+    missionId: String(step.missionId || step.stepId || '').trim(),
+    type: String(step.type || 'case').trim(),
+    risk: String(step.risk || fallbackRisk || '낮음').trim(),
+    primaryStats: Array.isArray(step.primaryStats) ? step.primaryStats.map((stat) => String(stat).toUpperCase()).filter(Boolean) : [],
+    recommendedWorkPower: Number(step.recommendedWorkPower || 0) || 0,
+    minMembers: Number(step.minMembers || 1) || 1,
+    maxMembers: Number(step.maxMembers || 3) || 3,
+    durationSeconds: Number(step.durationSeconds || 120) || 120,
+    rewardGold: Number(step.rewardGold || 0) || 0,
+    failureRewardGold: Number(step.failureRewardGold || 0) || 0,
+    preferredTags: Array.isArray(step.preferredTags) ? step.preferredTags.map(String).filter(Boolean) : [],
+    preferredPositions: Array.isArray(step.preferredPositions) ? step.preferredPositions.map(String).filter(Boolean) : [],
+    officeExp: Number(step.officeExp || 0) || 0,
+    mercenaryExp: Number(step.mercenaryExp || 0) || 0,
+    failureOfficeExp: Number(step.failureOfficeExp || 0) || 0,
+    failureMercenaryExp: Number(step.failureMercenaryExp || 0) || 0,
+    introText: String(step.introText || '').trim(),
+    successText: String(step.successText || '').trim(),
+    failureText: String(step.failureText || '').trim()
+  };
+}
+
+function readCaseData() {
+  if (!caseCache) {
+    const rows = JSON.parse(fs.readFileSync(CASE_MASTER_PATH, 'utf8'));
+    caseCache = rows
+      .filter((item) => item && item.caseId)
+      .map((item) => ({
+        ...item,
+        caseId: String(item.caseId).trim(),
+        enabled: Boolean(item.enabled),
+        title: String(item.title || '').trim(),
+        subtitle: String(item.subtitle || '').trim(),
+        category: String(item.category || '').trim(),
+        risk: String(item.risk || '낮음').trim(),
+        requiredOfficeLevel: Number(item.requiredOfficeLevel || 1) || 1,
+        unlockType: String(item.unlockType || 'default').trim(),
+        unlockSource: item.unlockSource || null,
+        sourceHint: String(item.sourceHint || '').trim(),
+        recommendedTags: Array.isArray(item.recommendedTags) ? item.recommendedTags.map(String).filter(Boolean) : [],
+        description: String(item.description || '').trim(),
+        steps: Array.isArray(item.steps)
+          ? item.steps.map((step) => normalizeCaseStep(step, item.risk)).filter((step) => step.stepId).sort((a, b) => a.order - b.order)
+          : [],
+        finalRewards: {
+          mercenaryGold: Number(item.finalRewards?.mercenaryGold || 0) || 0,
+          officeExp: Number(item.finalRewards?.officeExp || 0) || 0,
+          officeReputation: Number(item.finalRewards?.officeReputation || 0) || 0
+        },
+        completionText: String(item.completionText || '').trim(),
+        notes: String(item.notes || '').trim()
+      }))
+      .filter((item) => item.enabled && item.steps.length);
+  }
+  return caseCache;
+}
+
+function caseById() {
+  return new Map(readCaseData().map((item) => [item.caseId, item]));
+}
+
+function buildCaseStepMission(caseFile, step) {
+  const existing = missionById().get(step.missionId);
+  return {
+    ...(existing || {}),
+    missionId: step.missionId,
+    enabled: true,
+    title: step.title,
+    category: 'non_combat',
+    type: step.type || existing?.type || caseFile.category || 'case',
+    risk: step.risk || existing?.risk || caseFile.risk || '낮음',
+    primaryStats: step.primaryStats.length ? step.primaryStats : (existing?.primaryStats || []),
+    recommendedWorkPower: step.recommendedWorkPower || existing?.recommendedWorkPower || 50,
+    minMembers: step.minMembers || existing?.minMembers || 1,
+    maxMembers: step.maxMembers || existing?.maxMembers || 3,
+    durationSeconds: step.durationSeconds || existing?.durationSeconds || 120,
+    rewardGold: step.rewardGold || existing?.rewardGold || 0,
+    failureRewardGold: step.failureRewardGold || existing?.failureRewardGold || 0,
+    preferredTags: step.preferredTags.length ? step.preferredTags : (existing?.preferredTags || caseFile.recommendedTags || []),
+    preferredPositions: step.preferredPositions.length ? step.preferredPositions : (existing?.preferredPositions || []),
+    description: step.introText || existing?.description || caseFile.description,
+    successText: step.successText || existing?.successText || '사건 단계 의뢰를 완료했습니다.',
+    failureText: step.failureText || existing?.failureText || '사건 단계 의뢰를 완수하지 못했습니다.',
+    unlockCondition: '사건 파일',
+    officeExp: step.officeExp || existing?.officeExp || 0,
+    mercenaryExp: step.mercenaryExp || existing?.mercenaryExp || 0,
+    failureOfficeExp: step.failureOfficeExp || existing?.failureOfficeExp || 0,
+    failureMercenaryExp: step.failureMercenaryExp || existing?.failureMercenaryExp || 0
+  };
 }
 
 function getMissionRiskRank(risk) {
@@ -1746,6 +1845,350 @@ async function deleteSquad(userId, squadId) {
   };
 }
 
+async function getUnlockedCaseIdsFromRumors() {
+  // TODO: wire this to the future rumor tracking system.
+  return new Set();
+}
+
+function buildRumorSourceHint(caseFile) {
+  return caseFile.sourceHint || '소문망 추적 필요';
+}
+
+function getCaseOrThrow(caseId) {
+  const caseFile = caseById().get(String(caseId || '').trim());
+  if (!caseFile) throw httpError(404, '사건 파일을 찾을 수 없습니다.', 'CASE_NOT_FOUND');
+  return caseFile;
+}
+
+async function getCaseUnlockState(userId, caseFile, profile) {
+  const officeLevel = Number(profile?.officeLevel ?? profile?.office_level ?? 1) || 1;
+  if (officeLevel < Number(caseFile.requiredOfficeLevel || 1)) {
+    return {
+      unlocked: false,
+      lockedReason: `사무소 Lv.${caseFile.requiredOfficeLevel} 필요`
+    };
+  }
+  if (caseFile.unlockType === 'rumor') {
+    const unlockedIds = await getUnlockedCaseIdsFromRumors(userId);
+    if (!unlockedIds.has(caseFile.caseId)) {
+      return {
+        unlocked: false,
+        lockedReason: buildRumorSourceHint(caseFile) || '소문망 추적 필요'
+      };
+    }
+  }
+  if (caseFile.unlockType === 'event') {
+    return {
+      unlocked: false,
+      lockedReason: caseFile.sourceHint || '이벤트 해금 필요'
+    };
+  }
+  return { unlocked: true, lockedReason: '' };
+}
+
+function effectiveCaseStatus(progress, unlockState) {
+  if (!unlockState.unlocked) return 'locked';
+  return progress?.status || 'available';
+}
+
+function publicCaseSummary(caseFile, progress, unlockState) {
+  const status = effectiveCaseStatus(progress, unlockState);
+  const completedSteps = progress?.completedStepIds?.length || 0;
+  return {
+    caseId: caseFile.caseId,
+    title: caseFile.title,
+    subtitle: caseFile.subtitle,
+    category: caseFile.category,
+    risk: caseFile.risk,
+    requiredOfficeLevel: caseFile.requiredOfficeLevel,
+    unlockType: caseFile.unlockType,
+    sourceHint: caseFile.sourceHint,
+    recommendedTags: caseFile.recommendedTags,
+    description: caseFile.description,
+    status,
+    currentStepIndex: progress?.currentStepIndex || 0,
+    totalSteps: caseFile.steps.length,
+    completedSteps,
+    canStart: status === 'available',
+    canClaimReward: status === 'completed',
+    lockedReason: unlockState.unlocked ? '' : unlockState.lockedReason,
+    finalRewards: caseFile.finalRewards
+  };
+}
+
+function caseStepRunToPublic(runRow, members = []) {
+  return runRow ? serializeRun(runRow, members) : null;
+}
+
+async function buildCaseStepResponse(userId, caseFile, progress, stepRuns, step, index) {
+  const completed = new Set(progress?.completedStepIds || []);
+  const runningBridge = stepRuns.find((item) => item.stepId === step.stepId && item.status === 'running') || null;
+  const latestBridge = stepRuns.find((item) => item.stepId === step.stepId) || null;
+  const runRow = runningBridge ? await repo.getMercenaryRun(userId, runningBridge.runId) : null;
+  const members = runRow ? await buildRunMembers(userId, runRow.selectedMercenaryIds || []) : [];
+  const isCurrent = progress?.status === 'in_progress' && Number(progress.currentStepIndex || 0) === index;
+  const isCompleted = completed.has(step.stepId);
+  const status = isCompleted
+    ? 'completed'
+    : runningBridge
+      ? 'running'
+      : isCurrent
+        ? 'available'
+        : 'locked';
+  const mission = buildCaseStepMission(caseFile, step);
+  return {
+    stepId: step.stepId,
+    order: step.order,
+    title: step.title,
+    introText: step.introText,
+    successText: step.successText,
+    failureText: step.failureText,
+    missionPreview: publicMission(mission),
+    status,
+    canStart: status === 'available',
+    canClaim: Boolean(runRow && new Date(runRow.completesAt).getTime() <= Date.now() && !runRow.claimedAt),
+    runningRun: caseStepRunToPublic(runRow, members),
+    latestRunId: latestBridge?.runId || null
+  };
+}
+
+async function buildCaseDetail(userId, caseFile, progress = null) {
+  const [profile, existingProgress, stepRuns, ownedRows, communityPoints] = await Promise.all([
+    getOrCreateMercenaryProfile(userId),
+    progress ? Promise.resolve(progress) : repo.getCaseProgress(userId, caseFile.caseId),
+    repo.listCaseStepRuns(userId, caseFile.caseId),
+    repo.listUserMercenaries(userId),
+    getCommunityPoints(userId)
+  ]);
+  const unlockState = await getCaseUnlockState(userId, caseFile, profile);
+  const effectiveProgress = existingProgress || {
+    caseId: caseFile.caseId,
+    status: unlockState.unlocked ? 'available' : 'locked',
+    currentStepIndex: 0,
+    completedStepIds: []
+  };
+  const lookup = masterById();
+  const mercenaries = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const steps = [];
+  for (let index = 0; index < caseFile.steps.length; index += 1) {
+    steps.push(await buildCaseStepResponse(userId, caseFile, effectiveProgress, stepRuns, caseFile.steps[index], index));
+  }
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  return {
+    ok: true,
+    case: publicCaseSummary(caseFile, existingProgress, unlockState),
+    progress: effectiveProgress,
+    steps,
+    officeEffects: await getOfficeEffectsForUser(userId),
+    availableMercenaries: mercenaries.filter((item) => item.operationalStatus === 'idle'),
+    mercenaries,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile
+  };
+}
+
+async function listCases(userId) {
+  const [profile, progressRows, communityPoints] = await Promise.all([
+    getOrCreateMercenaryProfile(userId),
+    repo.listCaseProgress(userId),
+    getCommunityPoints(userId)
+  ]);
+  const progressByCase = new Map(progressRows.map((row) => [row.caseId, row]));
+  const cases = [];
+  for (const caseFile of readCaseData()) {
+    const unlockState = await getCaseUnlockState(userId, caseFile, profile);
+    cases.push(publicCaseSummary(caseFile, progressByCase.get(caseFile.caseId), unlockState));
+  }
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  return {
+    ok: true,
+    cases,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile
+  };
+}
+
+async function getCaseDetail(userId, caseId) {
+  return buildCaseDetail(userId, getCaseOrThrow(caseId));
+}
+
+async function startCaseFile(userId, caseId) {
+  const caseFile = getCaseOrThrow(caseId);
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const unlockState = await getCaseUnlockState(userId, caseFile, profile);
+  if (!unlockState.unlocked) throw httpError(403, unlockState.lockedReason || '사건 파일이 잠겨 있습니다.', 'CASE_LOCKED');
+  const existing = await repo.getCaseProgress(userId, caseFile.caseId);
+  if (existing?.status === 'in_progress') return buildCaseDetail(userId, caseFile, existing);
+  if (existing && ['completed', 'reward_claimed'].includes(existing.status)) {
+    throw httpError(409, '이미 완료한 사건 파일입니다.', 'CASE_ALREADY_COMPLETED');
+  }
+  const startedAt = new Date().toISOString();
+  const progress = existing
+    ? await repo.updateCaseProgress(userId, caseFile.caseId, { status: 'in_progress', currentStepIndex: 0, startedAt })
+    : await repo.createCaseProgress({
+      id: `case_${randomUUID()}`,
+      userId,
+      caseId: caseFile.caseId,
+      status: 'in_progress',
+      currentStepIndex: 0,
+      completedStepIds: [],
+      startedAt
+    });
+  return buildCaseDetail(userId, caseFile, progress);
+}
+
+function currentCaseStepOrThrow(caseFile, progress, stepId) {
+  if (!progress || progress.status !== 'in_progress') {
+    throw httpError(409, '사건 파일을 먼저 시작해야 합니다.', 'CASE_NOT_STARTED');
+  }
+  const currentStep = caseFile.steps[Number(progress.currentStepIndex || 0)];
+  if (!currentStep || currentStep.stepId !== stepId) {
+    throw httpError(409, '현재 진행할 수 있는 사건 단계가 아닙니다.', 'CASE_STEP_NOT_CURRENT');
+  }
+  return currentStep;
+}
+
+async function startCaseStepRun(userId, caseId, stepId, payload = {}) {
+  const caseFile = getCaseOrThrow(caseId);
+  const progress = await repo.getCaseProgress(userId, caseFile.caseId);
+  const step = currentCaseStepOrThrow(caseFile, progress, stepId);
+  if (await repo.getRunningCaseStepRun(userId, caseFile.caseId, step.stepId)) {
+    throw httpError(409, '이미 진행 중인 사건 단계입니다.', 'CASE_STEP_ALREADY_RUNNING');
+  }
+  if (!Array.isArray(payload.ownedMercenaryIds)) {
+    throw httpError(400, '파견할 보유 용병을 선택해 주세요.', 'INVALID_MERCENARY_SELECTION');
+  }
+  const memberIds = payload.ownedMercenaryIds.map((id) => String(id || '').trim()).filter(Boolean);
+  const mission = buildCaseStepMission(caseFile, step);
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const created = await createDirectMissionRun(userId, mission, memberIds);
+    const bridge = await repo.createCaseStepRun({
+      id: `case_step_${randomUUID()}`,
+      userId,
+      caseId: caseFile.caseId,
+      stepId: step.stepId,
+      runId: created.runRow.id,
+      status: 'running',
+      startedAt: created.startedAt
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    return {
+      ok: true,
+      caseId: caseFile.caseId,
+      stepId: step.stepId,
+      bridge,
+      run: serializeRun(created.runRow, created.members),
+      successPreview: created.successPreview,
+      officeEffects: created.officeEffects,
+      ...(await buildCaseDetail(userId, caseFile))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
+async function applyCaseProgressAfterRunClaim(userId, runId, resultStatus) {
+  const bridge = await repo.getCaseStepRunByRunId(userId, runId);
+  if (!bridge || bridge.status !== 'running') return null;
+  const caseFile = caseById().get(bridge.caseId);
+  if (!caseFile) return null;
+  const progress = await repo.getCaseProgress(userId, bridge.caseId);
+  if (!progress) return null;
+  const stepIndex = caseFile.steps.findIndex((step) => step.stepId === bridge.stepId);
+  if (stepIndex < 0) return null;
+  const completedIds = new Set(progress.completedStepIds || []);
+  completedIds.add(bridge.stepId);
+  const nextIndex = Math.min(caseFile.steps.length, Math.max(Number(progress.currentStepIndex || 0), stepIndex + 1));
+  const allCompleted = completedIds.size >= caseFile.steps.length;
+  const completedAt = allCompleted ? new Date().toISOString() : null;
+  await repo.updateCaseStepRunStatus(userId, bridge.id, {
+    status: resultStatus === 'success' ? 'completed' : 'failed',
+    completedAt: new Date().toISOString()
+  });
+  const updated = await repo.updateCaseProgress(userId, bridge.caseId, {
+    status: allCompleted ? 'completed' : 'in_progress',
+    currentStepIndex: nextIndex,
+    completedStepIds: [...completedIds],
+    completedAt
+  });
+  return { caseFile, progress: updated };
+}
+
+async function claimCaseStepRun(userId, caseId, stepId) {
+  const caseFile = getCaseOrThrow(caseId);
+  const progress = await repo.getCaseProgress(userId, caseFile.caseId);
+  const step = currentCaseStepOrThrow(caseFile, progress, stepId);
+  const bridge = await repo.getRunningCaseStepRun(userId, caseFile.caseId, step.stepId);
+  if (!bridge) throw httpError(404, '수령할 사건 단계 진행 기록이 없습니다.', 'CASE_STEP_NOT_READY');
+  const runRow = await repo.getMercenaryRun(userId, bridge.runId);
+  assertRunClaimable(runRow);
+  const result = await claimMissionRun(userId, bridge.runId);
+  return {
+    ...result,
+    ...(await buildCaseDetail(userId, caseFile))
+  };
+}
+
+async function claimCaseReward(userId, caseId) {
+  const caseFile = getCaseOrThrow(caseId);
+  const progress = await repo.getCaseProgress(userId, caseFile.caseId);
+  if (!progress || progress.status !== 'completed') {
+    if (progress?.status === 'reward_claimed' || progress?.rewardClaimedAt) {
+      throw httpError(409, '이미 사건 최종 보상을 수령했습니다.', 'CASE_REWARD_ALREADY_CLAIMED');
+    }
+    throw httpError(409, '사건 최종 보상을 아직 수령할 수 없습니다.', 'CASE_REWARD_NOT_READY');
+  }
+  const rewards = caseFile.finalRewards || {};
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const profile = await getOrCreateMercenaryProfile(userId);
+    const officeProgress = applyOfficeExpProgress(profile, rewards.officeExp || 0);
+    const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
+      gold: Number(profile.gold || 0) + Number(rewards.mercenaryGold || 0),
+      officeLevel: officeProgress.officeLevel,
+      officeExp: officeProgress.officeExp,
+      reputation: Number(profile.reputation || 0) + Number(rewards.officeReputation || 0)
+    });
+    const claimedAt = new Date().toISOString();
+    const updatedProgress = await repo.updateCaseProgress(userId, caseFile.caseId, {
+      status: 'reward_claimed',
+      rewardClaimedAt: claimedAt
+    });
+    await repo.createRecruitLog({
+      userId,
+      action: 'case_reward',
+      mercenaryId: caseFile.caseId,
+      goldDelta: Number(rewards.mercenaryGold || 0)
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    const mercenaryProfile = publicMercenaryProfile(updatedProfile);
+    return {
+      ok: true,
+      caseId: caseFile.caseId,
+      completionText: caseFile.completionText,
+      rewards,
+      progress: updatedProgress,
+      gold: mercenaryProfile.gold,
+      mercenaryGold: mercenaryProfile.gold,
+      communityPoints: await getCommunityPoints(userId),
+      mercenaryProfile,
+      ...(await buildCaseDetail(userId, caseFile, updatedProgress))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 async function listMissions(userId) {
   const [profile, communityPoints] = await Promise.all([
     getOrCreateMercenaryProfile(userId),
@@ -1844,6 +2287,59 @@ async function buildRunMembers(userId, memberIds) {
     const row = ownedById.get(String(id));
     return buildOwnedMercenaryItem(row, lookup.get(row?.mercenaryId));
   }).filter(Boolean);
+}
+
+async function createDirectMissionRun(userId, mission, memberIds) {
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const mercenaryProfile = publicMercenaryProfile(profile);
+  const openRuns = await repo.listOpenMercenaryRuns(userId);
+  if (openRuns.length >= mercenaryProfile.maxActiveRuns) {
+    throw httpError(409, '동시에 진행 가능한 의뢰 수를 초과했습니다.', 'ACTIVE_RUN_LIMIT_REACHED');
+  }
+  if (new Set(memberIds).size !== memberIds.length) {
+    throw httpError(400, '같은 보유 용병이 중복 선택되었습니다.', 'DUPLICATE_OWNED_MERCENARY');
+  }
+  validateMissionMemberCount(memberIds, mission);
+  await assertOwnedMercenariesAvailable(userId, memberIds);
+  const members = await buildRunMembers(userId, memberIds);
+  if (members.length !== memberIds.length) {
+    throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
+  }
+
+  const officeEffects = await getOfficeEffectsForUser(userId);
+  const successPreview = calculateMissionSuccessRate(members, mission, officeEffects);
+  const durationSeconds = Math.max(30, Math.floor(Number(mission.durationSeconds || 0) * (1 - Number(officeEffects.missionDurationReductionPct || 0))));
+  const rewardGold = Math.max(0, Math.floor(Number(mission.rewardGold || 0) * (1 + Number(officeEffects.rewardGoldBonusPct || 0))));
+  const now = new Date();
+  const runId = `run_${randomUUID()}`;
+  const completesAt = new Date(now.getTime() + durationSeconds * 1000);
+
+  const runRow = await repo.createMercenaryRun({
+    id: runId,
+    userId,
+    missionId: mission.missionId,
+    missionTitle: mission.title,
+    selectedMercenaryIds: memberIds,
+    successRate: successPreview.successRate,
+    rewardGold,
+    failureRewardGold: mission.failureRewardGold,
+    officeExp: mission.officeExp,
+    mercenaryExp: mission.mercenaryExp,
+    failureOfficeExp: mission.failureOfficeExp,
+    failureMercenaryExp: mission.failureMercenaryExp,
+    durationSeconds,
+    startedAt: now.toISOString(),
+    completesAt: completesAt.toISOString()
+  });
+  for (const ownedId of memberIds) {
+    await repo.updateUserMercenaryStatus(userId, ownedId, {
+      operationalStatus: 'dispatched',
+      currentActivityType: 'mission',
+      currentActivityId: runId
+    });
+  }
+
+  return { runRow, members, successPreview, officeEffects, startedAt: now.toISOString() };
 }
 
 async function listRuns(userId) {
@@ -2232,6 +2728,7 @@ async function claimMissionRun(userId, runId) {
       });
     }
     if (provider === 'sqlite') await run('COMMIT');
+    const caseProgress = await applyCaseProgressAfterRunClaim(userId, runRow.id, resultStatus);
     const mercenaryProfile = publicMercenaryProfile(updatedProfile);
     return {
       ok: true,
@@ -2246,6 +2743,7 @@ async function claimMissionRun(userId, runId) {
         injury
       },
       injury,
+      caseProgress,
       officeEffects,
       run: serializeRun(claimed, memberResults),
       members: memberResults,
@@ -2321,6 +2819,14 @@ module.exports = {
   startMissionRun,
   rejectMissionOffer,
   claimMissionRun,
+  listCases,
+  getCaseDetail,
+  startCaseFile,
+  startCaseStepRun,
+  claimCaseStepRun,
+  claimCaseReward,
+  getUnlockedCaseIdsFromRumors,
+  buildRumorSourceHint,
   listSquads,
   createSquad,
   updateSquad,

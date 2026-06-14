@@ -145,6 +145,39 @@ function normalizeOfficeAssignment(row) {
   };
 }
 
+function normalizeCaseProgress(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    caseId: row.case_id,
+    status: row.status || 'available',
+    currentStepIndex: Number(row.current_step_index || 0),
+    completedStepIds: parseJsonList(row.completed_step_ids).map((id) => String(id)),
+    startedAt: row.started_at || null,
+    completedAt: row.completed_at || null,
+    rewardClaimedAt: row.reward_claimed_at || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeCaseStepRun(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    caseId: row.case_id,
+    stepId: row.step_id,
+    runId: row.run_id,
+    status: row.status || 'running',
+    startedAt: row.started_at,
+    completedAt: row.completed_at || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function getMercenaryProfile(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -212,12 +245,15 @@ async function updateMercenaryGold(userId, nextGold) {
   return getMercenaryProfile(userId);
 }
 
-async function updateMercenaryProfileProgress(userId, { gold, officeLevel, officeExp }) {
+async function updateMercenaryProfileProgress(userId, { gold, officeLevel, officeExp, reputation }) {
+  const current = reputation === undefined ? await getMercenaryProfile(userId) : null;
+  const nextReputation = reputation === undefined ? Number(current?.reputation || 0) : Number(reputation || 0);
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
       .from('user_mercenary_profiles')
       .update({
         gold,
+        reputation: nextReputation,
         office_level: officeLevel,
         office_exp: officeExp,
         updated_at: new Date().toISOString()
@@ -232,11 +268,12 @@ async function updateMercenaryProfileProgress(userId, { gold, officeLevel, offic
   await run(
     `UPDATE user_mercenary_profiles
      SET gold = ?,
+         reputation = ?,
          office_level = ?,
          office_exp = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE user_id = ?`,
-    [gold, officeLevel, officeExp, userId]
+    [gold, nextReputation, officeLevel, officeExp, userId]
   );
   return getMercenaryProfile(userId);
 }
@@ -1116,6 +1153,266 @@ async function deleteOfficeAssignment(userId, assignmentId) {
   return existing;
 }
 
+async function listCaseProgress(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeCaseProgress);
+  }
+
+  const rows = await all(
+    'SELECT * FROM user_mercenary_case_progress WHERE user_id = ? ORDER BY created_at ASC',
+    [userId]
+  );
+  return rows.map(normalizeCaseProgress);
+}
+
+async function getCaseProgress(userId, caseId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('case_id', caseId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseProgress(data);
+  }
+
+  return normalizeCaseProgress(await get(
+    'SELECT * FROM user_mercenary_case_progress WHERE user_id = ? AND case_id = ?',
+    [userId, caseId]
+  ));
+}
+
+async function createCaseProgress({ id, userId, caseId, status = 'in_progress', currentStepIndex = 0, completedStepIds = [], startedAt = null }) {
+  const row = {
+    id,
+    user_id: userId,
+    case_id: caseId,
+    status,
+    current_step_index: currentStepIndex,
+    completed_step_ids: completedStepIds,
+    started_at: startedAt
+  };
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_progress')
+      .insert(row)
+      .select()
+      .single();
+    if (error) {
+      if (error.code === '23505') return getCaseProgress(userId, caseId);
+      throw error;
+    }
+    return normalizeCaseProgress(data);
+  }
+
+  await run(
+    `INSERT OR IGNORE INTO user_mercenary_case_progress
+     (id, user_id, case_id, status, current_step_index, completed_step_ids, started_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, userId, caseId, status, currentStepIndex, JSON.stringify(completedStepIds), startedAt]
+  );
+  return getCaseProgress(userId, caseId);
+}
+
+async function updateCaseProgress(userId, caseId, fields = {}) {
+  const completedStepIds = fields.completedStepIds !== undefined ? fields.completedStepIds : undefined;
+  if (provider === 'supabase') {
+    const patch = { updated_at: new Date().toISOString() };
+    if (fields.status !== undefined) patch.status = fields.status;
+    if (fields.currentStepIndex !== undefined) patch.current_step_index = fields.currentStepIndex;
+    if (completedStepIds !== undefined) patch.completed_step_ids = completedStepIds;
+    if (fields.startedAt !== undefined) patch.started_at = fields.startedAt;
+    if (fields.completedAt !== undefined) patch.completed_at = fields.completedAt;
+    if (fields.rewardClaimedAt !== undefined) patch.reward_claimed_at = fields.rewardClaimedAt;
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_progress')
+      .update(patch)
+      .eq('user_id', userId)
+      .eq('case_id', caseId)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseProgress(data);
+  }
+
+  const existing = await getCaseProgress(userId, caseId);
+  if (!existing) return null;
+  await run(
+    `UPDATE user_mercenary_case_progress
+     SET status = ?,
+         current_step_index = ?,
+         completed_step_ids = ?,
+         started_at = ?,
+         completed_at = ?,
+         reward_claimed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND case_id = ?`,
+    [
+      fields.status ?? existing.status,
+      fields.currentStepIndex ?? existing.currentStepIndex,
+      JSON.stringify(completedStepIds ?? existing.completedStepIds),
+      fields.startedAt !== undefined ? fields.startedAt : existing.startedAt,
+      fields.completedAt !== undefined ? fields.completedAt : existing.completedAt,
+      fields.rewardClaimedAt !== undefined ? fields.rewardClaimedAt : existing.rewardClaimedAt,
+      userId,
+      caseId
+    ]
+  );
+  return getCaseProgress(userId, caseId);
+}
+
+async function listCaseStepRuns(userId, caseId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('case_id', caseId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeCaseStepRun);
+  }
+
+  const rows = await all(
+    `SELECT * FROM user_mercenary_case_step_runs
+     WHERE user_id = ? AND case_id = ?
+     ORDER BY created_at ASC`,
+    [userId, caseId]
+  );
+  return rows.map(normalizeCaseStepRun);
+}
+
+async function getCaseStepRun(userId, caseId, stepId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('case_id', caseId)
+      .eq('step_id', stepId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseStepRun(data);
+  }
+
+  return normalizeCaseStepRun(await get(
+    `SELECT * FROM user_mercenary_case_step_runs
+     WHERE user_id = ? AND case_id = ? AND step_id = ?
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [userId, caseId, stepId]
+  ));
+}
+
+async function getRunningCaseStepRun(userId, caseId, stepId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('case_id', caseId)
+      .eq('step_id', stepId)
+      .eq('status', 'running')
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseStepRun(data);
+  }
+
+  return normalizeCaseStepRun(await get(
+    `SELECT * FROM user_mercenary_case_step_runs
+     WHERE user_id = ? AND case_id = ? AND step_id = ? AND status = 'running'
+     LIMIT 1`,
+    [userId, caseId, stepId]
+  ));
+}
+
+async function getCaseStepRunByRunId(userId, runId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('run_id', runId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseStepRun(data);
+  }
+
+  return normalizeCaseStepRun(await get(
+    'SELECT * FROM user_mercenary_case_step_runs WHERE user_id = ? AND run_id = ?',
+    [userId, runId]
+  ));
+}
+
+async function createCaseStepRun({ id, userId, caseId, stepId, runId, status = 'running', startedAt }) {
+  const row = {
+    id,
+    user_id: userId,
+    case_id: caseId,
+    step_id: stepId,
+    run_id: runId,
+    status,
+    started_at: startedAt
+  };
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeCaseStepRun(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_case_step_runs
+     (id, user_id, case_id, step_id, run_id, status, started_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, userId, caseId, stepId, runId, status, startedAt]
+  );
+  return getCaseStepRunByRunId(userId, runId);
+}
+
+async function updateCaseStepRunStatus(userId, bridgeId, { status, completedAt = null }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_case_step_runs')
+      .update({
+        status,
+        completed_at: completedAt,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', bridgeId)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeCaseStepRun(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_case_step_runs
+     SET status = ?,
+         completed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ?`,
+    [status, completedAt, userId, bridgeId]
+  );
+  return normalizeCaseStepRun(await get(
+    'SELECT * FROM user_mercenary_case_step_runs WHERE user_id = ? AND id = ?',
+    [userId, bridgeId]
+  ));
+}
+
 module.exports = {
   getMercenaryProfile,
   createMercenaryProfile,
@@ -1156,5 +1453,15 @@ module.exports = {
   getOfficeAssignmentBySlot,
   getOfficeAssignmentByOwnedMercenaryId,
   createOfficeAssignment,
-  deleteOfficeAssignment
+  deleteOfficeAssignment,
+  listCaseProgress,
+  getCaseProgress,
+  createCaseProgress,
+  updateCaseProgress,
+  listCaseStepRuns,
+  getCaseStepRun,
+  getRunningCaseStepRun,
+  getCaseStepRunByRunId,
+  createCaseStepRun,
+  updateCaseStepRunStatus
 };

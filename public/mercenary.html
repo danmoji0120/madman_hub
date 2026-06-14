@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=237" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=238" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -321,6 +321,44 @@
       </div>
     </section>
 
+    <section class="mercenary-case-view" id="mercenary-case-view" aria-label="사건 파일" hidden>
+      <div class="case-background-scrim" aria-hidden="true"></div>
+      <div class="case-shell">
+        <header class="case-topbar">
+          <div class="case-title-block">
+            <span class="case-kicker">연쇄 의뢰 0.1</span>
+            <h2>사건 파일</h2>
+            <p>큰 사건 · 단계별 파견 기록</p>
+          </div>
+          <button class="case-close-button" id="case-close-button" type="button">닫기</button>
+        </header>
+
+        <div class="case-layout">
+          <aside class="case-list-panel" aria-label="사건 파일 목록">
+            <div class="case-panel-heading">
+              <h3>사건 목록</h3>
+              <span id="case-count">0건</span>
+            </div>
+            <div class="case-filter-row" id="case-filter-row" aria-label="사건 상태 필터"></div>
+            <div class="case-list" id="case-list"></div>
+          </aside>
+
+          <section class="case-detail-panel" aria-label="선택 사건 상세">
+            <div id="case-detail"></div>
+          </section>
+
+          <aside class="case-dispatch-panel" aria-label="사건 단계 파견 용병 선택">
+            <div class="case-panel-heading">
+              <h3>파견 용병</h3>
+              <span id="case-member-count">0명</span>
+            </div>
+            <div class="case-dispatch-summary" id="case-dispatch-summary"></div>
+            <div class="case-roster-list" id="case-roster-list"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
     <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
       <div class="recruitment-background-scrim" aria-hidden="true"></div>
       <div class="recruitment-shell">
@@ -410,6 +448,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=237"></script>
+  <script src="/js/mercenary-lobby.js?v=238"></script>
 </body>
 </html>

@@ -666,6 +666,16 @@ button {
   right: 7%;
 }
 
+.hotspot-office {
+  top: 18%;
+  right: 10%;
+}
+
+.hotspot-cases {
+  top: 70%;
+  left: 22%;
+}
+
 .lobby-notice {
   position: absolute;
   top: 10px;
@@ -3609,6 +3619,347 @@ body.mission-open {
   border: 1px dashed rgba(214, 164, 83, 0.25);
   border-radius: 10px;
 }
+
+.mercenary-case-view {
+  position: fixed;
+  inset: 0;
+  z-index: 72;
+  padding: 18px;
+  color: #f8ead0;
+}
+
+.case-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(128, 32, 28, 0.25), transparent 34%),
+    radial-gradient(circle at 70% 35%, rgba(198, 140, 58, 0.16), transparent 36%),
+    rgba(5, 4, 4, 0.9);
+  backdrop-filter: blur(4px);
+}
+
+.case-shell {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 1540px);
+  height: min(92vh, 860px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(214, 164, 83, 0.36);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(28, 20, 17, 0.97), rgba(8, 6, 5, 0.98)),
+    radial-gradient(circle at 50% 0%, rgba(133, 41, 36, 0.14), transparent 46%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+}
+
+.case-topbar,
+.case-layout,
+.case-panel-heading,
+.case-card,
+.case-step-card,
+.case-roster-card,
+.case-action-row {
+  display: grid;
+}
+
+.case-topbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.case-kicker {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #d7ad68;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.case-title-block h2,
+.case-detail-head h3 {
+  margin: 0;
+  color: #ffe3aa;
+  font-family: 'Georgia', serif;
+}
+
+.case-title-block p,
+.case-detail-head p,
+.case-empty {
+  margin: 4px 0 0;
+  color: rgba(248, 234, 208, 0.72);
+}
+
+.case-close-button,
+.case-filter-row button,
+.case-action-row button,
+.case-roster-card {
+  border: 1px solid rgba(214, 164, 83, 0.42);
+  border-radius: 8px;
+  background: rgba(83, 50, 22, 0.72);
+  color: #ffe9bd;
+  cursor: pointer;
+}
+
+.case-close-button,
+.case-filter-row button,
+.case-action-row button {
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.case-layout {
+  grid-template-columns: 300px minmax(0, 1fr) 330px;
+  gap: 14px;
+  min-height: 0;
+}
+
+.case-list-panel,
+.case-detail-panel,
+.case-dispatch-panel {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(214, 164, 83, 0.24);
+  border-radius: 12px;
+  background: rgba(12, 9, 8, 0.7);
+}
+
+.case-panel-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.case-panel-heading h3 {
+  margin: 0;
+  color: #ffe0a6;
+}
+
+.case-filter-row,
+.case-list,
+.case-step-timeline,
+.case-roster-list {
+  display: grid;
+  gap: 10px;
+}
+
+.case-filter-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+.case-filter-row button.is-active {
+  border-color: rgba(245, 194, 99, 0.85);
+  background: rgba(132, 80, 31, 0.86);
+}
+
+.case-card {
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid rgba(214, 164, 83, 0.22);
+  border-radius: 10px;
+  background: rgba(33, 23, 18, 0.78);
+  color: #f8ead0;
+  cursor: pointer;
+}
+
+.case-card.is-selected {
+  border-color: rgba(245, 194, 99, 0.84);
+  box-shadow: 0 0 0 1px rgba(245, 194, 99, 0.2);
+}
+
+.case-card.status-locked {
+  opacity: 0.64;
+}
+
+.case-card span,
+.case-card small,
+.case-card em,
+.case-card i,
+.case-card b {
+  color: rgba(248, 234, 208, 0.7);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.case-card strong {
+  color: #ffe6b0;
+}
+
+.case-detail-head {
+  margin-bottom: 12px;
+}
+
+.case-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.case-detail-grid div,
+.case-current-panel,
+.case-dispatch-summary {
+  padding: 10px;
+  border: 1px solid rgba(214, 164, 83, 0.18);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.case-detail-grid span {
+  display: block;
+  color: rgba(248, 234, 208, 0.58);
+  font-size: 11px;
+}
+
+.case-detail-grid strong,
+.case-current-panel strong,
+.case-dispatch-summary strong {
+  color: #ffe5b1;
+}
+
+.case-tag-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.case-tag-line span {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(214, 164, 83, 0.12);
+  color: #f4d39c;
+  font-size: 12px;
+}
+
+.case-lock-message {
+  padding: 10px;
+  border: 1px solid rgba(191, 74, 62, 0.34);
+  border-radius: 8px;
+  background: rgba(86, 24, 20, 0.32);
+  color: #ffc6b8;
+}
+
+.case-step-card {
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid rgba(214, 164, 83, 0.2);
+  border-radius: 10px;
+  background: rgba(21, 15, 11, 0.78);
+}
+
+.case-step-card.status-running {
+  border-color: rgba(92, 153, 232, 0.5);
+}
+
+.case-step-card.status-completed {
+  border-color: rgba(96, 194, 118, 0.45);
+}
+
+.case-step-card.status-locked {
+  opacity: 0.56;
+}
+
+.case-step-card span,
+.case-step-card p,
+.case-step-card em,
+.case-current-panel p,
+.case-dispatch-summary p {
+  margin: 0;
+  color: rgba(248, 234, 208, 0.72);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.case-step-card strong {
+  color: #ffe5b1;
+}
+
+.case-current-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.case-action-row {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.case-action-row button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.case-dispatch-summary {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.case-roster-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  background: rgba(22, 15, 10, 0.78);
+}
+
+.case-roster-card.is-selected {
+  border-color: rgba(245, 194, 99, 0.86);
+  background: rgba(61, 42, 21, 0.86);
+}
+
+.case-roster-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.case-roster-portrait {
+  width: 54px;
+  height: 68px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.case-roster-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.case-roster-card b,
+.case-roster-card strong {
+  color: #ffe5b1;
+}
+
+.case-roster-card em,
+.case-roster-card small {
+  display: block;
+  color: rgba(248, 234, 208, 0.7);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.case-empty {
+  padding: 12px;
+  border: 1px dashed rgba(214, 164, 83, 0.25);
+  border-radius: 10px;
+}
 }
 
 
@@ -3911,6 +4262,28 @@ body.mission-open {
   .office-roster-panel {
     overflow: visible;
   }
+
+  .mercenary-case-view {
+    padding: 8px;
+  }
+
+  .case-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .case-layout,
+  .case-detail-grid,
+  .case-roster-card {
+    grid-template-columns: 1fr;
+  }
+
+  .case-list-panel,
+  .case-detail-panel,
+  .case-dispatch-panel {
+    overflow: visible;
+  }
 }
 
 @media (max-width: 768px) {
@@ -3935,6 +4308,16 @@ body.mission-open {
   .hotspot-infirmary {
     top: 70%;
     right: 4%;
+  }
+
+  .hotspot-office {
+    top: 20%;
+    right: 4%;
+  }
+
+  .hotspot-cases {
+    top: 56%;
+    left: 4%;
   }
 
   .quick-nav {
