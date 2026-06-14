@@ -55,6 +55,7 @@ function normalizeMercenaryProfile(row) {
     officeLevel: Number(row.office_level || 1),
     officeExp: Number(row.office_exp || 0),
     officeReputation: row.office_reputation || row.rank || 'D',
+    missionOfferNextAt: row.mission_offer_next_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -100,6 +101,21 @@ function normalizeRun(row) {
   };
 }
 
+function normalizeMissionOffer(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    missionId: row.mission_id,
+    generatedAt: row.generated_at,
+    acceptedAt: row.accepted_at || null,
+    rejectedAt: row.rejected_at || null,
+    acceptedRunId: row.accepted_run_id || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function getMercenaryProfile(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -125,7 +141,8 @@ async function createMercenaryProfile({ userId, gold = 0 }) {
         rank: 'D',
         office_level: 1,
         office_exp: 0,
-        office_reputation: 'D'
+        office_reputation: 'D',
+        mission_offer_next_at: null
       })
       .select()
       .single();
@@ -191,6 +208,31 @@ async function updateMercenaryProfileProgress(userId, { gold, officeLevel, offic
          updated_at = CURRENT_TIMESTAMP
      WHERE user_id = ?`,
     [gold, officeLevel, officeExp, userId]
+  );
+  return getMercenaryProfile(userId);
+}
+
+async function updateMissionOfferNextAt(userId, nextAt) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .update({
+        mission_offer_next_at: nextAt || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeMercenaryProfile(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_profiles
+     SET mission_offer_next_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ?`,
+    [nextAt || null, userId]
   );
   return getMercenaryProfile(userId);
 }
@@ -681,11 +723,137 @@ async function claimMercenaryRun(userId, runId, { resultStatus, resultText, clai
   return getMercenaryRun(userId, runId);
 }
 
+async function listActiveMissionOffers(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_mission_offers')
+      .select('*')
+      .eq('user_id', userId)
+      .is('accepted_at', null)
+      .is('rejected_at', null)
+      .order('generated_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeMissionOffer);
+  }
+
+  const rows = await all(
+    `SELECT * FROM user_mercenary_mission_offers
+     WHERE user_id = ? AND accepted_at IS NULL AND rejected_at IS NULL
+     ORDER BY generated_at ASC, created_at ASC`,
+    [userId]
+  );
+  return rows.map(normalizeMissionOffer);
+}
+
+async function getMissionOffer(userId, offerId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_mission_offers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', offerId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeMissionOffer(data);
+  }
+
+  return normalizeMissionOffer(await get(
+    'SELECT * FROM user_mercenary_mission_offers WHERE user_id = ? AND id = ?',
+    [userId, offerId]
+  ));
+}
+
+async function createMissionOffer({ id, userId, missionId, generatedAt }) {
+  const row = {
+    id,
+    user_id: userId,
+    mission_id: missionId,
+    generated_at: generatedAt
+  };
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_mission_offers')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeMissionOffer(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_mission_offers
+     (id, user_id, mission_id, generated_at)
+     VALUES (?, ?, ?, ?)`,
+    [id, userId, missionId, generatedAt]
+  );
+  return getMissionOffer(userId, id);
+}
+
+async function markMissionOfferAccepted(userId, offerId, runId, acceptedAt) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_mission_offers')
+      .update({
+        accepted_at: acceptedAt,
+        accepted_run_id: runId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', offerId)
+      .is('accepted_at', null)
+      .is('rejected_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeMissionOffer(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_mission_offers
+     SET accepted_at = ?,
+         accepted_run_id = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND accepted_at IS NULL AND rejected_at IS NULL`,
+    [acceptedAt, runId, userId, offerId]
+  );
+  return getMissionOffer(userId, offerId);
+}
+
+async function markMissionOfferRejected(userId, offerId, rejectedAt) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_mission_offers')
+      .update({
+        rejected_at: rejectedAt,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', offerId)
+      .is('accepted_at', null)
+      .is('rejected_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeMissionOffer(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_mission_offers
+     SET rejected_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND accepted_at IS NULL AND rejected_at IS NULL`,
+    [rejectedAt, userId, offerId]
+  );
+  return getMissionOffer(userId, offerId);
+}
+
 module.exports = {
   getMercenaryProfile,
   createMercenaryProfile,
   updateMercenaryGold,
   updateMercenaryProfileProgress,
+  updateMissionOfferNextAt,
   getRecruitBoard,
   upsertRecruitBoard,
   listUserMercenaries,
@@ -704,5 +872,10 @@ module.exports = {
   createMercenaryRun,
   listOpenMercenaryRuns,
   getMercenaryRun,
-  claimMercenaryRun
+  claimMercenaryRun,
+  listActiveMissionOffers,
+  getMissionOffer,
+  createMissionOffer,
+  markMissionOfferAccepted,
+  markMissionOfferRejected
 };

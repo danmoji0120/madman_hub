@@ -383,12 +383,14 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   office_level INTEGER NOT NULL DEFAULT 1,
   office_exp INTEGER NOT NULL DEFAULT 0,
   office_reputation TEXT NOT NULL DEFAULT 'D',
+  mission_offer_next_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_exp INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_reputation TEXT NOT NULL DEFAULT 'D';
+ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS mission_offer_next_at TIMESTAMPTZ;
 UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1;
 UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0;
 UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D');
@@ -442,6 +444,18 @@ CREATE TABLE IF NOT EXISTS user_mercenary_runs (
   claimed_at TIMESTAMPTZ,
   result_status TEXT,
   result_text TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_mission_offers (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_id TEXT NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  accepted_at TIMESTAMPTZ,
+  rejected_at TIMESTAMPTZ,
+  accepted_run_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -692,6 +706,11 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user ON user_mercenary_runs(u
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_user ON user_mercenary_mission_offers(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_mercenary_mission_offers(user_id, accepted_at, rejected_at);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_mission ON user_mercenary_mission_offers(mission_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_run ON user_mercenary_mission_offers(accepted_run_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);

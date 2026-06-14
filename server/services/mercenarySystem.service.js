@@ -19,6 +19,7 @@ const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;
 const MAX_OFFICE_LEVEL = 50;
 const BASE_OFFICE_EXP = 150;
+const MISSION_OFFER_REFILL_INTERVAL_SECONDS = 1800;
 const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating']);
 const OPERATIONAL_STATUS_LABELS = {
   idle: '대기 중',
@@ -556,6 +557,154 @@ function publicMission(mission) {
   };
 }
 
+function getMissionOfferBoardLimit(officeLevel) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  if (level >= 10) return 6;
+  if (level >= 6) return 5;
+  if (level >= 3) return 4;
+  return 3;
+}
+
+function getMissionOfferRefillIntervalSeconds() {
+  return MISSION_OFFER_REFILL_INTERVAL_SECONDS;
+}
+
+function nextMissionOfferAt(fromDate = new Date()) {
+  return new Date(fromDate.getTime() + getMissionOfferRefillIntervalSeconds() * 1000).toISOString();
+}
+
+function missionOfferNextAtMs(profile) {
+  const value = profile?.missionOfferNextAt || profile?.mission_offer_next_at || '';
+  const parsed = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function missionEligibleForOffer(mission, officeLevel) {
+  const unlock = getMissionUnlockState(mission, officeLevel);
+  return Boolean(mission?.enabled && mission.category === 'non_combat' && unlock.unlocked);
+}
+
+function riskAllowedForOffer(risk, officeLevel) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  const normalized = String(risk || '낮음');
+  if (level <= 2) return normalized === '낮음' || normalized === '보통';
+  if (level < 10) return normalized !== '위험';
+  return true;
+}
+
+function weightedOfferCandidates(missions, officeLevel) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  const weighted = [];
+  for (const mission of missions) {
+    const risk = String(mission.risk || '낮음');
+    let weight = 1;
+    if (level <= 2) weight = risk === '낮음' ? 5 : 1;
+    else if (level < 10) weight = risk === '낮음' ? 3 : risk === '보통' ? 3 : 1;
+    else weight = risk === '위험' ? 1 : risk === '높음' ? 2 : 3;
+    for (let index = 0; index < weight; index += 1) weighted.push(mission);
+  }
+  return weighted.length ? weighted : missions;
+}
+
+function pickMissionForOffer(profile, activeOffers = []) {
+  const officeLevel = Number(profile?.officeLevel || 1) || 1;
+  const activeMissionIds = new Set(activeOffers.map((offer) => String(offer.missionId)));
+  const eligible = readMissionData()
+    .filter((mission) => missionEligibleForOffer(mission, officeLevel))
+    .filter((mission) => riskAllowedForOffer(mission.risk, officeLevel));
+  const deduped = eligible.filter((mission) => !activeMissionIds.has(mission.missionId));
+  const pool = weightedOfferCandidates(deduped.length ? deduped : eligible, officeLevel);
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function buildMissionOfferResponse(offer, mission) {
+  return {
+    offerId: offer.id,
+    generatedAt: offer.generatedAt,
+    acceptedAt: offer.acceptedAt,
+    rejectedAt: offer.rejectedAt,
+    acceptedRunId: offer.acceptedRunId,
+    ...publicMission(mission)
+  };
+}
+
+function buildMissionBoardState(profile, activeOffers = []) {
+  const maxMissionOffers = getMissionOfferBoardLimit(profile?.officeLevel);
+  const nextAt = profile?.missionOfferNextAt || null;
+  const nextMs = missionOfferNextAtMs(profile);
+  const secondsUntilNextOffer = nextAt ? Math.max(0, Math.ceil((nextMs - Date.now()) / 1000)) : 0;
+  const activeOfferCount = activeOffers.length;
+  return {
+    activeOfferCount,
+    maxMissionOffers,
+    emptySlots: Math.max(0, maxMissionOffers - activeOfferCount),
+    nextOfferAt: nextAt,
+    secondsUntilNextOffer,
+    refillIntervalSeconds: getMissionOfferRefillIntervalSeconds()
+  };
+}
+
+async function createMissionOfferForUser(userId, missionId, generatedAt = new Date().toISOString()) {
+  return repo.createMissionOffer({
+    id: `offer_${randomUUID()}`,
+    userId,
+    missionId,
+    generatedAt
+  });
+}
+
+async function ensureMissionOffersForUser(userId, profile) {
+  let currentProfile = profile;
+  let activeOffers = await repo.listActiveMissionOffers(userId);
+  const maxMissionOffers = getMissionOfferBoardLimit(currentProfile.officeLevel);
+  const now = new Date();
+  const nowMs = now.getTime();
+  const nextMs = missionOfferNextAtMs(currentProfile);
+
+  if (!activeOffers.length && !currentProfile.missionOfferNextAt) {
+    const created = [];
+    for (let index = 0; index < maxMissionOffers; index += 1) {
+      const mission = pickMissionForOffer(currentProfile, [...activeOffers, ...created]);
+      if (!mission) break;
+      created.push(await createMissionOfferForUser(userId, mission.missionId, now.toISOString()));
+    }
+    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    activeOffers = await repo.listActiveMissionOffers(userId);
+    return { profile: currentProfile, activeOffers };
+  }
+
+  if (activeOffers.length >= maxMissionOffers) {
+    if (!currentProfile.missionOfferNextAt || nowMs >= nextMs) {
+      currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    }
+    activeOffers = await repo.listActiveMissionOffers(userId);
+    return { profile: currentProfile, activeOffers };
+  }
+
+  if (!currentProfile.missionOfferNextAt) {
+    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    return { profile: currentProfile, activeOffers };
+  }
+
+  if (nowMs >= nextMs) {
+    const mission = pickMissionForOffer(currentProfile, activeOffers);
+    if (mission) await createMissionOfferForUser(userId, mission.missionId, now.toISOString());
+    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    activeOffers = await repo.listActiveMissionOffers(userId);
+  }
+
+  return { profile: currentProfile, activeOffers };
+}
+
+async function pushMissionOfferRefillIfDue(userId, profile) {
+  const now = new Date();
+  if (!profile?.missionOfferNextAt || now.getTime() >= missionOfferNextAtMs(profile)) {
+    return repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+  }
+  return profile;
+}
+
 function calculateMissionWorkPower(ownedMercenaries, mission) {
   const members = Array.isArray(ownedMercenaries) ? ownedMercenaries.filter(Boolean) : [];
   const primaryStats = Array.isArray(mission?.primaryStats) ? mission.primaryStats : [];
@@ -1040,16 +1189,24 @@ async function listMissions(userId) {
     getOrCreateMercenaryProfile(userId),
     getCommunityPoints(userId)
   ]);
-  const mercenaryProfile = publicMercenaryProfile(profile);
-  const missions = readMissionData()
-    .map((mission, index) => ({ mission, index, unlock: getMissionUnlockState(mission, mercenaryProfile.officeLevel) }))
-    .filter(({ mission, unlock }) => mission.enabled && mission.category === 'non_combat' && unlock.unlocked)
-    .sort((a, b) => getMissionRiskRank(a.mission.risk) - getMissionRiskRank(b.mission.risk) || a.index - b.index)
-    .map(({ mission }) => publicMission(mission));
+  const ensured = await ensureMissionOffersForUser(userId, profile);
+  const mercenaryProfile = publicMercenaryProfile(ensured.profile);
+  const lookup = missionById();
+  const offers = ensured.activeOffers
+    .map((offer) => {
+      const mission = lookup.get(offer.missionId);
+      return mission ? buildMissionOfferResponse(offer, mission) : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => getMissionRiskRank(a.risk) - getMissionRiskRank(b.risk)
+      || new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime());
+  const board = buildMissionBoardState(ensured.profile, ensured.activeOffers);
 
   return {
     ok: true,
-    missions,
+    offers,
+    missions: offers,
+    board,
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
     communityPoints,
@@ -1067,6 +1224,20 @@ function getUnlockedMissionOrThrow(missionId, officeLevel) {
   const unlock = getMissionUnlockState(mission, officeLevel);
   if (!unlock.unlocked) {
     throw httpError(403, unlock.lockedReason || '의뢰 조건을 만족하지 못했습니다.', 'MISSION_LOCKED');
+  }
+  return mission;
+}
+
+function getMissionFromOfferOrThrow(offer, officeLevel) {
+  const mission = missionById().get(String(offer?.missionId || '').trim());
+  if (!mission) throw httpError(404, '제안된 의뢰 원본을 찾을 수 없습니다.', 'OFFER_MISSION_NOT_FOUND');
+  if (!mission.enabled) throw httpError(400, '비활성화된 의뢰입니다.', 'MISSION_DISABLED');
+  if (mission.category !== 'non_combat') {
+    throw httpError(400, '현재는 비전투 의뢰만 파견할 수 있습니다.', 'INVALID_MISSION_CATEGORY');
+  }
+  const unlock = getMissionUnlockState(mission, officeLevel);
+  if (!unlock.unlocked) {
+    throw httpError(403, unlock.lockedReason || '의뢰 조건을 만족하지 못했습니다.', 'OFFER_MISSION_LOCKED');
   }
   return mission;
 }
@@ -1135,7 +1306,15 @@ async function listRuns(userId) {
 async function startMissionRun(userId, payload = {}) {
   const profile = await getOrCreateMercenaryProfile(userId);
   const mercenaryProfile = publicMercenaryProfile(profile);
-  const mission = getUnlockedMissionOrThrow(payload.missionId, mercenaryProfile.officeLevel);
+  const offerId = String(payload.offerId || '').trim();
+  if (!offerId) {
+    throw httpError(400, '의뢰 게시판의 제안을 선택해 주세요.', 'OFFER_ID_REQUIRED');
+  }
+  const offer = await repo.getMissionOffer(userId, offerId);
+  if (!offer) throw httpError(404, '의뢰 제안을 찾을 수 없습니다.', 'OFFER_NOT_FOUND');
+  if (offer.acceptedAt) throw httpError(409, '이미 수락한 의뢰입니다.', 'OFFER_ALREADY_ACCEPTED');
+  if (offer.rejectedAt) throw httpError(409, '이미 거부한 의뢰입니다.', 'OFFER_ALREADY_REJECTED');
+  const mission = getMissionFromOfferOrThrow(offer, mercenaryProfile.officeLevel);
   const openRuns = await repo.listOpenMercenaryRuns(userId);
   if (openRuns.length >= mercenaryProfile.maxActiveRuns) {
     throw httpError(409, '동시에 진행 가능한 의뢰 수를 초과했습니다.', 'ACTIVE_RUN_LIMIT_REACHED');
@@ -1183,10 +1362,16 @@ async function startMissionRun(userId, payload = {}) {
         currentActivityId: runId
       });
     }
+    const accepted = await repo.markMissionOfferAccepted(userId, offer.id, runId, now.toISOString());
+    if (!accepted?.acceptedAt || accepted.acceptedRunId !== runId) {
+      throw httpError(409, '이미 처리된 의뢰 제안입니다.', accepted?.rejectedAt ? 'OFFER_ALREADY_REJECTED' : 'OFFER_ALREADY_ACCEPTED');
+    }
+    await pushMissionOfferRefillIfDue(userId, profile);
     if (provider === 'sqlite') await run('COMMIT');
     return {
       ok: true,
       run: serializeRun(runRow, members),
+      acceptedOfferId: offer.id,
       successPreview,
       ...(await listRuns(userId))
     };
@@ -1194,6 +1379,36 @@ async function startMissionRun(userId, payload = {}) {
     if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
     throw error;
   }
+}
+
+async function rejectMissionOffer(userId, offerId) {
+  const normalizedOfferId = String(offerId || '').trim();
+  if (!normalizedOfferId) throw httpError(400, '의뢰 제안을 선택해 주세요.', 'OFFER_NOT_FOUND');
+  const offer = await repo.getMissionOffer(userId, normalizedOfferId);
+  if (!offer) throw httpError(404, '의뢰 제안을 찾을 수 없습니다.', 'OFFER_NOT_FOUND');
+  if (offer.acceptedAt) throw httpError(409, '이미 수락한 의뢰는 거부할 수 없습니다.', 'OFFER_ALREADY_ACCEPTED');
+  if (offer.rejectedAt) throw httpError(409, '이미 거부한 의뢰입니다.', 'OFFER_ALREADY_REJECTED');
+
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const rejected = await repo.markMissionOfferRejected(userId, normalizedOfferId, new Date().toISOString());
+  if (!rejected?.rejectedAt) {
+    const latest = await repo.getMissionOffer(userId, normalizedOfferId);
+    throw httpError(409, '이미 처리된 의뢰 제안입니다.', latest?.acceptedAt ? 'OFFER_ALREADY_ACCEPTED' : 'OFFER_ALREADY_REJECTED');
+  }
+  const nextProfile = await pushMissionOfferRefillIfDue(userId, profile);
+  const activeOffers = await repo.listActiveMissionOffers(userId);
+  const board = buildMissionBoardState(nextProfile, activeOffers);
+  const mercenaryProfile = publicMercenaryProfile(nextProfile);
+
+  return {
+    ok: true,
+    rejectedOfferId: normalizedOfferId,
+    board,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints: await getCommunityPoints(userId),
+    mercenaryProfile
+  };
 }
 
 function assertRunClaimable(runRow) {
@@ -1349,9 +1564,12 @@ module.exports = {
   countMatchedMissionPositions,
   decideMissionResult,
   summarizeSquad,
+  getMissionOfferBoardLimit,
+  getMissionOfferRefillIntervalSeconds,
   listMissions,
   listRuns,
   startMissionRun,
+  rejectMissionOffer,
   claimMissionRun,
   listSquads,
   createSquad,

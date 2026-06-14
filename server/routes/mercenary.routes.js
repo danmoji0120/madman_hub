@@ -39,6 +39,7 @@ router.post('/squads', handle((req) => mercenarySystem.createSquad(req.user.id, 
 router.patch('/squads/:id', handle((req) => mercenarySystem.updateSquad(req.user.id, req.params.id, req.body)));
 router.delete('/squads/:id', handle((req) => mercenarySystem.deleteSquad(req.user.id, req.params.id)));
 router.get('/missions', handle((req) => mercenarySystem.listMissions(req.user.id)));
+router.post('/mission-offers/reject', handle((req) => mercenarySystem.rejectMissionOffer(req.user.id, req.body?.offerId)));
 router.get('/runs', handle((req) => mercenarySystem.listRuns(req.user.id)));
 router.post('/runs/start', handle((req) => mercenarySystem.startMissionRun(req.user.id, req.body)));
 router.post('/runs/claim', handle((req) => mercenarySystem.claimMissionRun(req.user.id, req.body?.runId)));

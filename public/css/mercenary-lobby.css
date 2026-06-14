@@ -2480,6 +2480,29 @@ body.mission-open {
   cursor: pointer;
 }
 
+.mission-board-state {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(214, 168, 93, 0.25);
+  background:
+    linear-gradient(180deg, rgba(45, 27, 13, 0.72), rgba(12, 9, 6, 0.68));
+  color: rgba(244, 223, 180, 0.84);
+  padding: 10px 11px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.22);
+}
+
+.mission-board-state strong {
+  color: #ffe0a4;
+}
+
+.mission-board-state span,
+.mission-board-state em,
+.mission-card em {
+  color: rgba(238, 209, 153, 0.68);
+  font-size: 12px;
+  font-style: normal;
+}
+
 .mission-card.is-selected,
 .mission-squad-card.is-selected {
   border-color: rgba(255, 210, 120, 0.8);
@@ -2563,6 +2586,37 @@ body.mission-open {
 
 .mission-factor-box {
   margin-top: 12px;
+}
+
+.mission-detail-actions {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(214, 168, 93, 0.16);
+  padding-top: 12px;
+}
+
+.mission-detail-actions span {
+  color: rgba(238, 209, 153, 0.62);
+  font-size: 12px;
+}
+
+.mission-reject-button {
+  min-height: 34px;
+  border: 1px solid rgba(156, 55, 45, 0.62);
+  background:
+    linear-gradient(180deg, rgba(93, 35, 26, 0.82), rgba(35, 15, 12, 0.82));
+  color: #ffd6c4;
+  padding: 0 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mission-reject-button:hover {
+  border-color: rgba(245, 126, 92, 0.82);
+  box-shadow: 0 0 14px rgba(170, 45, 30, 0.24);
 }
 
 .mission-squad-portraits,

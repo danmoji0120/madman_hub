@@ -414,10 +414,13 @@ const squadState = {
 
 const missionState = {
   missions: [],
+  offers: [],
+  board: null,
   squads: [],
   owned: [],
   runs: [],
   selectedMissionId: '',
+  selectedOfferId: '',
   selectedSquadId: '',
   activeRunCount: 0,
   maxActiveRuns: 1,
@@ -1333,6 +1336,13 @@ function formatMissionDuration(seconds) {
   return `${minutes}분 ${String(rest).padStart(2, '0')}초`;
 }
 
+function formatMissionCountdown(seconds) {
+  const value = Math.max(0, Number(seconds || 0) || 0);
+  const minutes = Math.floor(value / 60);
+  const rest = value % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
 function normalizeMissionRun(run) {
   return {
     ...run,
@@ -1344,7 +1354,9 @@ function normalizeMissionRun(run) {
 }
 
 function selectedMission() {
-  return missionState.missions.find((mission) => mission.missionId === missionState.selectedMissionId) || missionState.missions[0] || null;
+  return missionState.offers.find((offer) => offer.offerId === missionState.selectedOfferId)
+    || missionState.offers[0]
+    || null;
 }
 
 function selectedMissionSquad() {
@@ -1363,7 +1375,14 @@ async function loadMissionData() {
   updateMercenaryCurrencyDisplay(myPayload);
   updateMercenaryCurrencyDisplay(runPayload);
 
-  missionState.missions = Array.isArray(missionPayload?.missions) ? missionPayload.missions : [];
+  const offers = Array.isArray(missionPayload?.offers)
+    ? missionPayload.offers
+    : Array.isArray(missionPayload?.missions)
+      ? missionPayload.missions
+      : [];
+  missionState.offers = offers;
+  missionState.missions = offers;
+  missionState.board = missionPayload?.board || null;
   missionState.owned = Array.isArray(myPayload?.items)
     ? myPayload.items.map(normalizeMercenaryForRoster)
     : [];
@@ -1375,9 +1394,10 @@ async function loadMissionData() {
   missionState.activeRunCount = Number(runPayload?.activeRunCount || missionState.runs.length) || 0;
   missionState.maxActiveRuns = Number(runPayload?.maxActiveRuns || missionPayload?.mercenaryProfile?.maxActiveRuns || 1) || 1;
 
-  if (!missionState.selectedMissionId || !missionState.missions.some((mission) => mission.missionId === missionState.selectedMissionId)) {
-    missionState.selectedMissionId = missionState.missions[0]?.missionId || '';
+  if (!missionState.selectedOfferId || !missionState.offers.some((offer) => offer.offerId === missionState.selectedOfferId)) {
+    missionState.selectedOfferId = missionState.offers[0]?.offerId || '';
   }
+  missionState.selectedMissionId = selectedMission()?.missionId || '';
   if (!missionState.selectedSquadId || !missionState.squads.some((squad) => String(squad.id) === String(missionState.selectedSquadId))) {
     missionState.selectedSquadId = missionState.squads[0]?.id || '';
   }
@@ -1452,24 +1472,36 @@ function renderMissionList() {
   const list = document.querySelector('#mission-list');
   const count = document.querySelector('#mission-count');
   if (!list) return;
-  if (count) count.textContent = `${missionState.missions.length}건`;
-  if (!missionState.missions.length) {
-    list.innerHTML = '<p class="mission-empty">현재 접수 가능한 비전투 의뢰가 없습니다.</p>';
+  const board = missionState.board || {};
+  const activeCount = Number(board.activeOfferCount ?? missionState.offers.length) || 0;
+  const maxOffers = Number(board.maxMissionOffers || activeCount || 0) || 0;
+  if (count) count.textContent = maxOffers ? `${activeCount}/${maxOffers}` : `${missionState.offers.length}건`;
+  const boardHtml = `
+    <div class="mission-board-state" id="mission-board-state">
+      <strong>의뢰 게시판 ${formatNumber(activeCount)}${maxOffers ? ` / ${formatNumber(maxOffers)}` : ''}</strong>
+      <span>빈 슬롯 ${formatNumber(board.emptySlots ?? Math.max(0, maxOffers - activeCount))}</span>
+      <em>${activeCount >= maxOffers && maxOffers ? '게시판이 가득 찼습니다' : '다음 의뢰 대기 중'} · ${board.nextOfferAt ? `보충까지 ${formatMissionCountdown(board.secondsUntilNextOffer)}` : '보충 시간 계산 중'}</em>
+    </div>
+  `;
+  if (!missionState.offers.length) {
+    list.innerHTML = `${boardHtml}<p class="mission-empty">현재 게시판에 붙은 의뢰가 없습니다. 다음 보충 시간을 기다려 주세요.</p>`;
     return;
   }
-  list.innerHTML = missionState.missions.map((mission) => `
-    <button class="mission-card ${mission.missionId === missionState.selectedMissionId ? 'is-selected' : ''}" type="button" data-mission-id="${escapeHtml(mission.missionId)}">
+  list.innerHTML = boardHtml + missionState.offers.map((mission) => `
+    <button class="mission-card ${mission.offerId === missionState.selectedOfferId ? 'is-selected' : ''}" type="button" data-offer-id="${escapeHtml(mission.offerId)}">
       <span class="mission-badge">비전투</span>
       <strong>${escapeHtml(mission.title)}</strong>
       <small>${escapeHtml(mission.type)} · 위험도 ${escapeHtml(mission.risk)}</small>
       <span>권장 작업력 ${formatNumber(mission.recommendedWorkPower)}</span>
       <span>보상 ${formatNumber(mission.rewardGold)}G · ${formatMissionDuration(mission.durationSeconds)}</span>
+      <em>접수 ${mission.generatedAt ? new Date(mission.generatedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-'}</em>
     </button>
   `).join('');
 
-  list.querySelectorAll('[data-mission-id]').forEach((button) => {
+  list.querySelectorAll('[data-offer-id]').forEach((button) => {
     button.addEventListener('click', () => {
-      missionState.selectedMissionId = button.dataset.missionId;
+      missionState.selectedOfferId = button.dataset.offerId;
+      missionState.selectedMissionId = selectedMission()?.missionId || '';
       renderMissionView();
     });
   });
@@ -1533,7 +1565,12 @@ function renderMissionDetail() {
       <strong>성공률 영향</strong>
       <p>${preview ? `현재 작업력 ${formatNumber(preview.partyWorkPower)} / 태그 보너스 ${preview.matchedTagCount}개 / 포지션 보너스 ${preview.matchedPositionCount}개 / 위험도 보정 ${preview.riskPenalty}` : '편성을 선택하면 예상 성공률이 계산됩니다.'}</p>
     </div>
+    <div class="mission-detail-actions">
+      <button class="mission-reject-button" type="button" data-mission-reject="${escapeHtml(mission.offerId)}">의뢰 거부</button>
+      <span>거부한 의뢰는 즉시 보충되지 않습니다.</span>
+    </div>
   `;
+  root.querySelector('[data-mission-reject]')?.addEventListener('click', () => rejectSelectedMissionOffer());
   renderMissionStartState();
 }
 
@@ -1631,7 +1668,7 @@ async function startSelectedMission() {
   try {
     const payload = await apiRequest('/api/mercenary/runs/start', {
       method: 'POST',
-      body: JSON.stringify({ missionId: mission.missionId, squadId: squad.id }),
+      body: JSON.stringify({ offerId: mission.offerId, squadId: squad.id }),
       perfScope: 'mercenary-run-start'
     });
     updateMercenaryCurrencyDisplay(payload);
@@ -1640,6 +1677,34 @@ async function startSelectedMission() {
     renderMissionView();
   } catch (error) {
     showReadyNotice(error.data?.message || error.message || '의뢰 시작에 실패했습니다.');
+  }
+}
+
+async function rejectSelectedMissionOffer() {
+  const mission = selectedMission();
+  if (!mission?.offerId) {
+    showReadyNotice('거부할 의뢰를 선택하세요.');
+    return;
+  }
+  const confirmed = window.confirm('이 의뢰를 거부하시겠습니까? 거부한 의뢰는 게시판에서 사라지고, 새 의뢰는 다음 보충 시간에 들어옵니다.');
+  if (!confirmed) return;
+
+  try {
+    const payload = await apiRequest('/api/mercenary/mission-offers/reject', {
+      method: 'POST',
+      body: JSON.stringify({ offerId: mission.offerId }),
+      perfScope: 'mercenary-mission-reject'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    if (missionState.selectedOfferId === mission.offerId) {
+      missionState.selectedOfferId = '';
+      missionState.selectedMissionId = '';
+    }
+    showReadyNotice('의뢰를 거부했습니다. 새 의뢰는 다음 보충 시간에 들어옵니다.');
+    await loadMissionData();
+    renderMissionView();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '의뢰 거부에 실패했습니다.');
   }
 }
 
@@ -1700,7 +1765,15 @@ function startMissionTimer() {
       const nextRemaining = Math.max(0, runItem.remainingSeconds - 1);
       return { ...runItem, remainingSeconds: nextRemaining, readyToClaim: nextRemaining <= 0 };
     });
+    if (missionState.board?.secondsUntilNextOffer > 0) {
+      missionState.board = {
+        ...missionState.board,
+        secondsUntilNextOffer: Math.max(0, missionState.board.secondsUntilNextOffer - 1)
+      };
+      changed = true;
+    }
     if (changed) renderMissionRuns();
+    if (changed) renderMissionList();
   }, 1000);
 }
 

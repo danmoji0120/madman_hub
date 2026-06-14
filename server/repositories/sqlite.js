@@ -296,6 +296,7 @@ async function runMigrations() {
        office_level INTEGER NOT NULL DEFAULT 1,
        office_exp INTEGER NOT NULL DEFAULT 0,
        office_reputation TEXT NOT NULL DEFAULT 'D',
+       mission_offer_next_at TEXT,
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -303,6 +304,7 @@ async function runMigrations() {
   );
   await ensureColumn('user_mercenary_profiles', 'office_exp', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('user_mercenary_profiles', 'office_reputation', "TEXT NOT NULL DEFAULT 'D'");
+  await ensureColumn('user_mercenary_profiles', 'mission_offer_next_at', 'TEXT');
   await run('UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1');
   await run('UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0');
   await run("UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D')");
@@ -317,6 +319,20 @@ async function runMigrations() {
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        UNIQUE(user_id, slot_index),
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
+  await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_mission_offers (
+       id TEXT PRIMARY KEY,
+       user_id INTEGER NOT NULL,
+       mission_id TEXT NOT NULL,
+       generated_at TEXT NOT NULL,
+       accepted_at TEXT,
+       rejected_at TEXT,
+       accepted_run_id TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
      )`
   );
@@ -391,6 +407,11 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_user ON user_mercenary_mission_offers(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_mercenary_mission_offers(user_id, accepted_at, rejected_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_mission ON user_mercenary_mission_offers(mission_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_run ON user_mercenary_mission_offers(accepted_run_id)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
        id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
