@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madmen-hub-static-v243';
+const CACHE_NAME = 'madmen-hub-static-v244';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
