@@ -29,6 +29,7 @@ const mercenaryLobbyState = {
   officeExpToNext: 150,
   officeMaxLevel: 50,
   isOfficeMaxLevel: false,
+  officeGrowth: null,
   gold: 0,
   points: 0,
   mailCount: 0,
@@ -1536,7 +1537,6 @@ function renderMissionList() {
   const maxOffers = Number(board.maxMissionOffers || activeCount || 0) || 0;
   if (count) count.textContent = maxOffers ? `${activeCount}/${maxOffers}` : `${missionState.offers.length}건`;
   const boardHtml = `
-    ${renderMissionOfficeGrowth()}
     <div class="mission-board-state" id="mission-board-state">
       <strong>의뢰 게시판 ${formatNumber(activeCount)}${maxOffers ? ` / ${formatNumber(maxOffers)}` : ''}</strong>
       <span>빈 슬롯 ${formatNumber(board.emptySlots ?? Math.max(0, maxOffers - activeCount))}</span>
@@ -2166,6 +2166,7 @@ function renderTopActions(state) {
 
 function updateMercenaryCurrencyDisplay(payload = {}) {
   const profile = payload.mercenaryProfile || payload.officeProfile || {};
+  const nextOfficeGrowth = payload.officeGrowth || profile.officeGrowth;
   const nextMercenaryGold = payload.mercenaryGold ?? profile.mercenaryGold ?? payload.gold ?? profile.gold;
   const nextCommunityPoints = payload.communityPoints;
   const nextOfficeLevel = profile.officeLevel ?? payload.officeLevel;
@@ -2213,8 +2214,12 @@ function updateMercenaryCurrencyDisplay(payload = {}) {
       mercenaryLobbyState.expPercent = 100;
     }
   }
+  if (nextOfficeGrowth) {
+    mercenaryLobbyState.officeGrowth = nextOfficeGrowth;
+  }
   renderTopActions(mercenaryLobbyState);
   renderLobbyProgress(mercenaryLobbyState);
+  renderOfficeGrowthPopover();
 }
 
 function renderStatusPanel(summary) {
@@ -3030,9 +3035,132 @@ function renderLobbyProgress(state) {
   expBar?.setAttribute('aria-label', `${progressText} (${expText})`);
 }
 
+function officeGrowthFallback() {
+  return {
+    currentEffects: {
+      maxMissionOffers: 3,
+      maxActiveRuns: 1,
+      maxSquadSlots: 3,
+      unlockedRiskLevels: ['낮음']
+    },
+    nextUnlock: {
+      level: 3,
+      title: '보통 위험도 의뢰 등장',
+      description: '사무소 Lv.3부터 보통 위험도의 의뢰가 게시판에 등장합니다.'
+    },
+    milestones: [
+      { level: 1, title: '기본 사무소 운영', description: '낮음 위험도 의뢰, 동시 파견 1개, 의뢰 게시판 3칸이 열립니다.', unlocked: true }
+    ]
+  };
+}
+
+function renderOfficeGrowthPopover() {
+  const content = document.querySelector('#office-growth-content');
+  if (!content) return;
+  const growth = mercenaryLobbyState.officeGrowth || officeGrowthFallback();
+  const effects = growth.currentEffects || {};
+  const nextUnlock = growth.nextUnlock || null;
+  const milestones = Array.isArray(growth.milestones) ? growth.milestones : [];
+  const currentLevel = Number(mercenaryLobbyState.level || 1) || 1;
+  const nextLevel = nextUnlock?.level;
+  const recruitRates = Array.isArray(effects.recruitRates) ? effects.recruitRates : [];
+  const recruitRateText = recruitRates.length
+    ? recruitRates.map((item) => `${escapeHtml(item.grade)} ${formatNumber(item.rate)}%`).join(' · ')
+    : '';
+
+  content.innerHTML = `
+    <section class="office-growth-summary">
+      <div>
+        <span>현재 사무소 레벨</span>
+        <strong>Lv.${formatNumber(currentLevel)} · ${escapeHtml(mercenaryLobbyState.reputation || 'D급')}</strong>
+      </div>
+      <div>
+        <span>현재 적용 효과</span>
+        <strong>게시판 ${formatNumber(effects.maxMissionOffers || 0)}칸 · 동시 파견 ${formatNumber(effects.maxActiveRuns || 0)}개 · 편성 슬롯 ${formatNumber(effects.maxSquadSlots || 0)}개</strong>
+      </div>
+      <div>
+        <span>등장 위험도</span>
+        <strong>${(effects.unlockedRiskLevels || ['낮음']).map(escapeHtml).join(', ')}</strong>
+      </div>
+      ${recruitRateText ? `
+        <div>
+          <span>채용 게시판 확률</span>
+          <strong>${recruitRateText}</strong>
+        </div>
+      ` : ''}
+      <div class="office-growth-next">
+        <span>다음 해금</span>
+        <strong>${nextUnlock ? `Lv.${formatNumber(nextUnlock.level)} ${escapeHtml(nextUnlock.title)}` : '모든 주요 해금 달성'}</strong>
+        ${nextUnlock?.description ? `<p>${escapeHtml(nextUnlock.description)}</p>` : ''}
+      </div>
+    </section>
+    <section class="office-growth-list" aria-label="사무소 레벨별 효과">
+      ${milestones.map((item) => {
+        const itemLevel = Number(item.level || 0) || 0;
+        const stateClass = itemLevel <= currentLevel
+          ? 'is-unlocked'
+          : itemLevel === Number(nextLevel || 0)
+            ? 'is-next'
+            : 'is-future';
+        const stateLabel = stateClass === 'is-unlocked' ? '적용 중' : stateClass === 'is-next' ? '다음 해금' : '잠김';
+        return `
+          <article class="office-growth-row ${stateClass}">
+            <span>Lv.${formatNumber(itemLevel)}</span>
+            <div>
+              <strong>${escapeHtml(item.title || '해금 효과')}</strong>
+              <p>${escapeHtml(item.description || '')}</p>
+            </div>
+            <em>${stateLabel}</em>
+          </article>
+        `;
+      }).join('')}
+    </section>
+  `;
+}
+
+function openOfficeGrowthPopover() {
+  renderOfficeGrowthPopover();
+  document.querySelector('#office-growth-popover')?.removeAttribute('hidden');
+}
+
+function closeOfficeGrowthPopover() {
+  document.querySelector('#office-growth-popover')?.setAttribute('hidden', '');
+}
+
+function bindOfficeGrowthPopover() {
+  const button = document.querySelector('#office-growth-info-button');
+  const closeButton = document.querySelector('#office-growth-close');
+  if (button && button.dataset.bound !== 'true') {
+    button.dataset.bound = 'true';
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const popover = document.querySelector('#office-growth-popover');
+      if (popover?.hidden) openOfficeGrowthPopover();
+      else closeOfficeGrowthPopover();
+    });
+  }
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeOfficeGrowthPopover);
+  }
+  if (document.body.dataset.officeGrowthBound !== 'true') {
+    document.body.dataset.officeGrowthBound = 'true';
+    document.addEventListener('click', (event) => {
+      const popover = document.querySelector('#office-growth-popover');
+      if (!popover || popover.hidden) return;
+      if (popover.contains(event.target) || button?.contains(event.target)) return;
+      closeOfficeGrowthPopover();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeOfficeGrowthPopover();
+    });
+  }
+}
+
 function renderLobby(state) {
   document.querySelector('#office-name').textContent = state.officeName;
   renderLobbyProgress(state);
+  renderOfficeGrowthPopover();
   document.querySelector('#assistant-panel-title').textContent = state.assistant.name;
   document.querySelector('#assistant-line').textContent = state.assistant.line;
 
@@ -3045,6 +3173,7 @@ function renderLobby(state) {
 
 async function initializeMercenaryLobby() {
   bindMercenaryAuthOverlay();
+  bindOfficeGrowthPopover();
   renderLobby(mercenaryLobbyState);
   document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
   bindRecruitmentBoard();

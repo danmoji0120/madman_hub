@@ -118,12 +118,168 @@ button {
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.72), 0 0 22px rgba(215, 170, 84, 0.2);
 }
 
-.lobby-level-line {
+.lobby-level-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 9px 0 8px;
+}
+
+.lobby-level-line {
+  margin: 0;
   color: #dbc59c;
   font-family: "MercText", "Malgun Gothic", serif;
   font-size: 15px;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.78);
+}
+
+.office-growth-info-button {
+  width: 21px;
+  height: 21px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(238, 199, 118, 0.54);
+  border-radius: 999px;
+  background: rgba(12, 9, 6, 0.76);
+  color: #ffe4a7;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.34);
+}
+
+.office-growth-info-button:hover {
+  border-color: rgba(255, 222, 145, 0.9);
+  box-shadow: 0 0 12px rgba(238, 177, 76, 0.32);
+}
+
+.office-growth-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 12px);
+  left: 0;
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(72vh, 680px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border: 1px solid rgba(214, 168, 93, 0.48);
+  background:
+    radial-gradient(circle at top left, rgba(139, 84, 30, 0.18), transparent 44%),
+    linear-gradient(180deg, rgba(27, 18, 11, 0.98), rgba(6, 5, 4, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 235, 180, 0.06),
+    0 24px 64px rgba(0, 0, 0, 0.72);
+  color: #f4dfb4;
+  pointer-events: auto;
+}
+
+.office-growth-popover[hidden] {
+  display: none;
+}
+
+.office-growth-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 15px;
+  border-bottom: 1px solid rgba(214, 168, 93, 0.2);
+}
+
+.office-growth-popover-head h2 {
+  margin: 0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  color: #ffe2a4;
+  font-size: 20px;
+}
+
+.office-growth-popover-head button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  background: rgba(0, 0, 0, 0.24);
+  color: #ffe2a4;
+  cursor: pointer;
+}
+
+#office-growth-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 15px 16px;
+}
+
+.office-growth-summary {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+
+.office-growth-summary div {
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(7, 6, 5, 0.46);
+  padding: 9px 10px;
+}
+
+.office-growth-summary span,
+.office-growth-row em,
+.office-growth-row p {
+  color: rgba(238, 209, 153, 0.68);
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+  font-size: 12px;
+}
+
+.office-growth-summary strong,
+.office-growth-row strong {
+  display: block;
+  color: #fff1c2;
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+}
+
+.office-growth-summary p,
+.office-growth-row p {
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+.office-growth-list {
+  display: grid;
+  gap: 7px;
+}
+
+.office-growth-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 60px;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(214, 168, 93, 0.18);
+  background: rgba(10, 8, 6, 0.5);
+  padding: 9px 10px;
+}
+
+.office-growth-row > span {
+  color: #ffd899;
+  font-weight: 900;
+}
+
+.office-growth-row.is-unlocked {
+  border-color: rgba(121, 186, 93, 0.36);
+  background: rgba(16, 38, 18, 0.36);
+}
+
+.office-growth-row.is-next {
+  border-color: rgba(255, 216, 116, 0.72);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(220, 159, 57, 0.2), transparent 50%),
+    rgba(38, 25, 9, 0.52);
+  box-shadow: 0 0 16px rgba(222, 164, 58, 0.16);
+}
+
+.office-growth-row.is-future {
+  opacity: 0.58;
 }
 
 .lobby-exp-bar {

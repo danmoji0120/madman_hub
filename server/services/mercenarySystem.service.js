@@ -10,10 +10,18 @@ const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.mi
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 4;
-const RECRUIT_GRADE_RATES = [
+const DEFAULT_RECRUIT_GRADE_RATES = [
   { grade: 'N', rate: 94.9 },
   { grade: 'R', rate: 5.0 },
   { grade: 'SR', rate: 0.1 }
+];
+const RECRUIT_GRADE_RATE_TIERS = [
+  { minLevel: 40, rates: [{ grade: 'N', rate: 80.0 }, { grade: 'R', rate: 17.0 }, { grade: 'SR', rate: 3.0 }] },
+  { minLevel: 30, rates: [{ grade: 'N', rate: 82.5 }, { grade: 'R', rate: 15.0 }, { grade: 'SR', rate: 2.5 }] },
+  { minLevel: 20, rates: [{ grade: 'N', rate: 85.0 }, { grade: 'R', rate: 13.0 }, { grade: 'SR', rate: 2.0 }] },
+  { minLevel: 10, rates: [{ grade: 'N', rate: 87.5 }, { grade: 'R', rate: 11.0 }, { grade: 'SR', rate: 1.5 }] },
+  { minLevel: 5, rates: [{ grade: 'N', rate: 89.5 }, { grade: 'R', rate: 9.5 }, { grade: 'SR', rate: 1.0 }] },
+  { minLevel: 1, rates: [{ grade: 'N', rate: 91.0 }, { grade: 'R', rate: 8.5 }, { grade: 'SR', rate: 0.5 }] }
 ];
 const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;
@@ -70,7 +78,7 @@ const OFFICE_UNLOCK_MILESTONES = [
   {
     level: 3,
     title: '보통 위험도 의뢰 등장',
-    description: '보통 위험도 의뢰가 게시판 후보에 포함되고, 의뢰 게시판이 4칸으로 증가합니다.'
+    description: '보통 위험도 의뢰가 게시판 후보에 포함됩니다.'
   },
   {
     level: 5,
@@ -78,21 +86,67 @@ const OFFICE_UNLOCK_MILESTONES = [
     description: '저장 가능한 편성 슬롯이 4개로 증가합니다.'
   },
   {
-    level: 6,
-    title: '동시 파견 2개',
-    description: '동시에 진행할 수 있는 의뢰가 2개로 증가하고, 의뢰 게시판이 5칸으로 증가합니다.'
+    level: 7,
+    title: '게시판 슬롯 4',
+    description: '의뢰 게시판 슬롯이 4칸으로 증가합니다.'
   },
   {
     level: 10,
+    title: '채용 확률 상승 1단계',
+    description: '채용 게시판에서 R/SR 후보 등장 확률이 소폭 상승합니다.'
+  },
+  {
+    level: 12,
     title: '높음 위험도 의뢰 등장',
-    description: '높음 위험도 의뢰가 게시판 후보에 포함되고, 의뢰 게시판이 6칸으로 증가합니다.'
+    description: '높음 위험도 의뢰가 게시판 후보에 포함됩니다.'
   },
   {
     level: 15,
+    title: '동시 파견 2개',
+    description: '동시에 진행할 수 있는 의뢰가 2개로 증가합니다.'
+  },
+  {
+    level: 18,
+    title: '의뢰 보충 시간 감소 1단계',
+    description: '향후 의뢰 게시판 보충 속도 개선 효과가 적용될 예정입니다.'
+  },
+  {
+    level: 20,
+    title: '게시판 슬롯 5',
+    description: '의뢰 게시판 슬롯이 5칸으로 증가합니다.'
+  },
+  {
+    level: 25,
+    title: 'SR 등장률 상승 1단계',
+    description: '채용 게시판의 SR 후보 등장 확률이 상승하고, 편성 슬롯이 5개로 증가합니다.'
+  },
+  {
+    level: 30,
+    title: '위험 의뢰 등장',
+    description: '위험 등급 의뢰가 게시판 후보에 포함됩니다.'
+  },
+  {
+    level: 35,
     title: '동시 파견 3개',
     description: '동시에 진행할 수 있는 의뢰가 3개로 증가합니다.'
+  },
+  {
+    level: 40,
+    title: '게시판 슬롯 6',
+    description: '의뢰 게시판 슬롯이 6칸으로 증가합니다.'
+  },
+  {
+    level: 45,
+    title: '고위험 의뢰 보상 보너스',
+    description: '향후 고위험 의뢰의 용병단 골드 보상 보정이 적용될 예정입니다.'
+  },
+  {
+    level: 50,
+    title: '폐급 명문 사무소 효과',
+    description: '채용, 의뢰, 치료 전체 소폭 보너스가 적용될 예정입니다.'
   }
 ];
+
 const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 50000) || 0;
 
 let masterCache = null;
@@ -145,13 +199,15 @@ function calculateOfficeUnlocks(officeLevel) {
   const level = Math.max(1, Number(officeLevel) || 1);
   return {
     maxMissionOffers: getMissionOfferBoardLimit(level),
-    maxSquadSlots: level >= 10 ? 5 : level >= 5 ? 4 : 3,
-    maxActiveRuns: level >= 15 ? 3 : level >= 6 ? 2 : 1,
-    missionTier: level >= 10 ? 3 : level >= 3 ? 2 : 1,
+    maxSquadSlots: level >= 25 ? 5 : level >= 5 ? 4 : 3,
+    maxActiveRuns: level >= 35 ? 3 : level >= 15 ? 2 : 1,
+    missionTier: level >= 30 ? 4 : level >= 12 ? 3 : level >= 3 ? 2 : 1,
+    recruitRates: getRecruitGradeRates(level),
     unlockedRiskLevels: [
       '낮음',
       ...(level >= 3 ? ['보통'] : []),
-      ...(level >= 10 ? ['높음'] : [])
+      ...(level >= 12 ? ['높음'] : []),
+      ...(level >= 30 ? ['위험'] : [])
     ]
   };
 }
@@ -471,10 +527,16 @@ function todayKey() {
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
-function weightedRecruitGrade(seed) {
+function getRecruitGradeRates(officeLevel = 1) {
+  const level = Math.max(1, Number(officeLevel || 1) || 1);
+  return (RECRUIT_GRADE_RATE_TIERS.find((tier) => level >= tier.minLevel)?.rates || DEFAULT_RECRUIT_GRADE_RATES)
+    .map((item) => ({ ...item }));
+}
+
+function weightedRecruitGrade(seed, rates = DEFAULT_RECRUIT_GRADE_RATES) {
   const roll = deterministicUnit(seed);
   let accumulated = 0;
-  for (const item of RECRUIT_GRADE_RATES) {
+  for (const item of rates) {
     accumulated += item.rate / 100;
     if (roll < accumulated) return item.grade;
   }
@@ -502,7 +564,7 @@ function pickRecruitCandidate(pool, grade, usedIds, seed) {
   return pool.find((item) => !usedIds.has(item.id)) || null;
 }
 
-async function generateCandidateIds(userId, boardDate, refreshCount) {
+async function generateCandidateIds(userId, boardDate, refreshCount, officeLevel = 1) {
   const ownedUniqueIds = await ownedUniqueMercenaryIds(userId);
   const pool = readMasterData().filter((item) => {
     if (!['N', 'R', 'SR'].includes(item.grade)) return false;
@@ -512,9 +574,10 @@ async function generateCandidateIds(userId, boardDate, refreshCount) {
   const usedIds = new Set();
   const ids = [];
   const seedBase = `${userId}:${boardDate}:recruitment:${refreshCount}`;
+  const rates = getRecruitGradeRates(officeLevel);
 
   for (let index = 0; index < RECRUIT_BOARD_SIZE; index += 1) {
-    const grade = weightedRecruitGrade(`${seedBase}:grade:${index}`);
+    const grade = weightedRecruitGrade(`${seedBase}:grade:${index}`, rates);
     const candidate = pickRecruitCandidate(pool, grade, usedIds, `${seedBase}:pick:${index}`);
     if (candidate) {
       usedIds.add(candidate.id);
@@ -589,16 +652,22 @@ function getMissionRiskPenalty(risk) {
 
 function getMissionUnlockState(mission, officeLevel) {
   const condition = String(mission?.unlockCondition || '').trim();
-  if (!condition || condition === '기본') return { unlocked: true, lockedReason: '', unlockLevel: 1 };
+  const riskRequiredLevel = { '낮음': 1, '보통': 3, '높음': 12, '위험': 30 }[String(mission?.risk || '낮음')] || 1;
+  const level = Number(officeLevel || 1) || 1;
+  const riskLock = (baseRequired = 1) => {
+    const required = Math.max(baseRequired, riskRequiredLevel);
+    return level >= required
+      ? { unlocked: true, lockedReason: '', unlockLevel: required }
+      : { unlocked: false, lockedReason: `사무소 Lv.${required} 이상 필요`, unlockLevel: required };
+  };
+  if (!condition || condition === '기본') return riskLock(1);
   if (condition.includes('소문망')) {
     return { unlocked: false, lockedReason: '소문망 기능 개방 후', unlockLevel: null };
   }
   const levelMatch = condition.match(/사무소\s*레벨\s*(\d+)\s*이상/);
   if (levelMatch) {
     const required = Number(levelMatch[1] || 0);
-    return Number(officeLevel || 1) >= required
-      ? { unlocked: true, lockedReason: '', unlockLevel: required }
-      : { unlocked: false, lockedReason: `사무소 Lv.${required} 이상 필요`, unlockLevel: required };
+    return riskLock(required);
   }
   return { unlocked: false, lockedReason: condition || '해금 조건 미충족', unlockLevel: null };
 }
@@ -642,9 +711,9 @@ function publicMission(mission) {
 
 function getMissionOfferBoardLimit(officeLevel) {
   const level = Math.max(1, Number(officeLevel || 1) || 1);
-  if (level >= 10) return 6;
-  if (level >= 6) return 5;
-  if (level >= 3) return 4;
+  if (level >= 40) return 6;
+  if (level >= 20) return 5;
+  if (level >= 7) return 4;
   return 3;
 }
 
@@ -670,8 +739,9 @@ function missionEligibleForOffer(mission, officeLevel) {
 function riskAllowedForOffer(risk, officeLevel) {
   const level = Math.max(1, Number(officeLevel || 1) || 1);
   const normalized = String(risk || '낮음');
-  if (level <= 2) return normalized === '낮음' || normalized === '보통';
-  if (level < 10) return normalized !== '위험';
+  if (level < 3) return normalized === '낮음';
+  if (level < 12) return normalized === '낮음' || normalized === '보통';
+  if (level < 30) return normalized !== '위험';
   return true;
 }
 
@@ -681,8 +751,9 @@ function weightedOfferCandidates(missions, officeLevel) {
   for (const mission of missions) {
     const risk = String(mission.risk || '낮음');
     let weight = 1;
-    if (level <= 2) weight = risk === '낮음' ? 5 : 1;
-    else if (level < 10) weight = risk === '낮음' ? 3 : risk === '보통' ? 3 : 1;
+    if (level < 3) weight = risk === '낮음' ? 5 : 1;
+    else if (level < 12) weight = risk === '낮음' ? 4 : risk === '보통' ? 3 : 1;
+    else if (level < 30) weight = risk === '낮음' ? 3 : risk === '보통' ? 3 : 2;
     else weight = risk === '위험' ? 1 : risk === '높음' ? 2 : 3;
     for (let index = 0; index < weight; index += 1) weighted.push(mission);
   }
@@ -782,6 +853,7 @@ async function ensureMissionOffersForUser(userId, profile) {
   const now = new Date();
   const nowMs = now.getTime();
   const nextMs = missionOfferNextAtMs(currentProfile);
+  const intervalMs = getMissionOfferRefillIntervalSeconds() * 1000;
 
   if (!activeOffers.length && !currentProfile.missionOfferNextAt) {
     const created = [];
@@ -797,7 +869,10 @@ async function ensureMissionOffersForUser(userId, profile) {
 
   if (activeOffers.length >= maxMissionOffers) {
     if (!currentProfile.missionOfferNextAt || nowMs >= nextMs) {
-      currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+      const dueTicks = nextMs > 0 && nowMs >= nextMs
+        ? Math.floor((nowMs - nextMs) / intervalMs) + 1
+        : 1;
+      currentProfile = await repo.updateMissionOfferNextAt(userId, new Date((nextMs || nowMs) + dueTicks * intervalMs).toISOString());
     }
     activeOffers = await repo.listActiveMissionOffers(userId);
     return { profile: currentProfile, activeOffers };
@@ -809,9 +884,16 @@ async function ensureMissionOffersForUser(userId, profile) {
   }
 
   if (nowMs >= nextMs) {
-    const mission = pickMissionForOffer(currentProfile, activeOffers);
-    if (mission) await createMissionOfferForUser(userId, mission.missionId, now.toISOString());
-    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    const dueTicks = Math.floor((nowMs - nextMs) / intervalMs) + 1;
+    const emptySlots = Math.max(0, maxMissionOffers - activeOffers.length);
+    const createCount = Math.min(dueTicks, emptySlots);
+    const created = [];
+    for (let index = 0; index < createCount; index += 1) {
+      const mission = pickMissionForOffer(currentProfile, [...activeOffers, ...created]);
+      if (!mission) break;
+      created.push(await createMissionOfferForUser(userId, mission.missionId, now.toISOString()));
+    }
+    currentProfile = await repo.updateMissionOfferNextAt(userId, new Date(nextMs + dueTicks * intervalMs).toISOString());
     activeOffers = await repo.listActiveMissionOffers(userId);
   }
 
@@ -999,6 +1081,7 @@ async function serializeBoard(userId, board, profile) {
   const hiredIds = board.hiredCandidateIds || [];
   const mercenaryProfile = publicMercenaryProfile(profile);
   const communityPoints = await getCommunityPoints(userId);
+  const recruitRates = getRecruitGradeRates(mercenaryProfile.officeLevel);
   return {
     ok: true,
     board: {
@@ -1012,7 +1095,7 @@ async function serializeBoard(userId, board, profile) {
       candidateIds: board.candidateIds,
       hiredCandidateIds: hiredIds,
       candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
-      rates: RECRUIT_GRADE_RATES
+      rates: recruitRates
     },
     candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
     boardDate: board.boardDate,
@@ -1020,7 +1103,7 @@ async function serializeBoard(userId, board, profile) {
     refreshLimit: RECRUIT_DAILY_REFRESH_LIMIT,
     remainingRefreshes: Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - board.refreshCount),
     refreshCost: RECRUIT_REFRESH_COST,
-    rates: RECRUIT_GRADE_RATES.reduce((acc, item) => ({ ...acc, [item.grade]: item.rate }), {}),
+    rates: recruitRates.reduce((acc, item) => ({ ...acc, [item.grade]: item.rate }), {}),
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
     communityPoints,
@@ -1030,6 +1113,7 @@ async function serializeBoard(userId, board, profile) {
 
 async function ensureTodayBoard(userId) {
   const boardDate = todayKey();
+  const profile = await getOrCreateMercenaryProfile(userId);
   const existing = await repo.getRecruitBoard(userId);
   if (existing && existing.boardDate === boardDate && existing.candidateIds.length === RECRUIT_BOARD_SIZE) {
     return existing;
@@ -1038,7 +1122,7 @@ async function ensureTodayBoard(userId) {
     userId,
     boardDate,
     refreshCount: 0,
-    candidateIds: await generateCandidateIds(userId, boardDate, 0),
+    candidateIds: await generateCandidateIds(userId, boardDate, 0, profile.officeLevel),
     hiredCandidateIds: []
   });
 }
@@ -1060,12 +1144,13 @@ async function refreshRecruitBoard(userId) {
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
     const spent = await spendMercenaryGold(userId, RECRUIT_REFRESH_COST, '용병 채용 게시판 유료 갱신');
+    const profile = publicMercenaryProfile(spent.profile);
     const nextCount = board.refreshCount + 1;
     const updated = await repo.upsertRecruitBoard({
       userId,
       boardDate: board.boardDate,
       refreshCount: nextCount,
-      candidateIds: await generateCandidateIds(userId, board.boardDate, nextCount),
+      candidateIds: await generateCandidateIds(userId, board.boardDate, nextCount, profile.officeLevel),
       hiredCandidateIds: []
     });
     await repo.createRecruitLog({
@@ -1195,6 +1280,7 @@ async function listMyMercenaries(userId) {
     mercenaryGold: mercenaryProfile.gold,
     communityPoints,
     mercenaryProfile,
+    officeGrowth: buildOfficeGrowth(profile),
     capacity: 40
   };
 }
@@ -1919,6 +2005,7 @@ module.exports = {
   countMatchedMissionTags,
   countMatchedMissionPositions,
   decideMissionResult,
+  getRecruitGradeRates,
   getInjuryChanceByRisk,
   rollMissionInjury,
   calculateTreatmentCost,

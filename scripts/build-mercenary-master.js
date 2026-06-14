@@ -169,7 +169,9 @@ async function main() {
     .filter((item) => item.id && item.grade);
 
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-  fs.writeFileSync(OUTPUT_PATH, `${JSON.stringify(mercenaries, null, 2)}\n`, 'utf8');
+  const tempPath = `${OUTPUT_PATH}.${process.pid}.tmp`;
+  fs.writeFileSync(tempPath, `${JSON.stringify(mercenaries, null, 2)}\n`, 'utf8');
+  fs.renameSync(tempPath, OUTPUT_PATH);
   console.log(`Wrote ${mercenaries.length} mercenaries to ${OUTPUT_PATH}`);
 }
 

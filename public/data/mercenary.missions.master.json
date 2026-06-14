@@ -6,15 +6,27 @@
     "category": "non_combat",
     "type": "cleanup",
     "risk": "낮음",
-    "primaryStats": ["SUP", "TEC"],
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
     "recommendedWorkPower": 160,
     "minMembers": 1,
     "maxMembers": 3,
     "durationSeconds": 90,
     "rewardGold": 3600,
     "failureRewardGold": 600,
-    "preferredTags": ["청소", "하수도", "오염", "슬라임"],
-    "preferredPositions": ["지원", "기술", "특수"],
+    "preferredTags": [
+      "청소",
+      "하수도",
+      "오염",
+      "슬라임"
+    ],
+    "preferredPositions": [
+      "지원",
+      "기술",
+      "특수"
+    ],
     "description": "하수도 바닥에 들러붙은 점액을 긁어내는 의뢰입니다. 냄새보다 미끄러움이 더 위험합니다.",
     "successText": "점액은 사라졌고, 냄새는 조금 남았습니다.",
     "failureText": "점액이 줄기는 했지만 의뢰인은 신발을 잃었습니다.",
@@ -32,15 +44,25 @@
     "category": "non_combat",
     "type": "guard",
     "risk": "낮음",
-    "primaryStats": ["DEF", "SUP"],
+    "primaryStats": [
+      "DEF",
+      "SUP"
+    ],
     "recommendedWorkPower": 190,
     "minMembers": 1,
     "maxMembers": 3,
     "durationSeconds": 120,
     "rewardGold": 4200,
     "failureRewardGold": 700,
-    "preferredTags": ["경비", "야간", "창고"],
-    "preferredPositions": ["전열", "지원"],
+    "preferredTags": [
+      "경비",
+      "야간",
+      "창고"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
     "description": "값나가는 물건은 없지만, 쥐와 좀도둑은 많다는 창고입니다.",
     "successText": "창고는 조용했고, 쥐들도 예의를 갖췄습니다.",
     "failureText": "아침이 되자 창고 문과 감자 한 자루가 사라져 있었습니다.",
@@ -58,15 +80,25 @@
     "category": "non_combat",
     "type": "admin",
     "risk": "낮음",
-    "primaryStats": ["TEC", "SUP"],
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
     "recommendedWorkPower": 150,
     "minMembers": 1,
     "maxMembers": 2,
     "durationSeconds": 75,
     "rewardGold": 2800,
     "failureRewardGold": 400,
-    "preferredTags": ["서류", "행정", "정리"],
-    "preferredPositions": ["지원", "특수"],
+    "preferredTags": [
+      "서류",
+      "행정",
+      "정리"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
     "description": "접수대 아래에 쌓인 의뢰서와 영수증을 날짜순으로 맞추는 일입니다.",
     "successText": "서류 더미에서 바닥이 발견되었습니다.",
     "failureText": "정리 도중 더 오래된 서류 더미가 발견되었습니다.",
@@ -84,15 +116,25 @@
     "category": "non_combat",
     "type": "medical",
     "risk": "보통",
-    "primaryStats": ["SUP", "TEC"],
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
     "recommendedWorkPower": 230,
     "minMembers": 1,
     "maxMembers": 3,
     "durationSeconds": 150,
     "rewardGold": 5200,
     "failureRewardGold": 900,
-    "preferredTags": ["의무", "약초", "보조", "치료"],
-    "preferredPositions": ["지원"],
+    "preferredTags": [
+      "의무",
+      "약초",
+      "보조",
+      "치료"
+    ],
+    "preferredPositions": [
+      "지원"
+    ],
     "description": "의무실에서 약초와 붕대를 구분합니다. 냄새로 구분하지 않는 편이 좋습니다.",
     "successText": "약초가 제 칸에 들어갔고, 붕대는 더 이상 울지 않습니다.",
     "failureText": "치료용 약초와 차 재료가 섞였습니다. 누군가는 좋아하겠죠.",
@@ -110,15 +152,25 @@
     "category": "non_combat",
     "type": "escort",
     "risk": "보통",
-    "primaryStats": ["SPD", "DEF"],
+    "primaryStats": [
+      "SPD",
+      "DEF"
+    ],
     "recommendedWorkPower": 260,
     "minMembers": 2,
     "maxMembers": 3,
     "durationSeconds": 180,
     "rewardGold": 6800,
     "failureRewardGold": 1200,
-    "preferredTags": ["호송", "수레", "길잡이"],
-    "preferredPositions": ["전열", "지원"],
+    "preferredTags": [
+      "호송",
+      "수레",
+      "길잡이"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
     "description": "시장으로 가는 낡은 수레를 목적지까지 밀고 지킵니다.",
     "successText": "수레와 짐이 모두 목적지에 도착했습니다. 바퀴는 간신히요.",
     "failureText": "수레는 도착했지만 짐 일부가 길에게 기부되었습니다.",
@@ -136,15 +188,25 @@
     "category": "non_combat",
     "type": "scout",
     "risk": "보통",
-    "primaryStats": ["SPD", "TEC"],
+    "primaryStats": [
+      "SPD",
+      "TEC"
+    ],
     "recommendedWorkPower": 300,
     "minMembers": 1,
     "maxMembers": 3,
     "durationSeconds": 210,
     "rewardGold": 7600,
     "failureRewardGold": 1400,
-    "preferredTags": ["정찰", "폐허", "소문"],
-    "preferredPositions": ["특수", "지원"],
+    "preferredTags": [
+      "정찰",
+      "폐허",
+      "소문"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
     "description": "무너진 폐허 주변을 살피고 위험한 길목을 표시합니다.",
     "successText": "위험한 길목 세 곳과 쓸 만한 지름길 하나를 표시했습니다.",
     "failureText": "지도는 그렸지만 북쪽이 세 군데입니다.",
@@ -162,15 +224,25 @@
     "category": "non_combat",
     "type": "collection",
     "risk": "보통",
-    "primaryStats": ["SUP", "DEF"],
+    "primaryStats": [
+      "SUP",
+      "DEF"
+    ],
     "recommendedWorkPower": 280,
     "minMembers": 1,
     "maxMembers": 2,
     "durationSeconds": 160,
     "rewardGold": 6400,
     "failureRewardGold": 1000,
-    "preferredTags": ["독촉", "협상", "회수"],
-    "preferredPositions": ["전열", "지원"],
+    "preferredTags": [
+      "독촉",
+      "협상",
+      "회수"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
     "description": "동네 조합의 밀린 회비를 정중하게, 가능하면 덜 정중하게 받아옵니다.",
     "successText": "회비는 돌아왔고, 사과문은 덤으로 받았습니다.",
     "failureText": "회비 대신 변명 목록을 받아왔습니다.",
@@ -188,15 +260,27 @@
     "category": "non_combat",
     "type": "cleanup",
     "risk": "높음",
-    "primaryStats": ["TEC", "SUP", "DEF"],
+    "primaryStats": [
+      "TEC",
+      "SUP",
+      "DEF"
+    ],
     "recommendedWorkPower": 420,
     "minMembers": 2,
     "maxMembers": 3,
     "durationSeconds": 300,
     "rewardGold": 11800,
     "failureRewardGold": 2200,
-    "preferredTags": ["오염", "마력", "청소", "폐기물"],
-    "preferredPositions": ["지원", "특수"],
+    "preferredTags": [
+      "오염",
+      "마력",
+      "청소",
+      "폐기물"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
     "description": "마법 실험실 뒤편의 반짝이는 쓰레기를 봉인 상자에 담습니다.",
     "successText": "폐기물은 봉인됐고, 아무도 빛나지 않습니다.",
     "failureText": "폐기물은 줄었지만 보고서가 살짝 빛납니다.",
@@ -214,15 +298,25 @@
     "category": "non_combat",
     "type": "guard",
     "risk": "높음",
-    "primaryStats": ["DEF", "TEC"],
+    "primaryStats": [
+      "DEF",
+      "TEC"
+    ],
     "recommendedWorkPower": 460,
     "minMembers": 2,
     "maxMembers": 3,
     "durationSeconds": 330,
     "rewardGold": 13200,
     "failureRewardGold": 2600,
-    "preferredTags": ["경비", "귀족", "보관고"],
-    "preferredPositions": ["전열", "지원"],
+    "preferredTags": [
+      "경비",
+      "귀족",
+      "보관고"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
     "description": "귀족가의 보관고 앞을 지킵니다. 보관품보다 고용주의 말투가 더 날카롭습니다.",
     "successText": "보관고는 무사했고 고용주는 불만만 남겼습니다.",
     "failureText": "물건은 무사하지만 고용주의 신뢰가 조금 도망갔습니다.",
@@ -240,15 +334,25 @@
     "category": "non_combat",
     "type": "scout",
     "risk": "낮음",
-    "primaryStats": ["SUP", "TEC"],
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
     "recommendedWorkPower": 210,
     "minMembers": 1,
     "maxMembers": 2,
     "durationSeconds": 120,
     "rewardGold": 4600,
     "failureRewardGold": 800,
-    "preferredTags": ["소문", "탐문", "정보"],
-    "preferredPositions": ["지원", "특수"],
+    "preferredTags": [
+      "소문",
+      "탐문",
+      "정보"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
     "description": "술집과 게시판 주변을 돌며 쓸 만한 소문을 골라옵니다.",
     "successText": "쓸 만한 소문 두 개와 못 쓸 소문 다섯 개를 확보했습니다.",
     "failureText": "소문은 많았지만 대부분 본인 이야기였습니다.",
@@ -266,15 +370,25 @@
     "category": "non_combat",
     "type": "escort",
     "risk": "보통",
-    "primaryStats": ["SUP", "SPD"],
+    "primaryStats": [
+      "SUP",
+      "SPD"
+    ],
     "recommendedWorkPower": 310,
     "minMembers": 2,
     "maxMembers": 3,
     "durationSeconds": 220,
     "rewardGold": 8200,
     "failureRewardGold": 1500,
-    "preferredTags": ["의무", "호송", "보조", "환자"],
-    "preferredPositions": ["지원"],
+    "preferredTags": [
+      "의무",
+      "호송",
+      "보조",
+      "환자"
+    ],
+    "preferredPositions": [
+      "지원"
+    ],
     "description": "환자를 마차까지 안전하게 옮깁니다. 마차가 환자보다 더 아파 보입니다.",
     "successText": "환자는 안전하게 옮겨졌고, 마차도 일단 굴러갔습니다.",
     "failureText": "환자는 괜찮지만 마차가 누워버렸습니다.",
@@ -284,5 +398,1125 @@
     "mercenaryExp": 120,
     "failureOfficeExp": 24,
     "failureMercenaryExp": 48
+  },
+  {
+    "missionId": "noncombat_admin_complaint_sorting_001",
+    "enabled": true,
+    "title": "민원장 분류 야근",
+    "category": "non_combat",
+    "type": "admin",
+    "risk": "낮음",
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 170,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 90,
+    "rewardGold": 3200,
+    "failureRewardGold": 500,
+    "preferredTags": [
+      "서류",
+      "민원",
+      "행정"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "책상 위에 쌓인 민원장을 종류별로 분류합니다. 읽다 보면 정신 피해가 올 수 있습니다.",
+    "successText": "민원은 정리됐고, 접수원은 잠시 웃었습니다.",
+    "failureText": "민원장이 더 늘었습니다. 누군가 읽고 답장까지 썼기 때문입니다.",
+    "unlockCondition": "기본",
+    "note": "초급 행정/사무소 분위기 강화",
+    "officeExp": 38,
+    "mercenaryExp": 65,
+    "failureOfficeExp": 10,
+    "failureMercenaryExp": 24
+  },
+  {
+    "missionId": "noncombat_guard_lamp_watch_001",
+    "enabled": true,
+    "title": "꺼지는 가로등 순찰",
+    "category": "non_combat",
+    "type": "guard",
+    "risk": "낮음",
+    "primaryStats": [
+      "DEF",
+      "SPD"
+    ],
+    "recommendedWorkPower": 180,
+    "minMembers": 1,
+    "maxMembers": 3,
+    "durationSeconds": 110,
+    "rewardGold": 3900,
+    "failureRewardGold": 650,
+    "preferredTags": [
+      "경비",
+      "순찰",
+      "야간"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
+    "description": "밤마다 꺼지는 골목 가로등을 순찰하며 장난치는 존재를 확인합니다.",
+    "successText": "가로등은 켜졌고, 골목은 덜 수상해졌습니다.",
+    "failureText": "가로등은 켜졌지만 순찰 기록지가 사라졌습니다.",
+    "unlockCondition": "기본",
+    "note": "초급 야간 순찰",
+    "officeExp": 42,
+    "mercenaryExp": 68,
+    "failureOfficeExp": 12,
+    "failureMercenaryExp": 26
+  },
+  {
+    "missionId": "noncombat_cleanup_tavern_ooze_001",
+    "enabled": true,
+    "title": "술집 지하 점액 제거",
+    "category": "non_combat",
+    "type": "cleanup",
+    "risk": "낮음",
+    "primaryStats": [
+      "SUP",
+      "DEF"
+    ],
+    "recommendedWorkPower": 200,
+    "minMembers": 1,
+    "maxMembers": 3,
+    "durationSeconds": 120,
+    "rewardGold": 4400,
+    "failureRewardGold": 700,
+    "preferredTags": [
+      "청소",
+      "술집",
+      "점액",
+      "오염"
+    ],
+    "preferredPositions": [
+      "지원",
+      "전열"
+    ],
+    "description": "술집 지하 저장고에 번진 이상한 점액을 제거합니다. 술 냄새와 점액 냄새가 싸웁니다.",
+    "successText": "저장고는 깨끗해졌고, 술통은 무사했습니다.",
+    "failureText": "점액은 줄었지만 술집 주인이 새 냄새를 발견했습니다.",
+    "unlockCondition": "기본",
+    "note": "슬라임/청소 계열 다양화",
+    "officeExp": 45,
+    "mercenaryExp": 75,
+    "failureOfficeExp": 13,
+    "failureMercenaryExp": 30
+  },
+  {
+    "missionId": "noncombat_scout_missing_cat_001",
+    "enabled": true,
+    "title": "귀족 고양이 수색",
+    "category": "non_combat",
+    "type": "scout",
+    "risk": "낮음",
+    "primaryStats": [
+      "SPD",
+      "SUP"
+    ],
+    "recommendedWorkPower": 210,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 130,
+    "rewardGold": 4700,
+    "failureRewardGold": 800,
+    "preferredTags": [
+      "수색",
+      "귀족",
+      "동물",
+      "소문"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "귀족가에서 사라진 고양이를 찾습니다. 고양이가 귀족보다 더 귀족 같습니다.",
+    "successText": "고양이는 돌아왔고, 용병들은 무시당했습니다.",
+    "failureText": "고양이는 찾았지만 돌아오기를 거부했습니다.",
+    "unlockCondition": "사무소 레벨 2 이상",
+    "note": "가벼운 수색 의뢰",
+    "officeExp": 50,
+    "mercenaryExp": 82,
+    "failureOfficeExp": 15,
+    "failureMercenaryExp": 32
+  },
+  {
+    "missionId": "noncombat_collection_tavern_tab_001",
+    "enabled": true,
+    "title": "술값 외상 회수",
+    "category": "non_combat",
+    "type": "collection",
+    "risk": "낮음",
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
+    "recommendedWorkPower": 220,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 120,
+    "rewardGold": 5000,
+    "failureRewardGold": 900,
+    "preferredTags": [
+      "회수",
+      "술집",
+      "협상",
+      "장부"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "술집에 쌓인 외상값을 정중하게 회수합니다. 정중함은 선택 사항입니다.",
+    "successText": "외상값 일부와 사과 한 병을 받아냈습니다.",
+    "failureText": "외상 장부가 더 두꺼워졌습니다.",
+    "unlockCondition": "사무소 레벨 2 이상",
+    "note": "소액 회수 의뢰",
+    "officeExp": 52,
+    "mercenaryExp": 84,
+    "failureOfficeExp": 16,
+    "failureMercenaryExp": 34
+  },
+  {
+    "missionId": "noncombat_medical_bandage_stock_001",
+    "enabled": true,
+    "title": "붕대 재고 점검",
+    "category": "non_combat",
+    "type": "medical",
+    "risk": "낮음",
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
+    "recommendedWorkPower": 190,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 100,
+    "rewardGold": 4100,
+    "failureRewardGold": 650,
+    "preferredTags": [
+      "의무",
+      "붕대",
+      "재고",
+      "정리"
+    ],
+    "preferredPositions": [
+      "지원"
+    ],
+    "description": "의무실 붕대와 약병 재고를 확인합니다. 누가 붕대를 담요로 쓰고 있습니다.",
+    "successText": "붕대 재고가 맞춰졌고, 약병도 제자리를 찾았습니다.",
+    "failureText": "붕대는 찾았지만 재고표가 붕대로 감겼습니다.",
+    "unlockCondition": "기본",
+    "note": "의무실 연결용 초급 의뢰",
+    "officeExp": 40,
+    "mercenaryExp": 70,
+    "failureOfficeExp": 12,
+    "failureMercenaryExp": 28
+  },
+  {
+    "missionId": "noncombat_escort_drunk_mage_001",
+    "enabled": true,
+    "title": "만취 마법사 귀가 호송",
+    "category": "non_combat",
+    "type": "escort",
+    "risk": "보통",
+    "primaryStats": [
+      "DEF",
+      "SUP"
+    ],
+    "recommendedWorkPower": 300,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 190,
+    "rewardGold": 7400,
+    "failureRewardGold": 1300,
+    "preferredTags": [
+      "호송",
+      "마법사",
+      "야간",
+      "제압"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
+    "description": "만취한 마법사를 집까지 데려갑니다. 문제는 그가 집을 세 군데로 기억한다는 겁니다.",
+    "successText": "마법사는 집에 도착했고, 골목 하나만 살짝 그을렸습니다.",
+    "failureText": "마법사는 무사하지만 집이 다른 차원으로 보입니다.",
+    "unlockCondition": "사무소 레벨 3 이상",
+    "note": "사고성 호송",
+    "officeExp": 72,
+    "mercenaryExp": 115,
+    "failureOfficeExp": 22,
+    "failureMercenaryExp": 46
+  },
+  {
+    "missionId": "noncombat_admin_tax_receipts_001",
+    "enabled": true,
+    "title": "세금 영수증 대조",
+    "category": "non_combat",
+    "type": "admin",
+    "risk": "보통",
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 260,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 180,
+    "rewardGold": 6200,
+    "failureRewardGold": 1000,
+    "preferredTags": [
+      "서류",
+      "회계",
+      "세금",
+      "장부"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "누락된 세금 영수증과 장부를 대조합니다. 숫자가 서로를 싫어합니다.",
+    "successText": "장부가 맞았고 회계 책상이 덜 울었습니다.",
+    "failureText": "숫자는 맞았지만 영수증이 한 장 증식했습니다.",
+    "unlockCondition": "사무소 레벨 3 이상",
+    "note": "회계/행정",
+    "officeExp": 68,
+    "mercenaryExp": 108,
+    "failureOfficeExp": 20,
+    "failureMercenaryExp": 44
+  },
+  {
+    "missionId": "noncombat_guard_evidence_room_001",
+    "enabled": true,
+    "title": "증거품 보관실 감시",
+    "category": "non_combat",
+    "type": "guard",
+    "risk": "보통",
+    "primaryStats": [
+      "DEF",
+      "TEC"
+    ],
+    "recommendedWorkPower": 320,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 220,
+    "rewardGold": 8200,
+    "failureRewardGold": 1500,
+    "preferredTags": [
+      "경비",
+      "증거품",
+      "감시",
+      "창고"
+    ],
+    "preferredPositions": [
+      "전열",
+      "특수"
+    ],
+    "description": "도시 경비대의 증거품 보관실을 하룻밤 감시합니다. 증거품들이 서로 수상합니다.",
+    "successText": "증거품은 그대로였고, 감시자는 졸지 않았다고 주장했습니다.",
+    "failureText": "증거품은 그대로인데 목록이 바뀌었습니다.",
+    "unlockCondition": "사무소 레벨 4 이상",
+    "note": "중급 경비",
+    "officeExp": 80,
+    "mercenaryExp": 125,
+    "failureOfficeExp": 24,
+    "failureMercenaryExp": 50
+  },
+  {
+    "missionId": "noncombat_cleanup_cursed_stain_001",
+    "enabled": true,
+    "title": "저주 얼룩 세탁",
+    "category": "non_combat",
+    "type": "cleanup",
+    "risk": "보통",
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 310,
+    "minMembers": 1,
+    "maxMembers": 3,
+    "durationSeconds": 210,
+    "rewardGold": 7900,
+    "failureRewardGold": 1450,
+    "preferredTags": [
+      "청소",
+      "저주",
+      "세탁",
+      "정화"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "지워지지 않는 저주 얼룩을 처리합니다. 얼룩이 먼저 말을 걸 수도 있습니다.",
+    "successText": "얼룩은 사라졌고, 천은 더 이상 속삭이지 않습니다.",
+    "failureText": "얼룩은 옅어졌지만 불만은 선명해졌습니다.",
+    "unlockCondition": "사무소 레벨 4 이상",
+    "note": "정화/청소 혼합",
+    "officeExp": 78,
+    "mercenaryExp": 124,
+    "failureOfficeExp": 23,
+    "failureMercenaryExp": 48
+  },
+  {
+    "missionId": "noncombat_scout_rooftop_route_001",
+    "enabled": true,
+    "title": "지붕길 안전 조사",
+    "category": "non_combat",
+    "type": "scout",
+    "risk": "보통",
+    "primaryStats": [
+      "SPD",
+      "TEC"
+    ],
+    "recommendedWorkPower": 340,
+    "minMembers": 1,
+    "maxMembers": 3,
+    "durationSeconds": 230,
+    "rewardGold": 8600,
+    "failureRewardGold": 1600,
+    "preferredTags": [
+      "정찰",
+      "지붕",
+      "길찾기",
+      "도시"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
+    "description": "지붕 위 비공식 이동로를 조사합니다. 아래를 보면 손해입니다.",
+    "successText": "안전한 길목과 위험한 기와를 표시했습니다.",
+    "failureText": "지도는 완성됐지만 한 용병이 굴뚝과 친해졌습니다.",
+    "unlockCondition": "사무소 레벨 4 이상",
+    "note": "도시 정찰",
+    "officeExp": 82,
+    "mercenaryExp": 130,
+    "failureOfficeExp": 25,
+    "failureMercenaryExp": 52
+  },
+  {
+    "missionId": "noncombat_medical_fever_tent_001",
+    "enabled": true,
+    "title": "열병 천막 보조",
+    "category": "non_combat",
+    "type": "medical",
+    "risk": "보통",
+    "primaryStats": [
+      "SUP",
+      "TEC"
+    ],
+    "recommendedWorkPower": 330,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 240,
+    "rewardGold": 8800,
+    "failureRewardGold": 1650,
+    "preferredTags": [
+      "의무",
+      "열병",
+      "보조",
+      "치료"
+    ],
+    "preferredPositions": [
+      "지원"
+    ],
+    "description": "임시 진료 천막에서 환자 분류와 약 배달을 돕습니다.",
+    "successText": "환자들은 안정됐고, 천막도 아직 서 있습니다.",
+    "failureText": "환자는 안정됐지만 약 상자가 도망간 듯합니다.",
+    "unlockCondition": "사무소 레벨 4 이상",
+    "note": "의무 중급",
+    "officeExp": 84,
+    "mercenaryExp": 132,
+    "failureOfficeExp": 26,
+    "failureMercenaryExp": 54
+  },
+  {
+    "missionId": "noncombat_collection_broken_sword_001",
+    "enabled": true,
+    "title": "부러진 검 보증금 회수",
+    "category": "non_combat",
+    "type": "collection",
+    "risk": "보통",
+    "primaryStats": [
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 350,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 200,
+    "rewardGold": 8400,
+    "failureRewardGold": 1500,
+    "preferredTags": [
+      "회수",
+      "장비",
+      "협상",
+      "대장간"
+    ],
+    "preferredPositions": [
+      "전열",
+      "특수"
+    ],
+    "description": "대장간에서 빌려준 검의 보증금을 회수합니다. 검은 이미 두 조각입니다.",
+    "successText": "보증금 일부와 대장장이의 한숨을 회수했습니다.",
+    "failureText": "검 조각은 회수했지만 보증금은 철학이 됐습니다.",
+    "unlockCondition": "사무소 레벨 5 이상",
+    "note": "장비 회수",
+    "officeExp": 86,
+    "mercenaryExp": 135,
+    "failureOfficeExp": 26,
+    "failureMercenaryExp": 54
+  },
+  {
+    "missionId": "noncombat_escort_cursed_doll_001",
+    "enabled": true,
+    "title": "저주 인형 봉송",
+    "category": "non_combat",
+    "type": "escort",
+    "risk": "높음",
+    "primaryStats": [
+      "SUP",
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 440,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 300,
+    "rewardGold": 12200,
+    "failureRewardGold": 2400,
+    "preferredTags": [
+      "호송",
+      "저주",
+      "봉인",
+      "의식"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "말하는 저주 인형을 성당 보관함까지 옮깁니다. 인형은 계속 항의합니다.",
+    "successText": "인형은 봉인됐고, 욕설도 함께 봉인됐습니다.",
+    "failureText": "인형은 도착했지만 용병 하나의 이름을 외웠습니다.",
+    "unlockCondition": "사무소 레벨 6 이상",
+    "note": "고위험 호송",
+    "officeExp": 100,
+    "mercenaryExp": 158,
+    "failureOfficeExp": 32,
+    "failureMercenaryExp": 64
+  },
+  {
+    "missionId": "noncombat_guard_black_auction_001",
+    "enabled": true,
+    "title": "암시장 경매장 경비",
+    "category": "non_combat",
+    "type": "guard",
+    "risk": "높음",
+    "primaryStats": [
+      "DEF",
+      "SUP",
+      "TEC"
+    ],
+    "recommendedWorkPower": 480,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 360,
+    "rewardGold": 14500,
+    "failureRewardGold": 3000,
+    "preferredTags": [
+      "경비",
+      "암시장",
+      "귀족",
+      "계약"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
+    "description": "암시장 경매장의 입구를 지킵니다. 손님보다 계약서가 더 위험합니다.",
+    "successText": "경매는 조용히 끝났고, 아무도 이름을 남기지 않았습니다.",
+    "failureText": "경매는 끝났지만 사무소 이름이 한 장부에 올랐습니다.",
+    "unlockCondition": "사무소 레벨 7 이상",
+    "note": "암시장/계약",
+    "officeExp": 115,
+    "mercenaryExp": 180,
+    "failureOfficeExp": 36,
+    "failureMercenaryExp": 72
+  },
+  {
+    "missionId": "noncombat_cleanup_alchemy_smoke_001",
+    "enabled": true,
+    "title": "연금술 연기 배출",
+    "category": "non_combat",
+    "type": "cleanup",
+    "risk": "높음",
+    "primaryStats": [
+      "TEC",
+      "DEF",
+      "SUP"
+    ],
+    "recommendedWorkPower": 470,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 330,
+    "rewardGold": 13600,
+    "failureRewardGold": 2800,
+    "preferredTags": [
+      "청소",
+      "연금술",
+      "오염",
+      "환기"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
+    "description": "연금술 공방에 갇힌 색깔 있는 연기를 밖으로 빼냅니다. 초록색은 피하세요.",
+    "successText": "연기는 빠졌고, 모두 원래 색으로 돌아왔습니다. 대체로요.",
+    "failureText": "연기는 줄었지만 보고서가 보라색으로 변했습니다.",
+    "unlockCondition": "사무소 레벨 7 이상",
+    "note": "연금술 오염",
+    "officeExp": 110,
+    "mercenaryExp": 174,
+    "failureOfficeExp": 34,
+    "failureMercenaryExp": 70
+  },
+  {
+    "missionId": "noncombat_scout_old_well_001",
+    "enabled": true,
+    "title": "마른 우물 내부 조사",
+    "category": "non_combat",
+    "type": "scout",
+    "risk": "높음",
+    "primaryStats": [
+      "SPD",
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 450,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 310,
+    "rewardGold": 12800,
+    "failureRewardGold": 2600,
+    "preferredTags": [
+      "정찰",
+      "우물",
+      "지하",
+      "소문"
+    ],
+    "preferredPositions": [
+      "특수",
+      "전열"
+    ],
+    "description": "마른 우물 아래에서 들리는 금속음을 확인합니다.",
+    "successText": "우물 아래 통로와 녹슨 표식을 기록했습니다.",
+    "failureText": "통로는 찾았지만 밧줄이 사무소를 고소할 표정입니다.",
+    "unlockCondition": "사무소 레벨 6 이상",
+    "note": "지하 정찰",
+    "officeExp": 104,
+    "mercenaryExp": 166,
+    "failureOfficeExp": 32,
+    "failureMercenaryExp": 66
+  },
+  {
+    "missionId": "noncombat_admin_noble_contracts_001",
+    "enabled": true,
+    "title": "귀족 계약서 검토",
+    "category": "non_combat",
+    "type": "admin",
+    "risk": "높음",
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 430,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 280,
+    "rewardGold": 11600,
+    "failureRewardGold": 2100,
+    "preferredTags": [
+      "서류",
+      "계약",
+      "귀족",
+      "법무"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "귀족가가 보낸 계약서의 함정을 찾습니다. 글씨가 작을수록 위험합니다.",
+    "successText": "계약 함정 셋을 발견했고, 사무소는 아직 팔리지 않았습니다.",
+    "failureText": "계약은 검토됐지만 작은 글씨가 한 줄 도망쳤습니다.",
+    "unlockCondition": "사무소 레벨 6 이상",
+    "note": "고급 행정",
+    "officeExp": 96,
+    "mercenaryExp": 152,
+    "failureOfficeExp": 30,
+    "failureMercenaryExp": 60
+  },
+  {
+    "missionId": "noncombat_medical_undead_checkup_001",
+    "enabled": true,
+    "title": "언데드 정기검진",
+    "category": "non_combat",
+    "type": "medical",
+    "risk": "높음",
+    "primaryStats": [
+      "SUP",
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 460,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 320,
+    "rewardGold": 13400,
+    "failureRewardGold": 2700,
+    "preferredTags": [
+      "의무",
+      "언데드",
+      "정화",
+      "검진"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "언데드 노동자의 관절과 저주 상태를 점검합니다. 맥박은 참고하지 마세요.",
+    "successText": "검진은 끝났고, 대부분은 여전히 움직입니다.",
+    "failureText": "검진표가 환자보다 먼저 눕습니다.",
+    "unlockCondition": "사무소 레벨 7 이상",
+    "note": "언데드/의료",
+    "officeExp": 108,
+    "mercenaryExp": 170,
+    "failureOfficeExp": 34,
+    "failureMercenaryExp": 68
+  },
+  {
+    "missionId": "noncombat_collection_shrine_fee_001",
+    "enabled": true,
+    "title": "성소 사용료 회수",
+    "category": "non_combat",
+    "type": "collection",
+    "risk": "높음",
+    "primaryStats": [
+      "SUP",
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 490,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 300,
+    "rewardGold": 14000,
+    "failureRewardGold": 2900,
+    "preferredTags": [
+      "회수",
+      "성당",
+      "협상",
+      "신성"
+    ],
+    "preferredPositions": [
+      "지원",
+      "전열"
+    ],
+    "description": "성소 사용료를 밀린 의뢰인에게 받아냅니다. 신성한 미납입니다.",
+    "successText": "사용료와 정중한 항의문을 받아왔습니다.",
+    "failureText": "사용료 대신 축복 쿠폰을 받아왔습니다.",
+    "unlockCondition": "사무소 레벨 8 이상",
+    "note": "성당/회수",
+    "officeExp": 112,
+    "mercenaryExp": 178,
+    "failureOfficeExp": 35,
+    "failureMercenaryExp": 70
+  },
+  {
+    "missionId": "noncombat_escort_tax_cart_001",
+    "enabled": true,
+    "title": "세금 수레 호송",
+    "category": "non_combat",
+    "type": "escort",
+    "risk": "높음",
+    "primaryStats": [
+      "DEF",
+      "SPD",
+      "TEC"
+    ],
+    "recommendedWorkPower": 500,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 340,
+    "rewardGold": 15200,
+    "failureRewardGold": 3200,
+    "preferredTags": [
+      "호송",
+      "세금",
+      "수레",
+      "경비"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
+    "description": "세금이 실린 수레를 관청까지 호송합니다. 모두가 수레를 사랑합니다.",
+    "successText": "수레는 관청에 도착했고, 세금은 덜 사랑받게 됐습니다.",
+    "failureText": "수레는 도착했지만 동전 몇 개가 사회로 환원됐습니다.",
+    "unlockCondition": "사무소 레벨 8 이상",
+    "note": "고보상 호송",
+    "officeExp": 118,
+    "mercenaryExp": 185,
+    "failureOfficeExp": 38,
+    "failureMercenaryExp": 74
+  },
+  {
+    "missionId": "noncombat_scout_forbidden_archive_001",
+    "enabled": true,
+    "title": "금서고 열람 기록 확인",
+    "category": "non_combat",
+    "type": "scout",
+    "risk": "위험",
+    "primaryStats": [
+      "TEC",
+      "SUP",
+      "SPD"
+    ],
+    "recommendedWorkPower": 560,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 420,
+    "rewardGold": 19000,
+    "failureRewardGold": 4200,
+    "preferredTags": [
+      "정찰",
+      "금서",
+      "기록",
+      "마법"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
+    "description": "금서고 열람 기록에서 사라진 이름을 확인합니다. 책장이 먼저 쳐다봅니다.",
+    "successText": "사라진 이름과 위험한 책갈피를 확보했습니다.",
+    "failureText": "기록은 찾았지만 한 용병이 책에게 사과했습니다.",
+    "unlockCondition": "사무소 레벨 10 이상",
+    "note": "위험 정찰/소문망 연결",
+    "officeExp": 145,
+    "mercenaryExp": 220,
+    "failureOfficeExp": 46,
+    "failureMercenaryExp": 88
+  },
+  {
+    "missionId": "noncombat_cleanup_reality_leak_001",
+    "enabled": true,
+    "title": "현실 누수 임시 봉합",
+    "category": "non_combat",
+    "type": "cleanup",
+    "risk": "위험",
+    "primaryStats": [
+      "TEC",
+      "SUP",
+      "DEF"
+    ],
+    "recommendedWorkPower": 620,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 480,
+    "rewardGold": 22000,
+    "failureRewardGold": 5000,
+    "preferredTags": [
+      "오염",
+      "현실오염",
+      "봉인",
+      "청소"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "벽 틈에서 새는 현실오염을 임시 봉합합니다. 설명만으로도 보험이 필요합니다.",
+    "successText": "누수는 멈췄고, 방은 다시 방처럼 보입니다.",
+    "failureText": "누수는 줄었지만 모서리 하나가 어제에 남았습니다.",
+    "unlockCondition": "사무소 레벨 12 이상",
+    "note": "위험 청소/고레벨",
+    "officeExp": 165,
+    "mercenaryExp": 250,
+    "failureOfficeExp": 52,
+    "failureMercenaryExp": 100
+  },
+  {
+    "missionId": "noncombat_guard_cursed_gate_001",
+    "enabled": true,
+    "title": "저주문 야간 봉쇄",
+    "category": "non_combat",
+    "type": "guard",
+    "risk": "위험",
+    "primaryStats": [
+      "DEF",
+      "SUP",
+      "TEC"
+    ],
+    "recommendedWorkPower": 600,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 450,
+    "rewardGold": 21000,
+    "failureRewardGold": 4700,
+    "preferredTags": [
+      "경비",
+      "저주",
+      "봉쇄",
+      "야간"
+    ],
+    "preferredPositions": [
+      "전열",
+      "지원"
+    ],
+    "description": "밤마다 열리려는 저주문 앞을 지킵니다. 문고리가 설득을 시도합니다.",
+    "successText": "문은 열리지 않았고, 새벽은 무사히 왔습니다.",
+    "failureText": "문은 닫혔지만 문고리가 사무소 주소를 기억했습니다.",
+    "unlockCondition": "사무소 레벨 12 이상",
+    "note": "위험 경비",
+    "officeExp": 158,
+    "mercenaryExp": 240,
+    "failureOfficeExp": 50,
+    "failureMercenaryExp": 96
+  },
+  {
+    "missionId": "noncombat_medical_field_triage_001",
+    "enabled": true,
+    "title": "야전 응급분류 지원",
+    "category": "non_combat",
+    "type": "medical",
+    "risk": "위험",
+    "primaryStats": [
+      "SUP",
+      "SPD",
+      "TEC"
+    ],
+    "recommendedWorkPower": 580,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 430,
+    "rewardGold": 19800,
+    "failureRewardGold": 4400,
+    "preferredTags": [
+      "의무",
+      "응급",
+      "구조",
+      "분류"
+    ],
+    "preferredPositions": [
+      "지원"
+    ],
+    "description": "소규모 교전 이후 환자를 분류하고 후송 우선순위를 정합니다.",
+    "successText": "중상자는 옮겨졌고, 의료진은 한숨 돌렸습니다.",
+    "failureText": "분류는 끝났지만 침대가 부족하다는 보고가 왔습니다.",
+    "unlockCondition": "사무소 레벨 10 이상",
+    "note": "전투 의뢰 전 의료형",
+    "officeExp": 150,
+    "mercenaryExp": 230,
+    "failureOfficeExp": 48,
+    "failureMercenaryExp": 92
+  },
+  {
+    "missionId": "noncombat_collection_demon_clause_001",
+    "enabled": true,
+    "title": "악마 계약 조항 독촉",
+    "category": "non_combat",
+    "type": "collection",
+    "risk": "위험",
+    "primaryStats": [
+      "TEC",
+      "SUP",
+      "DEF"
+    ],
+    "recommendedWorkPower": 640,
+    "minMembers": 1,
+    "maxMembers": 3,
+    "durationSeconds": 460,
+    "rewardGold": 23000,
+    "failureRewardGold": 5200,
+    "preferredTags": [
+      "계약",
+      "악마",
+      "독촉",
+      "저주"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
+    "description": "악마 계약서의 미이행 조항을 독촉합니다. 상대는 말장난이 직업입니다.",
+    "successText": "미이행 조항 하나와 위험한 서명을 회수했습니다.",
+    "failureText": "조항은 확인했지만 쉼표 하나에 모두가 휘말렸습니다.",
+    "unlockCondition": "사무소 레벨 13 이상",
+    "note": "악마/계약 위험 의뢰",
+    "officeExp": 172,
+    "mercenaryExp": 260,
+    "failureOfficeExp": 55,
+    "failureMercenaryExp": 104
+  },
+  {
+    "missionId": "noncombat_escort_relic_case_001",
+    "enabled": true,
+    "title": "균열 유물 상자 운반",
+    "category": "non_combat",
+    "type": "escort",
+    "risk": "위험",
+    "primaryStats": [
+      "DEF",
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 660,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 500,
+    "rewardGold": 24500,
+    "failureRewardGold": 5600,
+    "preferredTags": [
+      "호송",
+      "유물",
+      "봉인",
+      "균열"
+    ],
+    "preferredPositions": [
+      "전열",
+      "특수"
+    ],
+    "description": "열면 안 되는 유물 상자를 지정 장소까지 옮깁니다. 상자가 먼저 열려고 합니다.",
+    "successText": "유물 상자는 봉인된 채 도착했습니다. 모두가 박수를 아주 작게 쳤습니다.",
+    "failureText": "상자는 닫혀 있지만 안쪽에서 영수증이 나왔습니다.",
+    "unlockCondition": "사무소 레벨 14 이상",
+    "note": "위험 호송/보스 전조",
+    "officeExp": 180,
+    "mercenaryExp": 275,
+    "failureOfficeExp": 58,
+    "failureMercenaryExp": 110
+  },
+  {
+    "missionId": "noncombat_admin_audit_blackledger_001",
+    "enabled": true,
+    "title": "검은 장부 감사",
+    "category": "non_combat",
+    "type": "admin",
+    "risk": "위험",
+    "primaryStats": [
+      "TEC",
+      "SUP"
+    ],
+    "recommendedWorkPower": 590,
+    "minMembers": 1,
+    "maxMembers": 2,
+    "durationSeconds": 390,
+    "rewardGold": 17600,
+    "failureRewardGold": 3900,
+    "preferredTags": [
+      "서류",
+      "감사",
+      "장부",
+      "암시장"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "검은 장부의 위조 흔적을 확인합니다. 장부가 선배보다 더 거짓말을 잘합니다.",
+    "successText": "위조 흔적을 찾아냈고, 잉크도 자백했습니다.",
+    "failureText": "장부는 맞는데 작성자가 이미 도망갔습니다.",
+    "unlockCondition": "사무소 레벨 10 이상",
+    "note": "고위 행정/회계",
+    "officeExp": 138,
+    "mercenaryExp": 212,
+    "failureOfficeExp": 44,
+    "failureMercenaryExp": 84
+  },
+  {
+    "missionId": "noncombat_scout_dream_alley_001",
+    "enabled": true,
+    "title": "꿈골목 출입구 조사",
+    "category": "non_combat",
+    "type": "scout",
+    "risk": "위험",
+    "primaryStats": [
+      "SUP",
+      "TEC",
+      "SPD"
+    ],
+    "recommendedWorkPower": 630,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 470,
+    "rewardGold": 22800,
+    "failureRewardGold": 5100,
+    "preferredTags": [
+      "정찰",
+      "꿈",
+      "골목",
+      "공허"
+    ],
+    "preferredPositions": [
+      "특수",
+      "지원"
+    ],
+    "description": "잠든 사람만 볼 수 있다는 골목의 출입구를 조사합니다.",
+    "successText": "출입구 좌표와 악몽 방지법을 확보했습니다.",
+    "failureText": "출입구는 찾았지만 한 명이 잠든 척을 계속합니다.",
+    "unlockCondition": "사무소 레벨 13 이상",
+    "note": "공허/꿈 소문",
+    "officeExp": 170,
+    "mercenaryExp": 258,
+    "failureOfficeExp": 54,
+    "failureMercenaryExp": 102
+  },
+  {
+    "missionId": "noncombat_cleanup_blood_moon_stain_001",
+    "enabled": true,
+    "title": "붉은 달 얼룩 제거",
+    "category": "non_combat",
+    "type": "cleanup",
+    "risk": "위험",
+    "primaryStats": [
+      "SUP",
+      "TEC",
+      "DEF"
+    ],
+    "recommendedWorkPower": 650,
+    "minMembers": 2,
+    "maxMembers": 3,
+    "durationSeconds": 500,
+    "rewardGold": 24000,
+    "failureRewardGold": 5400,
+    "preferredTags": [
+      "청소",
+      "붉은달",
+      "저주",
+      "오염"
+    ],
+    "preferredPositions": [
+      "지원",
+      "특수"
+    ],
+    "description": "붉은 달 이후 남은 얼룩을 제거합니다. 얼룩이 달력을 기억합니다.",
+    "successText": "얼룩은 사라졌고, 창문은 달을 덜 무서워합니다.",
+    "failureText": "얼룩은 줄었지만 달빛이 사무소를 노려봅니다.",
+    "unlockCondition": "사무소 레벨 14 이상",
+    "note": "이벤트성 위험 청소",
+    "officeExp": 178,
+    "mercenaryExp": 270,
+    "failureOfficeExp": 56,
+    "failureMercenaryExp": 108
   }
 ]
