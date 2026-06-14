@@ -3034,13 +3034,10 @@ function renderImageWithPlaceholder(mercenary, className) {
   const imagePath = getMercenaryImagePath(mercenary);
   const gradeClass = getGradeClass(mercenary.grade);
   const safeName = escapeHtml(mercenary.name || '용병');
-  const placeholderHtml = '<div class="merc-image-placeholder" aria-hidden="true"></div>';
 
   if (!imagePath) {
     return `
-      <div class="${className} merc-image-wrap ${gradeClass} is-missing">
-        ${placeholderHtml}
-      </div>
+      <div class="${className} merc-image-wrap ${gradeClass} is-missing"></div>
     `;
   }
 
@@ -3051,13 +3048,11 @@ function renderImageWithPlaceholder(mercenary, className) {
         alt="${safeName}"
         loading="lazy"
         onload="this.classList.add('is-loaded'); this.closest('.merc-image-wrap')?.classList.add('is-loaded');"
-        onerror="this.hidden=true; const wrap=this.closest('.merc-image-wrap'); wrap?.classList.remove('has-image'); wrap?.classList.add('is-missing');"
+        onerror="this.hidden=true; this.closest('.merc-image-wrap')?.classList.add('is-missing');"
       />
-      ${placeholderHtml}
     </div>
   `;
 }
-
 function renderSelectOptions(root, options, selected) {
   if (!root) return;
   root.innerHTML = options.map((option) => {

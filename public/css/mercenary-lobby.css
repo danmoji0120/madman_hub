@@ -4329,11 +4329,37 @@ body.mission-open {
     justify-content: center;
   }
 
-  .merc-image-wrap.has-image .merc-image-placeholder {
+  .merc-image-placeholder::before {
+    content: none !important;
     display: none !important;
   }
 
-.merc-image-wrap.is-missing .merc-image-placeholder {
-    display: grid;
+  .merc-image-wrap.has-image .merc-image-placeholder,
+  .merc-image-wrap.is-loaded .merc-image-placeholder,
+  .merc-image-placeholder[hidden] {
+    display: none !important;
+  }
+
+  .merc-image-wrap img.is-loaded,
+  .merc-image-wrap.is-loaded img {
+    opacity: 1 !important;
+  }
+
+  .squad-mini-portrait .merc-image-placeholder,
+  .squad-slot-portrait .merc-image-placeholder,
+  .mission-mini-portrait .merc-image-placeholder {
+    display: none !important;
+  }
+
+  .squad-mini-portrait .merc-image-placeholder::before,
+  .squad-slot-portrait .merc-image-placeholder::before,
+  .mission-mini-portrait .merc-image-placeholder::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .merc-image-placeholder::before {
+    content: none !important;
+    display: none !important;
   }
 }
