@@ -4328,12 +4328,4 @@ body.mission-open {
   .quick-nav button {
     justify-content: center;
   }
-
-  .merc-image-wrap.has-image .merc-image-placeholder {
-    display: none !important;
-  }
-
-.merc-image-wrap.is-missing .merc-image-placeholder {
-    display: grid;
-  }
 }

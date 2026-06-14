@@ -3032,28 +3032,23 @@ function getMercenaryImagePath(mercenary) {
 
 function renderImageWithPlaceholder(mercenary, className) {
   const imagePath = getMercenaryImagePath(mercenary);
-  const gradeClass = getGradeClass(mercenary.grade);
-  const safeName = escapeHtml(mercenary.name || '용병');
-  const placeholderHtml = '<div class="merc-image-placeholder" aria-hidden="true"></div>';
 
-  if (!imagePath) {
+  if (imagePath) {
     return `
-      <div class="${className} merc-image-wrap ${gradeClass} is-missing">
-        ${placeholderHtml}
+      <div class="${className} merc-image-wrap ${getGradeClass(mercenary.grade)} has-image">
+        <img
+          src="${escapeHtml(imagePath)}"
+          alt="${escapeHtml(mercenary.name)}"
+          loading="lazy"
+          onerror="this.hidden=true;"
+        />
       </div>
     `;
   }
 
   return `
-    <div class="${className} merc-image-wrap ${gradeClass} has-image">
-      <img
-        src="${escapeHtml(imagePath)}"
-        alt="${safeName}"
-        loading="lazy"
-        onload="this.closest('.merc-image-wrap')?.classList.add('is-loaded');"
-        onerror="this.hidden=true; const wrap=this.closest('.merc-image-wrap'); wrap?.classList.remove('has-image'); wrap?.classList.add('is-missing');"
-      />
-      ${placeholderHtml}
+    <div class="${className} merc-image-wrap ${getGradeClass(mercenary.grade)} is-missing">
+      <div class="merc-image-placeholder" aria-hidden="true"></div>
     </div>
   `;
 }
