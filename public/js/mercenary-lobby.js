@@ -69,6 +69,14 @@ const mercenaryLobbyState = {
       status: 'warning',
       icon: 'medicalBag',
       description: '누군가 신음하고 있습니다. 무시할까요?'
+    },
+    {
+      key: 'office',
+      label: '사무실',
+      badge: 'OPS',
+      status: 'available',
+      icon: 'settings',
+      description: '책상에 사람을 앉히면 사무소가 조금 덜 망합니다.'
     }
   ],
   logs: [
@@ -81,6 +89,7 @@ const mercenaryLobbyState = {
     { label: '의뢰 목록', icon: 'scroll', action: 'missions' },
     { label: '편성/파견', icon: 'crossedSwords', action: 'squads' },
     { label: '의무실', icon: 'medicalCross', action: 'infirmary' },
+    { label: '사무실', icon: 'settings', action: 'office' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
 };
@@ -440,6 +449,16 @@ const infirmaryState = {
   errorMessage: ''
 };
 let infirmaryTimer = null;
+
+const officeState = {
+  facilities: [],
+  availableMercenaries: [],
+  assignedMercenaries: [],
+  officeEffects: null,
+  selectedFacilityKey: 'reception',
+  loading: false,
+  errorMessage: ''
+};
 
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
@@ -2070,6 +2089,252 @@ function bindInfirmaryControls() {
   }
 }
 
+function selectedOfficeFacility() {
+  return officeState.facilities.find((facility) => facility.key === officeState.selectedFacilityKey)
+    || officeState.facilities[0]
+    || null;
+}
+
+function formatOfficeEffectValue(key, value) {
+  const number = Number(value || 0);
+  if (key === 'missionSuccessBonusPoints' || key === 'injuryChanceReductionPoints') {
+    return `${number > 0 ? '+' : ''}${Math.round(number * 10) / 10}%p`;
+  }
+  return `${Math.round(number * 100)}%`;
+}
+
+function officeEffectLabel(key) {
+  return {
+    offerRefillReductionPct: '의뢰 보충 시간 감소',
+    rewardGoldBonusPct: '의뢰 성공 보상 증가',
+    treatmentCostReductionPct: '치료비 감소',
+    treatmentTimeReductionPct: '치료 시간 감소',
+    missionSuccessBonusPoints: '의뢰 성공률 보너스',
+    missionDurationReductionPct: '의뢰 소요 시간 감소',
+    injuryChanceReductionPoints: '부상 확률 감소'
+  }[key] || key;
+}
+
+async function loadOfficeData() {
+  officeState.loading = true;
+  officeState.errorMessage = '';
+  renderOfficeView();
+  try {
+    const payload = await apiRequest('/api/mercenary/office', { perfScope: 'mercenary-office' });
+    updateMercenaryCurrencyDisplay(payload);
+    officeState.facilities = Array.isArray(payload.facilities) ? payload.facilities : [];
+    officeState.availableMercenaries = Array.isArray(payload.availableMercenaries) ? payload.availableMercenaries : [];
+    officeState.assignedMercenaries = Array.isArray(payload.assignedMercenaries) ? payload.assignedMercenaries : [];
+    officeState.officeEffects = payload.officeEffects || null;
+    if (!officeState.facilities.some((facility) => facility.key === officeState.selectedFacilityKey)) {
+      officeState.selectedFacilityKey = officeState.facilities[0]?.key || 'reception';
+    }
+  } catch (error) {
+    if (error.status === 401 || error.data?.error === 'UNAUTHORIZED') {
+      showMercenaryLoginRequiredModal();
+      closeOfficeView();
+      return;
+    }
+    officeState.errorMessage = error.data?.message || error.message || '사무실 정보를 불러오지 못했습니다.';
+  } finally {
+    officeState.loading = false;
+    renderOfficeView();
+  }
+}
+
+async function openOfficeView() {
+  const screen = document.querySelector('#mercenary-office-view');
+  if (!screen) return;
+  screen.removeAttribute('hidden');
+  await loadOfficeData();
+}
+
+function closeOfficeView() {
+  document.querySelector('#mercenary-office-view')?.setAttribute('hidden', '');
+}
+
+function renderOfficeFacilities() {
+  const list = document.querySelector('#office-facility-list');
+  const count = document.querySelector('#office-facility-count');
+  if (!list) return;
+  if (count) count.textContent = `${officeState.facilities.length}개`;
+  if (!officeState.facilities.length) {
+    list.innerHTML = '<p class="office-empty">시설 정보를 불러오지 못했습니다.</p>';
+    return;
+  }
+  list.innerHTML = officeState.facilities.map((facility) => {
+    const assignedCount = (facility.slots || []).filter((slot) => slot.assignment).length;
+    const selected = facility.key === selectedOfficeFacility()?.key;
+    return `
+      <button class="office-facility-card ${selected ? 'is-selected' : ''}" type="button" data-office-facility="${escapeHtml(facility.key)}">
+        <strong>${escapeHtml(facility.label)}</strong>
+        <span>${formatNumber(assignedCount)} / ${formatNumber(facility.maxSlots)}명 · 효율 ${formatNumber(Math.round(Number(facility.efficiency || 0) * 100))}%</span>
+        <em>${(facility.effectLabels || []).map(escapeHtml).join(' · ')}</em>
+      </button>
+    `;
+  }).join('');
+  list.querySelectorAll('[data-office-facility]').forEach((button) => {
+    button.addEventListener('click', () => {
+      officeState.selectedFacilityKey = button.dataset.officeFacility;
+      renderOfficeView();
+    });
+  });
+}
+
+function renderOfficeDetail() {
+  const root = document.querySelector('#office-detail');
+  const facility = selectedOfficeFacility();
+  if (!root) return;
+  if (officeState.loading) {
+    root.innerHTML = '<p class="office-empty">사무실 장부를 펼치는 중입니다.</p>';
+    return;
+  }
+  if (officeState.errorMessage) {
+    root.innerHTML = `<p class="office-empty">${escapeHtml(officeState.errorMessage)}</p>`;
+    return;
+  }
+  if (!facility) {
+    root.innerHTML = '<p class="office-empty">선택된 시설이 없습니다.</p>';
+    return;
+  }
+  const effects = Object.entries(facility.effects || {})
+    .filter(([, value]) => Number(value || 0) > 0)
+    .map(([key, value]) => `<span>${escapeHtml(officeEffectLabel(key))} ${escapeHtml(formatOfficeEffectValue(key, value))}</span>`)
+    .join('');
+  root.innerHTML = `
+    <div class="office-detail-head">
+      <span class="office-kicker">선택 시설</span>
+      <h3>${escapeHtml(facility.label)}</h3>
+      <p>${escapeHtml(facility.description || '')}</p>
+    </div>
+    <div class="office-detail-grid">
+      <div><span>주요 스탯</span><strong>${(facility.primaryStats || []).map(escapeHtml).join(', ')}</strong></div>
+      <div><span>권장 작업력</span><strong>${formatNumber(facility.recommendedPower)}</strong></div>
+      <div><span>현재 작업력</span><strong>${formatNumber(facility.workPower)}</strong></div>
+      <div><span>효율</span><strong>${formatNumber(Math.round(Number(facility.efficiency || 0) * 100))}%</strong></div>
+    </div>
+    <div class="office-efficiency-meter" aria-label="시설 효율"><span style="width: ${Math.min(100, Math.round(Number(facility.efficiency || 0) * 100))}%"></span></div>
+    <div class="office-tag-line">${(facility.preferredTags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}</div>
+    <div class="office-effect-chips">${effects || '<span>효과 없음</span>'}</div>
+    <div class="office-slot-list">
+      ${(facility.slots || []).map((slot) => {
+        const mercenary = slot.mercenary;
+        return `
+          <article class="office-slot-card ${mercenary ? 'is-filled' : ''}">
+            <div class="office-slot-label">슬롯 ${formatNumber(Number(slot.slotIndex) + 1)}</div>
+            ${mercenary ? `
+              ${renderImageWithPlaceholder(mercenary, 'office-slot-portrait')}
+              <div>
+                <strong>${escapeHtml(mercenary.name)}</strong>
+                <p>${mercenary.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(mercenary.level)} / ${formatNumber(mercenary.maxLevel)}`} · 작업력 ${formatNumber(mercenary.workPower)}</p>
+                <p>${(mercenary.tags || []).slice(0, 3).map(escapeHtml).join(' · ') || '태그 없음'}</p>
+              </div>
+              <button type="button" data-office-unassign="${escapeHtml(slot.assignment?.id || '')}">배치 해제</button>
+            ` : '<div class="office-empty-slot">오른쪽 목록에서 용병을 배치하세요.</div>'}
+          </article>
+        `;
+      }).join('')}
+    </div>
+  `;
+  root.querySelectorAll('[data-office-unassign]').forEach((button) => {
+    button.addEventListener('click', () => unassignOfficeMercenary(button.dataset.officeUnassign));
+  });
+}
+
+function renderOfficeRoster() {
+  const list = document.querySelector('#office-roster-list');
+  const count = document.querySelector('#office-roster-count');
+  const facility = selectedOfficeFacility();
+  if (!list) return;
+  if (count) count.textContent = `${officeState.availableMercenaries.length}명`;
+  if (officeState.loading) {
+    list.innerHTML = '<p class="office-empty">배치 가능한 용병을 확인 중입니다.</p>';
+    return;
+  }
+  if (!officeState.availableMercenaries.length) {
+    list.innerHTML = '<p class="office-empty">대기 중인 용병이 없습니다. 파견/치료/사무실 배치 중인 용병은 사용할 수 없습니다.</p>';
+    return;
+  }
+  const hasEmptySlot = Boolean((facility?.slots || []).some((slot) => !slot.assignment));
+  list.innerHTML = officeState.availableMercenaries.map((mercenary) => `
+    <article class="office-roster-card ${getGradeClass(mercenary.grade)}">
+      ${renderImageWithPlaceholder(mercenary, 'office-roster-portrait')}
+      <div>
+        <span class="office-grade">${escapeHtml(mercenary.grade)}</span>
+        <strong>${escapeHtml(mercenary.name)}</strong>
+        <p>${mercenary.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(mercenary.level)} / ${formatNumber(mercenary.maxLevel)}`} · 작업력 ${formatNumber(mercenary.workPower)}</p>
+        <p>${(mercenary.tags || []).slice(0, 4).map(escapeHtml).join(' · ') || '태그 없음'}</p>
+      </div>
+      <button type="button" data-office-assign="${escapeHtml(mercenary.ownedId)}" ${hasEmptySlot ? '' : 'disabled'}>배치</button>
+    </article>
+  `).join('');
+  list.querySelectorAll('[data-office-assign]').forEach((button) => {
+    button.addEventListener('click', () => assignOfficeMercenary(button.dataset.officeAssign));
+  });
+}
+
+function renderOfficeEffectsSummary() {
+  const root = document.querySelector('#office-effects-panel');
+  if (!root) return;
+  const effects = officeState.officeEffects || {};
+  const items = Object.entries(effects)
+    .filter(([, value]) => Number(value || 0) > 0)
+    .map(([key, value]) => `<span><b>${escapeHtml(officeEffectLabel(key))}</b> ${escapeHtml(formatOfficeEffectValue(key, value))}</span>`);
+  root.innerHTML = `<strong>현재 사무실 총 효과</strong>${items.length ? items.join('') : '<span>배치 효과 없음</span>'}`;
+}
+
+function renderOfficeView() {
+  renderOfficeFacilities();
+  renderOfficeDetail();
+  renderOfficeRoster();
+  renderOfficeEffectsSummary();
+}
+
+async function assignOfficeMercenary(ownedMercenaryId) {
+  const facility = selectedOfficeFacility();
+  const slot = (facility?.slots || []).find((item) => !item.assignment);
+  if (!facility || !slot) {
+    showReadyNotice('빈 사무실 슬롯이 없습니다.');
+    return;
+  }
+  try {
+    const payload = await apiRequest('/api/mercenary/office/assign', {
+      method: 'POST',
+      body: JSON.stringify({ facilityKey: facility.key, slotIndex: slot.slotIndex, ownedMercenaryId }),
+      perfScope: 'mercenary-office-assign'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    showReadyNotice('용병을 사무실에 배치했습니다.');
+    await loadOfficeData();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '사무실 배치에 실패했습니다.');
+  }
+}
+
+async function unassignOfficeMercenary(assignmentId) {
+  if (!assignmentId) return;
+  try {
+    const payload = await apiRequest('/api/mercenary/office/unassign', {
+      method: 'POST',
+      body: JSON.stringify({ assignmentId }),
+      perfScope: 'mercenary-office-unassign'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    showReadyNotice('사무실 배치를 해제했습니다.');
+    await loadOfficeData();
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '배치 해제에 실패했습니다.');
+  }
+}
+
+function bindOfficeControls() {
+  const closeButton = document.querySelector('#office-close-button');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeOfficeView);
+  }
+}
+
 function startMissionTimer() {
   stopMissionTimer();
   missionTimer = window.setInterval(() => {
@@ -2277,6 +2542,10 @@ function renderHotspots(hotspots) {
         openInfirmaryView();
         return;
       }
+      if (button.classList.contains('hotspot-office')) {
+        openOfficeView();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -2314,6 +2583,10 @@ function renderQuickNav(items) {
       }
       if (button.dataset.quickAction === 'infirmary') {
         openInfirmaryView();
+        return;
+      }
+      if (button.dataset.quickAction === 'office') {
+        openOfficeView();
         return;
       }
       showReadyNotice();
@@ -3174,6 +3447,7 @@ function renderLobby(state) {
 async function initializeMercenaryLobby() {
   bindMercenaryAuthOverlay();
   bindOfficeGrowthPopover();
+  bindOfficeControls();
   renderLobby(mercenaryLobbyState);
   document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
   bindRecruitmentBoard();

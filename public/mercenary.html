@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=236" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=237" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -283,6 +283,44 @@
       </div>
     </section>
 
+    <section class="mercenary-office-view" id="mercenary-office-view" aria-label="용병단 사무실" hidden>
+      <div class="office-background-scrim" aria-hidden="true"></div>
+      <div class="office-shell">
+        <header class="office-topbar">
+          <div class="office-title-block">
+            <span class="office-kicker">내정 배치 0.1</span>
+            <h2>용병단 사무실</h2>
+            <p>시설 배치 · 운영 보너스</p>
+          </div>
+          <button class="office-close-button" id="office-close-button" type="button">닫기</button>
+        </header>
+
+        <div class="office-layout">
+          <aside class="office-facility-panel" aria-label="사무실 시설 목록">
+            <div class="office-panel-heading">
+              <h3>시설 목록</h3>
+              <span id="office-facility-count">4개</span>
+            </div>
+            <div class="office-facility-list" id="office-facility-list"></div>
+          </aside>
+
+          <section class="office-detail-panel" aria-label="선택 시설 상세">
+            <div id="office-detail"></div>
+          </section>
+
+          <aside class="office-roster-panel" aria-label="배치 가능한 용병">
+            <div class="office-panel-heading">
+              <h3>배치 가능한 용병</h3>
+              <span id="office-roster-count">0명</span>
+            </div>
+            <div class="office-roster-list" id="office-roster-list"></div>
+          </aside>
+        </div>
+
+        <footer class="office-effects-panel" id="office-effects-panel" aria-label="현재 사무실 총 효과"></footer>
+      </div>
+    </section>
+
     <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
       <div class="recruitment-background-scrim" aria-hidden="true"></div>
       <div class="recruitment-shell">
@@ -372,6 +410,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=236"></script>
+  <script src="/js/mercenary-lobby.js?v=237"></script>
 </body>
 </html>

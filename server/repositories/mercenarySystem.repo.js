@@ -132,6 +132,19 @@ function normalizeTreatment(row) {
   };
 }
 
+function normalizeOfficeAssignment(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    facilityKey: row.facility_key,
+    slotIndex: Number(row.slot_index || 0),
+    ownedMercenaryId: row.owned_mercenary_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function getMercenaryProfile(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -981,6 +994,128 @@ async function claimTreatment(userId, treatmentId, claimedAt) {
   return getTreatment(userId, treatmentId);
 }
 
+async function listOfficeAssignments(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .select('*')
+      .eq('user_id', userId)
+      .order('facility_key', { ascending: true })
+      .order('slot_index', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeOfficeAssignment);
+  }
+
+  const rows = await all(
+    `SELECT * FROM user_mercenary_office_assignments
+     WHERE user_id = ?
+     ORDER BY facility_key ASC, slot_index ASC`,
+    [userId]
+  );
+  return rows.map(normalizeOfficeAssignment);
+}
+
+async function getOfficeAssignment(userId, assignmentId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', assignmentId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOfficeAssignment(data);
+  }
+
+  return normalizeOfficeAssignment(await get(
+    'SELECT * FROM user_mercenary_office_assignments WHERE user_id = ? AND id = ?',
+    [userId, assignmentId]
+  ));
+}
+
+async function getOfficeAssignmentBySlot(userId, facilityKey, slotIndex) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('facility_key', facilityKey)
+      .eq('slot_index', slotIndex)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOfficeAssignment(data);
+  }
+
+  return normalizeOfficeAssignment(await get(
+    `SELECT * FROM user_mercenary_office_assignments
+     WHERE user_id = ? AND facility_key = ? AND slot_index = ?`,
+    [userId, facilityKey, slotIndex]
+  ));
+}
+
+async function getOfficeAssignmentByOwnedMercenaryId(userId, ownedMercenaryId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('owned_mercenary_id', ownedMercenaryId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOfficeAssignment(data);
+  }
+
+  return normalizeOfficeAssignment(await get(
+    `SELECT * FROM user_mercenary_office_assignments
+     WHERE user_id = ? AND owned_mercenary_id = ?`,
+    [userId, ownedMercenaryId]
+  ));
+}
+
+async function createOfficeAssignment({ id, userId, facilityKey, slotIndex, ownedMercenaryId }) {
+  const row = {
+    id,
+    user_id: userId,
+    facility_key: facilityKey,
+    slot_index: slotIndex,
+    owned_mercenary_id: ownedMercenaryId
+  };
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeOfficeAssignment(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_office_assignments
+     (id, user_id, facility_key, slot_index, owned_mercenary_id)
+     VALUES (?, ?, ?, ?, ?)`,
+    [id, userId, facilityKey, slotIndex, ownedMercenaryId]
+  );
+  return getOfficeAssignment(userId, id);
+}
+
+async function deleteOfficeAssignment(userId, assignmentId) {
+  const existing = await getOfficeAssignment(userId, assignmentId);
+  if (!existing) return null;
+  if (provider === 'supabase') {
+    const { error } = await getSupabaseAdminClient()
+      .from('user_mercenary_office_assignments')
+      .delete()
+      .eq('user_id', userId)
+      .eq('id', assignmentId);
+    if (error) throw error;
+    return existing;
+  }
+
+  await run('DELETE FROM user_mercenary_office_assignments WHERE user_id = ? AND id = ?', [userId, assignmentId]);
+  return existing;
+}
+
 module.exports = {
   getMercenaryProfile,
   createMercenaryProfile,
@@ -1015,5 +1150,11 @@ module.exports = {
   getActiveTreatmentByOwnedMercenaryId,
   getTreatment,
   createTreatment,
-  claimTreatment
+  claimTreatment,
+  listOfficeAssignments,
+  getOfficeAssignment,
+  getOfficeAssignmentBySlot,
+  getOfficeAssignmentByOwnedMercenaryId,
+  createOfficeAssignment,
+  deleteOfficeAssignment
 };

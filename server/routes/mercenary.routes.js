@@ -46,6 +46,9 @@ router.post('/runs/claim', handle((req) => mercenarySystem.claimMissionRun(req.u
 router.get('/infirmary', handle((req) => mercenarySystem.getInfirmaryState(req.user.id)));
 router.post('/infirmary/treat/start', handle((req) => mercenarySystem.startTreatment(req.user.id, req.body?.ownedMercenaryId)));
 router.post('/infirmary/treat/claim', handle((req) => mercenarySystem.claimTreatment(req.user.id, req.body?.treatmentId)));
+router.get('/office', handle((req) => mercenarySystem.buildMercenaryOfficeView(req.user.id)));
+router.post('/office/assign', handle((req) => mercenarySystem.assignMercenaryToOffice(req.user.id, req.body)));
+router.post('/office/unassign', handle((req) => mercenarySystem.unassignMercenaryFromOffice(req.user.id, req.body)));
 router.get('/my', handle(async (req) => {
   const userId = req.user?.id;
   console.log('[mercenary/my] userId:', userId || null);

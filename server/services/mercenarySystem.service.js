@@ -28,13 +28,56 @@ const SQUAD_MEMBER_LIMIT = 3;
 const MAX_OFFICE_LEVEL = 50;
 const BASE_OFFICE_EXP = 150;
 const MISSION_OFFER_REFILL_INTERVAL_SECONDS = 1800;
-const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating']);
+const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating', 'office_assigned']);
 const OPERATIONAL_STATUS_LABELS = {
   idle: '대기 중',
   dispatched: '파견 중',
   injured: '부상',
-  treating: '치료 중'
+  treating: '치료 중',
+  office_assigned: '사무실 배치 중'
 };
+const OFFICE_FACILITIES = [
+  {
+    key: 'reception',
+    label: '접수 데스크',
+    description: '의뢰 접수와 민원 대응을 맡기는 자리입니다.',
+    primaryStats: ['SUP', 'TEC'],
+    recommendedPower: 220,
+    maxSlots: 2,
+    preferredTags: ['접수', '민원', '행정', '서류', '협상', '정보'],
+    effectLabels: ['의뢰 보충 시간 감소']
+  },
+  {
+    key: 'accounting',
+    label: '회계 책상',
+    description: '장부와 계약 비용을 정리하는 자리입니다.',
+    primaryStats: ['TEC', 'SUP'],
+    recommendedPower: 240,
+    maxSlots: 2,
+    preferredTags: ['회계', '장부', '세금', '계약', '회수', '독촉'],
+    effectLabels: ['의뢰 보상 골드 증가', '치료비 감소']
+  },
+  {
+    key: 'operations',
+    label: '작전 테이블',
+    description: '파견 동선과 작전 계획을 조율하는 자리입니다.',
+    primaryStats: ['TEC', 'SPD', 'SUP'],
+    recommendedPower: 320,
+    maxSlots: 3,
+    preferredTags: ['지휘', '정찰', '작전', '분석', '호송', '전술'],
+    effectLabels: ['의뢰 성공률 증가', '의뢰 소요 시간 감소']
+  },
+  {
+    key: 'infirmary_support',
+    label: '의무실 보조석',
+    description: '부상자 처치와 치료 준비를 돕는 자리입니다.',
+    primaryStats: ['SUP', 'TEC'],
+    recommendedPower: 260,
+    maxSlots: 2,
+    preferredTags: ['의무', '치료', '붕대', '약초', '응급', '정화'],
+    effectLabels: ['치료 시간 감소', '치료비 감소', '부상 확률 감소']
+  }
+];
 const GRADE_GROWTH_RATES = {
   N: 0.45,
   R: 0.65,
@@ -445,6 +488,117 @@ function summarizeSquad(members) {
   };
 }
 
+function getOfficeFacilitiesConfig() {
+  return OFFICE_FACILITIES.map((facility) => ({
+    ...facility,
+    primaryStats: [...facility.primaryStats],
+    preferredTags: [...facility.preferredTags],
+    effectLabels: [...facility.effectLabels]
+  }));
+}
+
+function officeFacilityByKey(facilityKey) {
+  return getOfficeFacilitiesConfig().find((facility) => facility.key === facilityKey) || null;
+}
+
+function calculateOfficeFacilityPower(members, facility) {
+  const primaryStats = facility.primaryStats || [];
+  return (members || []).reduce((sum, member) => {
+    const stats = normalizeBaseStats(member?.effectiveStats || {});
+    return sum + primaryStats.reduce((statSum, stat) => {
+      return statSum + Number(stats[String(stat).toLowerCase()] || 0);
+    }, 0);
+  }, 0);
+}
+
+function calculateOfficeFacilityEfficiency(members, facility) {
+  const workPower = calculateOfficeFacilityPower(members, facility);
+  const preferredTags = new Set((facility.preferredTags || []).map(String));
+  const matchedTags = new Set();
+  for (const member of members || []) {
+    for (const tag of member.tags || []) {
+      if (preferredTags.has(String(tag))) matchedTags.add(String(tag));
+    }
+  }
+  const rawEfficiency = workPower / Math.max(1, Number(facility.recommendedPower || 1));
+  const tagMultiplier = 1 + Math.min(matchedTags.size * 0.05, 0.25);
+  const efficiency = Math.max(0, Math.min(1.25, rawEfficiency * tagMultiplier));
+  return { workPower, matchedTagCount: matchedTags.size, efficiency };
+}
+
+function emptyOfficeEffects() {
+  return {
+    offerRefillReductionPct: 0,
+    rewardGoldBonusPct: 0,
+    treatmentCostReductionPct: 0,
+    treatmentTimeReductionPct: 0,
+    missionSuccessBonusPoints: 0,
+    missionDurationReductionPct: 0,
+    injuryChanceReductionPoints: 0
+  };
+}
+
+function clampOfficeEffects(effects) {
+  return {
+    offerRefillReductionPct: Math.min(0.2, Number(effects.offerRefillReductionPct || 0)),
+    rewardGoldBonusPct: Math.min(0.1, Number(effects.rewardGoldBonusPct || 0)),
+    treatmentCostReductionPct: Math.min(0.2, Number(effects.treatmentCostReductionPct || 0)),
+    treatmentTimeReductionPct: Math.min(0.15, Number(effects.treatmentTimeReductionPct || 0)),
+    missionSuccessBonusPoints: Math.min(5, Number(effects.missionSuccessBonusPoints || 0)),
+    missionDurationReductionPct: Math.min(0.1, Number(effects.missionDurationReductionPct || 0)),
+    injuryChanceReductionPoints: Math.min(5, Number(effects.injuryChanceReductionPoints || 0))
+  };
+}
+
+function effectsForFacility(facilityKey, efficiency) {
+  const scale = Math.min(1, Math.max(0, Number(efficiency || 0)));
+  const effects = emptyOfficeEffects();
+  if (facilityKey === 'reception') effects.offerRefillReductionPct = 0.2 * scale;
+  if (facilityKey === 'accounting') {
+    effects.rewardGoldBonusPct = 0.1 * scale;
+    effects.treatmentCostReductionPct = 0.15 * scale;
+  }
+  if (facilityKey === 'operations') {
+    effects.missionSuccessBonusPoints = 5 * scale;
+    effects.missionDurationReductionPct = 0.1 * scale;
+  }
+  if (facilityKey === 'infirmary_support') {
+    effects.treatmentTimeReductionPct = 0.15 * scale;
+    effects.treatmentCostReductionPct = 0.1 * scale;
+    effects.injuryChanceReductionPoints = 5 * scale;
+  }
+  return effects;
+}
+
+function mergeOfficeEffects(items) {
+  const merged = emptyOfficeEffects();
+  for (const item of items || []) {
+    for (const key of Object.keys(merged)) merged[key] += Number(item?.[key] || 0);
+  }
+  return clampOfficeEffects(merged);
+}
+
+function buildOfficeFacilityResponse(facility, assignments, itemByOwnedId) {
+  const slots = [];
+  const members = [];
+  for (let index = 0; index < facility.maxSlots; index += 1) {
+    const assignment = assignments.find((item) => item.facilityKey === facility.key && item.slotIndex === index) || null;
+    const mercenary = assignment ? itemByOwnedId.get(String(assignment.ownedMercenaryId)) || null : null;
+    if (mercenary) members.push(mercenary);
+    slots.push({ slotIndex: index, assignment, mercenary });
+  }
+  const calculated = calculateOfficeFacilityEfficiency(members, facility);
+  const effects = effectsForFacility(facility.key, calculated.efficiency);
+  return {
+    ...facility,
+    workPower: calculated.workPower,
+    matchedTagCount: calculated.matchedTagCount,
+    efficiency: calculated.efficiency,
+    effects,
+    slots
+  };
+}
+
 async function getOrCreateMercenaryProfile(userId) {
   const existing = await repo.getMercenaryProfile(userId);
   if (existing) return existing;
@@ -717,12 +871,13 @@ function getMissionOfferBoardLimit(officeLevel) {
   return 3;
 }
 
-function getMissionOfferRefillIntervalSeconds() {
-  return MISSION_OFFER_REFILL_INTERVAL_SECONDS;
+function getMissionOfferRefillIntervalSeconds(officeEffects = null) {
+  const reduction = Math.max(0, Math.min(0.2, Number(officeEffects?.offerRefillReductionPct || 0)));
+  return Math.max(1200, Math.floor(MISSION_OFFER_REFILL_INTERVAL_SECONDS * (1 - reduction)));
 }
 
-function nextMissionOfferAt(fromDate = new Date()) {
-  return new Date(fromDate.getTime() + getMissionOfferRefillIntervalSeconds() * 1000).toISOString();
+function nextMissionOfferAt(fromDate = new Date(), officeEffects = null) {
+  return new Date(fromDate.getTime() + getMissionOfferRefillIntervalSeconds(officeEffects) * 1000).toISOString();
 }
 
 function missionOfferNextAtMs(profile) {
@@ -821,7 +976,7 @@ function buildOfficeGrowth(profile) {
   };
 }
 
-function buildMissionBoardState(profile, activeOffers = []) {
+function buildMissionBoardState(profile, activeOffers = [], officeEffects = null) {
   const maxMissionOffers = getMissionOfferBoardLimit(profile?.officeLevel);
   const nextAt = profile?.missionOfferNextAt || null;
   const nextMs = missionOfferNextAtMs(profile);
@@ -833,7 +988,7 @@ function buildMissionBoardState(profile, activeOffers = []) {
     emptySlots: Math.max(0, maxMissionOffers - activeOfferCount),
     nextOfferAt: nextAt,
     secondsUntilNextOffer,
-    refillIntervalSeconds: getMissionOfferRefillIntervalSeconds()
+    refillIntervalSeconds: getMissionOfferRefillIntervalSeconds(officeEffects)
   };
 }
 
@@ -846,14 +1001,14 @@ async function createMissionOfferForUser(userId, missionId, generatedAt = new Da
   });
 }
 
-async function ensureMissionOffersForUser(userId, profile) {
+async function ensureMissionOffersForUser(userId, profile, officeEffects = null) {
   let currentProfile = profile;
   let activeOffers = await repo.listActiveMissionOffers(userId);
   const maxMissionOffers = getMissionOfferBoardLimit(currentProfile.officeLevel);
   const now = new Date();
   const nowMs = now.getTime();
   const nextMs = missionOfferNextAtMs(currentProfile);
-  const intervalMs = getMissionOfferRefillIntervalSeconds() * 1000;
+  const intervalMs = getMissionOfferRefillIntervalSeconds(officeEffects) * 1000;
 
   if (!activeOffers.length && !currentProfile.missionOfferNextAt) {
     const created = [];
@@ -862,7 +1017,7 @@ async function ensureMissionOffersForUser(userId, profile) {
       if (!mission) break;
       created.push(await createMissionOfferForUser(userId, mission.missionId, now.toISOString()));
     }
-    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now, officeEffects));
     activeOffers = await repo.listActiveMissionOffers(userId);
     return { profile: currentProfile, activeOffers };
   }
@@ -879,7 +1034,7 @@ async function ensureMissionOffersForUser(userId, profile) {
   }
 
   if (!currentProfile.missionOfferNextAt) {
-    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    currentProfile = await repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now, officeEffects));
     return { profile: currentProfile, activeOffers };
   }
 
@@ -900,10 +1055,10 @@ async function ensureMissionOffersForUser(userId, profile) {
   return { profile: currentProfile, activeOffers };
 }
 
-async function pushMissionOfferRefillIfDue(userId, profile) {
+async function pushMissionOfferRefillIfDue(userId, profile, officeEffects = null) {
   const now = new Date();
   if (!profile?.missionOfferNextAt || now.getTime() >= missionOfferNextAtMs(profile)) {
-    return repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now));
+    return repo.updateMissionOfferNextAt(userId, nextMissionOfferAt(now, officeEffects));
   }
   return profile;
 }
@@ -949,20 +1104,22 @@ function countMatchedMissionPositions(ownedMercenaries, mission) {
   return [...preferred].filter((position) => memberPositions.has(position)).length;
 }
 
-function calculateMissionSuccessRate(ownedMercenaries, mission) {
+function calculateMissionSuccessRate(ownedMercenaries, mission, officeEffects = null) {
   const recommended = Math.max(50, Number(mission?.recommendedWorkPower || 0) || 50);
   const partyWorkPower = calculateMissionWorkPower(ownedMercenaries, mission);
   const baseRate = 45 + ((partyWorkPower - recommended) / recommended) * 35;
   const matchedTagCount = countMatchedMissionTags(ownedMercenaries, mission);
   const matchedPositionCount = countMatchedMissionPositions(ownedMercenaries, mission);
   const riskPenalty = getMissionRiskPenalty(mission?.risk);
-  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty);
+  const officeBonusPoints = Math.max(0, Math.min(5, Number(officeEffects?.missionSuccessBonusPoints || 0)));
+  const successRate = Math.round(baseRate + matchedTagCount * 4 + matchedPositionCount * 5 + riskPenalty + officeBonusPoints);
   return {
     partyWorkPower,
     recommendedWorkPower: recommended,
     matchedTagCount,
     matchedPositionCount,
     riskPenalty,
+    officeBonusPoints,
     successRate: Math.max(15, Math.min(95, successRate))
   };
 }
@@ -972,8 +1129,11 @@ function decideMissionResult(successRate, randomValue = Math.random()) {
   return randomValue * 100 < safeRate ? 'success' : 'failure';
 }
 
-function getInjuryChanceByRisk(risk) {
-  return INJURY_CHANCE_BY_RISK[String(risk || '낮음')] ?? 0;
+function getInjuryChanceByRisk(risk, officeEffects = null) {
+  const baseChance = INJURY_CHANCE_BY_RISK[String(risk || '낮음')] ?? 0;
+  if (baseChance <= 0) return 0;
+  const reductionPoints = Math.max(0, Math.min(5, Number(officeEffects?.injuryChanceReductionPoints || 0)));
+  return Math.max(1, baseChance - reductionPoints);
 }
 
 function pickInjuredMember(members, randomFn = Math.random) {
@@ -982,8 +1142,8 @@ function pickInjuredMember(members, randomFn = Math.random) {
   return safeMembers[Math.floor(randomFn() * safeMembers.length)] || safeMembers[0];
 }
 
-function rollMissionInjury(mission, members, randomFn = Math.random) {
-  const chance = getInjuryChanceByRisk(mission?.risk);
+function rollMissionInjury(mission, members, randomFn = Math.random, officeEffects = null) {
+  const chance = getInjuryChanceByRisk(mission?.risk, officeEffects);
   if (chance <= 0 || !members?.length) {
     return { occurred: false, chance, injuredMember: null };
   }
@@ -1285,6 +1445,125 @@ async function listMyMercenaries(userId) {
   };
 }
 
+async function buildMercenaryOfficeView(userId) {
+  const [ownedRows, assignments, profile, communityPoints] = await Promise.all([
+    repo.listUserMercenaries(userId),
+    repo.listOfficeAssignments(userId),
+    getOrCreateMercenaryProfile(userId),
+    getCommunityPoints(userId)
+  ]);
+  const lookup = masterById();
+  const items = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const itemByOwnedId = new Map(items.map((item) => [String(item.ownedId), item]));
+  const facilities = getOfficeFacilitiesConfig().map((facility) => buildOfficeFacilityResponse(facility, assignments, itemByOwnedId));
+  const officeEffects = mergeOfficeEffects(facilities.map((facility) => facility.effects));
+  const mercenaryProfile = publicMercenaryProfile(profile);
+
+  return {
+    ok: true,
+    profile: mercenaryProfile,
+    mercenaryProfile,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    facilities,
+    officeEffects,
+    availableMercenaries: items.filter((item) => item.operationalStatus === 'idle'),
+    assignedMercenaries: items.filter((item) => item.operationalStatus === 'office_assigned'),
+    mercenaries: items
+  };
+}
+
+async function getOfficeEffectsForUser(userId) {
+  return (await buildMercenaryOfficeView(userId)).officeEffects;
+}
+
+async function assignMercenaryToOffice(userId, payload = {}) {
+  const facilityKey = String(payload.facilityKey || '').trim();
+  const facility = officeFacilityByKey(facilityKey);
+  if (!facility) throw httpError(400, '유효하지 않은 사무실 시설입니다.', 'INVALID_FACILITY');
+  const slotIndex = Number(payload.slotIndex);
+  if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= facility.maxSlots) {
+    throw httpError(400, '유효하지 않은 사무실 슬롯입니다.', 'INVALID_OFFICE_SLOT');
+  }
+  const ownedMercenaryId = String(payload.ownedMercenaryId || '').trim();
+  const owned = await repo.getUserMercenary(userId, ownedMercenaryId);
+  if (!owned) throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
+  if (owned.operationalStatus !== 'idle') {
+    throw httpError(409, '대기 중인 용병만 사무실에 배치할 수 있습니다.', 'MERCENARY_NOT_IDLE');
+  }
+  if (await repo.getOfficeAssignmentByOwnedMercenaryId(userId, ownedMercenaryId)) {
+    throw httpError(409, '이미 사무실에 배치된 용병입니다.', 'MERCENARY_ALREADY_ASSIGNED');
+  }
+  if (await repo.getOfficeAssignmentBySlot(userId, facilityKey, slotIndex)) {
+    throw httpError(409, '이미 사용 중인 사무실 슬롯입니다.', 'OFFICE_SLOT_OCCUPIED');
+  }
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const assignment = await repo.createOfficeAssignment({
+      id: `office_${randomUUID()}`,
+      userId,
+      facilityKey,
+      slotIndex,
+      ownedMercenaryId
+    });
+    await repo.updateUserMercenaryStatus(userId, ownedMercenaryId, {
+      operationalStatus: 'office_assigned',
+      currentActivityType: 'office',
+      currentActivityId: facilityKey
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    return {
+      ok: true,
+      assignment,
+      ...(await buildMercenaryOfficeView(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      throw httpError(409, '이미 사용 중인 사무실 배치입니다.', 'OFFICE_SLOT_OCCUPIED');
+    }
+    throw error;
+  }
+}
+
+async function unassignMercenaryFromOffice(userId, payload = {}) {
+  let assignment = null;
+  const assignmentId = String(payload.assignmentId || '').trim();
+  if (assignmentId) {
+    assignment = await repo.getOfficeAssignment(userId, assignmentId);
+  } else {
+    const facilityKey = String(payload.facilityKey || '').trim();
+    const slotIndex = Number(payload.slotIndex);
+    assignment = Number.isInteger(slotIndex) ? await repo.getOfficeAssignmentBySlot(userId, facilityKey, slotIndex) : null;
+  }
+  if (!assignment) throw httpError(404, '사무실 배치를 찾을 수 없습니다.', 'OFFICE_ASSIGNMENT_NOT_FOUND');
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const deleted = await repo.deleteOfficeAssignment(userId, assignment.id);
+    if (!deleted) throw httpError(404, '사무실 배치를 찾을 수 없습니다.', 'OFFICE_ASSIGNMENT_NOT_FOUND');
+    await repo.updateUserMercenaryStatus(userId, assignment.ownedMercenaryId, {
+      operationalStatus: 'idle',
+      currentActivityType: null,
+      currentActivityId: null
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    return {
+      ok: true,
+      assignmentId: assignment.id,
+      ownedMercenaryId: assignment.ownedMercenaryId,
+      ...(await buildMercenaryOfficeView(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 function normalizeSquadMemberIds(value) {
   if (!Array.isArray(value)) {
     throw httpError(400, '편성원 정보가 올바르지 않습니다.', 'INVALID_SQUAD_PAYLOAD');
@@ -1472,7 +1751,8 @@ async function listMissions(userId) {
     getOrCreateMercenaryProfile(userId),
     getCommunityPoints(userId)
   ]);
-  const ensured = await ensureMissionOffersForUser(userId, profile);
+  const officeEffects = await getOfficeEffectsForUser(userId);
+  const ensured = await ensureMissionOffersForUser(userId, profile, officeEffects);
   const mercenaryProfile = publicMercenaryProfile(ensured.profile);
   const lookup = missionById();
   const offers = ensured.activeOffers
@@ -1483,7 +1763,7 @@ async function listMissions(userId) {
     .filter(Boolean)
     .sort((a, b) => getMissionRiskRank(a.risk) - getMissionRiskRank(b.risk)
       || new Date(a.generatedAt).getTime() - new Date(b.generatedAt).getTime());
-  const board = buildMissionBoardState(ensured.profile, ensured.activeOffers);
+  const board = buildMissionBoardState(ensured.profile, ensured.activeOffers, officeEffects);
   const lockedMissions = listLockedMissionsForOffice(mercenaryProfile.officeLevel);
   const officeGrowth = buildOfficeGrowth(ensured.profile);
 
@@ -1493,6 +1773,7 @@ async function listMissions(userId) {
     missions: offers,
     lockedMissions,
     board,
+    officeEffects,
     officeGrowth,
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
@@ -1635,8 +1916,11 @@ async function startTreatment(userId, ownedMercenaryId) {
   const master = masterById().get(owned.mercenaryId);
   if (!master) throw httpError(404, '용병 마스터 정보를 찾을 수 없습니다.', 'MERCENARY_NOT_OWNED');
   const item = buildOwnedMercenaryItem(owned, master);
-  const costGold = calculateTreatmentCost(master.grade, item.level);
-  const durationSeconds = calculateTreatmentDurationSeconds(master.grade, item.level);
+  const officeEffects = await getOfficeEffectsForUser(userId);
+  const baseCostGold = calculateTreatmentCost(master.grade, item.level);
+  const baseDurationSeconds = calculateTreatmentDurationSeconds(master.grade, item.level);
+  const costGold = Math.max(1, Math.floor(baseCostGold * (1 - Number(officeEffects.treatmentCostReductionPct || 0))));
+  const durationSeconds = Math.max(30, Math.floor(baseDurationSeconds * (1 - Number(officeEffects.treatmentTimeReductionPct || 0))));
   const now = new Date();
   const treatmentId = `treat_${randomUUID()}`;
   const completesAt = new Date(now.getTime() + durationSeconds * 1000);
@@ -1673,6 +1957,7 @@ async function startTreatment(userId, ownedMercenaryId) {
       mercenaryGold: mercenaryProfile.gold,
       communityPoints: await getCommunityPoints(userId),
       mercenaryProfile,
+      officeEffects,
       ...(await getInfirmaryState(userId))
     };
   } catch (error) {
@@ -1726,6 +2011,7 @@ async function claimTreatment(userId, treatmentId) {
 async function startMissionRun(userId, payload = {}) {
   const profile = await getOrCreateMercenaryProfile(userId);
   const mercenaryProfile = publicMercenaryProfile(profile);
+  const officeEffects = await getOfficeEffectsForUser(userId);
   const offerId = String(payload.offerId || '').trim();
   if (!offerId) {
     throw httpError(400, '의뢰 게시판의 제안을 선택해 주세요.', 'OFFER_ID_REQUIRED');
@@ -1751,9 +2037,11 @@ async function startMissionRun(userId, payload = {}) {
     throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
   }
 
-  const successPreview = calculateMissionSuccessRate(members, mission);
+  const successPreview = calculateMissionSuccessRate(members, mission, officeEffects);
+  const durationSeconds = Math.max(30, Math.floor(Number(mission.durationSeconds || 0) * (1 - Number(officeEffects.missionDurationReductionPct || 0))));
+  const rewardGold = Math.max(0, Math.floor(Number(mission.rewardGold || 0) * (1 + Number(officeEffects.rewardGoldBonusPct || 0))));
   const now = new Date();
-  const completesAt = new Date(now.getTime() + Math.max(1, mission.durationSeconds) * 1000);
+  const completesAt = new Date(now.getTime() + durationSeconds * 1000);
   const runId = `run_${randomUUID()}`;
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
@@ -1765,13 +2053,13 @@ async function startMissionRun(userId, payload = {}) {
       missionTitle: mission.title,
       selectedMercenaryIds: memberIds,
       successRate: successPreview.successRate,
-      rewardGold: mission.rewardGold,
+      rewardGold,
       failureRewardGold: mission.failureRewardGold,
       officeExp: mission.officeExp,
       mercenaryExp: mission.mercenaryExp,
       failureOfficeExp: mission.failureOfficeExp,
       failureMercenaryExp: mission.failureMercenaryExp,
-      durationSeconds: mission.durationSeconds,
+      durationSeconds,
       startedAt: now.toISOString(),
       completesAt: completesAt.toISOString()
     });
@@ -1786,13 +2074,14 @@ async function startMissionRun(userId, payload = {}) {
     if (!accepted?.acceptedAt || accepted.acceptedRunId !== runId) {
       throw httpError(409, '이미 처리된 의뢰 제안입니다.', accepted?.rejectedAt ? 'OFFER_ALREADY_REJECTED' : 'OFFER_ALREADY_ACCEPTED');
     }
-    await pushMissionOfferRefillIfDue(userId, profile);
+    await pushMissionOfferRefillIfDue(userId, profile, officeEffects);
     if (provider === 'sqlite') await run('COMMIT');
     return {
       ok: true,
       run: serializeRun(runRow, members),
       acceptedOfferId: offer.id,
       successPreview,
+      officeEffects,
       ...(await listRuns(userId))
     };
   } catch (error) {
@@ -1815,15 +2104,17 @@ async function rejectMissionOffer(userId, offerId) {
     const latest = await repo.getMissionOffer(userId, normalizedOfferId);
     throw httpError(409, '이미 처리된 의뢰 제안입니다.', latest?.acceptedAt ? 'OFFER_ALREADY_ACCEPTED' : 'OFFER_ALREADY_REJECTED');
   }
-  const nextProfile = await pushMissionOfferRefillIfDue(userId, profile);
+  const officeEffects = await getOfficeEffectsForUser(userId);
+  const nextProfile = await pushMissionOfferRefillIfDue(userId, profile, officeEffects);
   const activeOffers = await repo.listActiveMissionOffers(userId);
-  const board = buildMissionBoardState(nextProfile, activeOffers);
+  const board = buildMissionBoardState(nextProfile, activeOffers, officeEffects);
   const mercenaryProfile = publicMercenaryProfile(nextProfile);
 
   return {
     ok: true,
     rejectedOfferId: normalizedOfferId,
     board,
+    officeEffects,
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
     communityPoints: await getCommunityPoints(userId),
@@ -1858,6 +2149,7 @@ async function claimMissionRun(userId, runId) {
   };
   const resultStatus = decideMissionResult(runRow.successRate);
   const succeeded = resultStatus === 'success';
+  const officeEffects = await getOfficeEffectsForUser(userId);
   const gainedGold = succeeded ? runRow.rewardGold : runRow.failureRewardGold;
   const gainedOfficeExp = succeeded ? runRow.officeExp : runRow.failureOfficeExp;
   const gainedMercenaryExp = succeeded ? runRow.mercenaryExp : runRow.failureMercenaryExp;
@@ -1870,7 +2162,7 @@ async function claimMissionRun(userId, runId) {
         ownedId: row.id,
         name: master?.name || row.mercenaryId || '이름 없는 용병'
       };
-    }));
+    }), Math.random, officeEffects);
   const injuredOwnedId = injury.occurred ? String(injury.injuredMember?.ownedId || '') : '';
   const baseResultText = succeeded
     ? (mission.successText || '의뢰를 완료했습니다.')
@@ -1954,6 +2246,7 @@ async function claimMissionRun(userId, runId) {
         injury
       },
       injury,
+      officeEffects,
       run: serializeRun(claimed, memberResults),
       members: memberResults,
       gold: mercenaryProfile.gold,
@@ -1999,6 +2292,13 @@ module.exports = {
   calculateCombatPowerFromStats,
   calculateBaseWorkPowerFromStats,
   calculateBaseWorkPower,
+  getOfficeFacilitiesConfig,
+  calculateOfficeFacilityPower,
+  calculateOfficeFacilityEfficiency,
+  buildMercenaryOfficeView,
+  getOfficeEffectsForUser,
+  assignMercenaryToOffice,
+  unassignMercenaryFromOffice,
   calculateMissionWorkPower,
   calculateMissionSuccessRate,
   getMissionRiskPenalty,

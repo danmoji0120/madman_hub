@@ -3314,6 +3314,304 @@ body.mission-open {
   box-shadow: 0 0 16px rgba(229, 168, 76, 0.26);
 }
 
+.mercenary-office-view {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  padding: 18px;
+  color: #f8ead0;
+}
+
+.office-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 25% 25%, rgba(173, 116, 42, 0.22), transparent 32%),
+    rgba(5, 4, 3, 0.88);
+  backdrop-filter: blur(4px);
+}
+
+.office-shell {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 1500px);
+  height: min(92vh, 860px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(214, 164, 83, 0.38);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(29, 22, 15, 0.96), rgba(10, 8, 6, 0.98)),
+    radial-gradient(circle at 65% 20%, rgba(180, 126, 54, 0.14), transparent 38%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62);
+}
+
+.office-topbar,
+.office-layout,
+.office-panel-heading,
+.office-slot-card,
+.office-roster-card,
+.office-effects-panel {
+  display: grid;
+}
+
+.office-topbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.office-kicker {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #d7ad68;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.office-title-block h2,
+.office-detail-head h3 {
+  margin: 0;
+  color: #ffe3aa;
+  font-family: 'Georgia', serif;
+}
+
+.office-title-block p,
+.office-detail-head p,
+.office-empty,
+.office-empty-slot {
+  margin: 4px 0 0;
+  color: rgba(248, 234, 208, 0.72);
+}
+
+.office-close-button,
+.office-slot-card button,
+.office-roster-card button {
+  border: 1px solid rgba(214, 164, 83, 0.48);
+  border-radius: 8px;
+  background: rgba(83, 50, 22, 0.72);
+  color: #ffe9bd;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.office-close-button {
+  padding: 10px 16px;
+}
+
+.office-layout {
+  grid-template-columns: 260px minmax(0, 1fr) 330px;
+  gap: 14px;
+  min-height: 0;
+}
+
+.office-facility-panel,
+.office-detail-panel,
+.office-roster-panel {
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid rgba(214, 164, 83, 0.25);
+  border-radius: 12px;
+  background: rgba(12, 9, 7, 0.68);
+}
+
+.office-panel-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.office-panel-heading h3 {
+  margin: 0;
+  color: #ffe0a6;
+}
+
+.office-panel-heading span {
+  color: #d8bc83;
+  font-weight: 800;
+}
+
+.office-facility-list,
+.office-roster-list,
+.office-slot-list {
+  display: grid;
+  gap: 10px;
+}
+
+.office-facility-card {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1px solid rgba(214, 164, 83, 0.22);
+  border-radius: 10px;
+  background: rgba(35, 25, 16, 0.76);
+  color: #f8ead0;
+  cursor: pointer;
+}
+
+.office-facility-card.is-selected {
+  border-color: rgba(245, 194, 99, 0.82);
+  box-shadow: 0 0 0 1px rgba(245, 194, 99, 0.22);
+}
+
+.office-facility-card strong,
+.office-roster-card strong,
+.office-slot-card strong {
+  color: #ffe5b1;
+}
+
+.office-facility-card span,
+.office-facility-card em,
+.office-roster-card p,
+.office-slot-card p {
+  color: rgba(248, 234, 208, 0.72);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.office-detail-head {
+  margin-bottom: 12px;
+}
+
+.office-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.office-detail-grid div {
+  padding: 10px;
+  border: 1px solid rgba(214, 164, 83, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.office-detail-grid span {
+  display: block;
+  color: rgba(248, 234, 208, 0.58);
+  font-size: 11px;
+}
+
+.office-detail-grid strong {
+  color: #ffe5b1;
+}
+
+.office-efficiency-meter {
+  height: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.office-efficiency-meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #9e6b2b, #f0c265);
+}
+
+.office-tag-line,
+.office-effect-chips,
+.office-effects-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.office-tag-line span,
+.office-effect-chips span,
+.office-effects-panel span {
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: rgba(214, 164, 83, 0.12);
+  color: #f4d39c;
+  font-size: 12px;
+}
+
+.office-slot-card,
+.office-roster-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(214, 164, 83, 0.2);
+  border-radius: 10px;
+  background: rgba(22, 15, 10, 0.78);
+}
+
+.office-slot-label {
+  grid-column: 1 / -1;
+  color: #d7ad68;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.office-slot-portrait,
+.office-roster-portrait {
+  width: 58px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.office-slot-portrait img,
+.office-roster-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.office-roster-card button,
+.office-slot-card button {
+  padding: 9px 12px;
+}
+
+.office-roster-card button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.office-grade {
+  display: inline-block;
+  margin-bottom: 3px;
+  color: #d7ad68;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.office-effects-panel {
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(214, 164, 83, 0.24);
+  border-radius: 10px;
+  background: rgba(12, 8, 5, 0.68);
+}
+
+.office-effects-panel strong {
+  margin-right: 6px;
+  color: #ffe5b1;
+}
+
+.office-empty {
+  padding: 12px;
+  border: 1px dashed rgba(214, 164, 83, 0.25);
+  border-radius: 10px;
+}
+}
+
+
 @media (max-width: 1180px) {
   .lobby-stage {
     right: 320px;
@@ -3589,6 +3887,29 @@ body.mission-open {
 
   .mission-run-card {
     grid-template-columns: 1fr;
+  }
+
+  .mercenary-office-view {
+    padding: 8px;
+  }
+
+  .office-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
+  .office-layout,
+  .office-detail-grid,
+  .office-slot-card,
+  .office-roster-card {
+    grid-template-columns: 1fr;
+  }
+
+  .office-facility-panel,
+  .office-detail-panel,
+  .office-roster-panel {
+    overflow: visible;
   }
 }
 
