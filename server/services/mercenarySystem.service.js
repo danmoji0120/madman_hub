@@ -10,7 +10,7 @@ const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.mi
 const CASE_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.cases.master.json');
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
-const RECRUIT_DAILY_REFRESH_LIMIT = 4;
+const RECRUIT_DAILY_REFRESH_LIMIT = 10;
 const DEFAULT_RECRUIT_GRADE_RATES = [
   { grade: 'N', rate: 94.9 },
   { grade: 'R', rate: 5.0 },
@@ -28,7 +28,7 @@ const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;
 const MAX_OFFICE_LEVEL = 50;
 const BASE_OFFICE_EXP = 150;
-const MISSION_OFFER_REFILL_INTERVAL_SECONDS = 1800;
+const MISSION_OFFER_REFILL_INTERVAL_SECONDS = 600;
 const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating', 'office_assigned']);
 const OPERATIONAL_STATUS_LABELS = {
   idle: '대기 중',
@@ -972,7 +972,7 @@ function getMissionOfferBoardLimit(officeLevel) {
 
 function getMissionOfferRefillIntervalSeconds(officeEffects = null) {
   const reduction = Math.max(0, Math.min(0.2, Number(officeEffects?.offerRefillReductionPct || 0)));
-  return Math.max(1200, Math.floor(MISSION_OFFER_REFILL_INTERVAL_SECONDS * (1 - reduction)));
+  return Math.max(300, Math.floor(MISSION_OFFER_REFILL_INTERVAL_SECONDS * (1 - reduction)));
 }
 
 function nextMissionOfferAt(fromDate = new Date(), officeEffects = null) {
