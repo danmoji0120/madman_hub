@@ -116,6 +116,22 @@ function normalizeMissionOffer(row) {
   };
 }
 
+function normalizeTreatment(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    ownedMercenaryId: row.owned_mercenary_id,
+    costGold: Number(row.cost_gold || 0),
+    durationSeconds: Number(row.duration_seconds || 0),
+    startedAt: row.started_at,
+    completesAt: row.completes_at,
+    claimedAt: row.claimed_at || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 async function getMercenaryProfile(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -848,6 +864,123 @@ async function markMissionOfferRejected(userId, offerId, rejectedAt) {
   return getMissionOffer(userId, offerId);
 }
 
+async function listActiveTreatments(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_treatments')
+      .select('*')
+      .eq('user_id', userId)
+      .is('claimed_at', null)
+      .order('completes_at', { ascending: true });
+    if (error) throw error;
+    return (data || []).map(normalizeTreatment);
+  }
+
+  const rows = await all(
+    `SELECT * FROM user_mercenary_treatments
+     WHERE user_id = ? AND claimed_at IS NULL
+     ORDER BY completes_at ASC, created_at ASC`,
+    [userId]
+  );
+  return rows.map(normalizeTreatment);
+}
+
+async function getActiveTreatmentByOwnedMercenaryId(userId, ownedMercenaryId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_treatments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('owned_mercenary_id', ownedMercenaryId)
+      .is('claimed_at', null)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeTreatment(data);
+  }
+
+  return normalizeTreatment(await get(
+    `SELECT * FROM user_mercenary_treatments
+     WHERE user_id = ? AND owned_mercenary_id = ? AND claimed_at IS NULL
+     LIMIT 1`,
+    [userId, ownedMercenaryId]
+  ));
+}
+
+async function getTreatment(userId, treatmentId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_treatments')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', treatmentId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeTreatment(data);
+  }
+
+  return normalizeTreatment(await get(
+    'SELECT * FROM user_mercenary_treatments WHERE user_id = ? AND id = ?',
+    [userId, treatmentId]
+  ));
+}
+
+async function createTreatment({ id, userId, ownedMercenaryId, costGold, durationSeconds, startedAt, completesAt }) {
+  const row = {
+    id,
+    user_id: userId,
+    owned_mercenary_id: ownedMercenaryId,
+    cost_gold: costGold || 0,
+    duration_seconds: durationSeconds || 0,
+    started_at: startedAt,
+    completes_at: completesAt
+  };
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_treatments')
+      .insert(row)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeTreatment(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_treatments
+     (id, user_id, owned_mercenary_id, cost_gold, duration_seconds, started_at, completes_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, userId, ownedMercenaryId, row.cost_gold, row.duration_seconds, startedAt, completesAt]
+  );
+  return getTreatment(userId, id);
+}
+
+async function claimTreatment(userId, treatmentId, claimedAt) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_treatments')
+      .update({
+        claimed_at: claimedAt,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', treatmentId)
+      .is('claimed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeTreatment(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_treatments
+     SET claimed_at = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND claimed_at IS NULL`,
+    [claimedAt, userId, treatmentId]
+  );
+  return getTreatment(userId, treatmentId);
+}
+
 module.exports = {
   getMercenaryProfile,
   createMercenaryProfile,
@@ -877,5 +1010,10 @@ module.exports = {
   getMissionOffer,
   createMissionOffer,
   markMissionOfferAccepted,
-  markMissionOfferRejected
+  markMissionOfferRejected,
+  listActiveTreatments,
+  getActiveTreatmentByOwnedMercenaryId,
+  getTreatment,
+  createTreatment,
+  claimTreatment
 };

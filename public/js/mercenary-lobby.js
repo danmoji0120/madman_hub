@@ -79,7 +79,7 @@ const mercenaryLobbyState = {
     { label: '용병 목록', icon: 'group', action: 'roster' },
     { label: '의뢰 목록', icon: 'scroll', action: 'missions' },
     { label: '편성/파견', icon: 'crossedSwords', action: 'squads' },
-    { label: '의무실', icon: 'medicalCross', action: 'ready' },
+    { label: '의무실', icon: 'medicalCross', action: 'infirmary' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
 };
@@ -432,6 +432,14 @@ const missionState = {
 };
 let missionTimer = null;
 
+const infirmaryState = {
+  injured: [],
+  treating: [],
+  loading: false,
+  errorMessage: ''
+};
+let infirmaryTimer = null;
+
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 4;
@@ -662,6 +670,8 @@ function normalizeMercenaryForRoster(item) {
   if (item.hired !== undefined) normalized.hired = Boolean(item.hired);
   if (item.locked !== undefined) normalized.locked = Boolean(item.locked);
   if (item.isLocked !== undefined) normalized.locked = Boolean(item.isLocked);
+  if (item.treatmentCostGold !== undefined) normalized.treatmentCostGold = Number(item.treatmentCostGold) || 0;
+  if (item.treatmentDurationSeconds !== undefined) normalized.treatmentDurationSeconds = Number(item.treatmentDurationSeconds) || 0;
   normalized.isLocked = Boolean(normalized.locked);
   normalized.equipment = Array.isArray(item.equipment) ? item.equipment : makeDummyEquipment(normalized);
   return normalized;
@@ -1811,9 +1821,17 @@ function renderMissionResult(payload) {
   const content = document.querySelector('#mission-result-content');
   if (!modal || !title || !content) return;
   const result = payload?.result || {};
+  const injury = payload?.injury || result.injury || {};
   title.textContent = result.status === 'success' ? '의뢰 성공' : '의뢰 실패';
   content.innerHTML = `
     <p>${escapeHtml(result.resultText || '')}</p>
+    ${injury.occurred ? `
+      <div class="mission-injury-alert">
+        <strong>부상 발생</strong>
+        <p>${escapeHtml(injury.injuredMember?.name || '참여 용병 1명')}가 부상당했습니다. 의무실에서 치료가 필요합니다.</p>
+        <button type="button" id="mission-infirmary-open">의무실로 이동</button>
+      </div>
+    ` : ''}
     <dl class="mission-result-list">
       <div><dt>골드</dt><dd>+${formatNumber(result.gainedGold)}G</dd></div>
       <div><dt>사무소 EXP</dt><dd>+${formatNumber(result.gainedOfficeExp)}</dd></div>
@@ -1826,10 +1844,230 @@ function renderMissionResult(payload) {
     </div>
   `;
   modal.hidden = false;
+  document.querySelector('#mission-infirmary-open')?.addEventListener('click', () => {
+    closeMissionResult();
+    closeMissionView();
+    openInfirmaryView();
+  });
 }
 
 function closeMissionResult() {
   document.querySelector('#mission-result-modal')?.setAttribute('hidden', '');
+}
+
+function normalizeInfirmaryTreatment(item) {
+  return {
+    ...item,
+    ownedId: String(item?.ownedId || ''),
+    treatmentId: String(item?.treatmentId || ''),
+    level: Number(item?.level || 1) || 1,
+    costGold: Number(item?.costGold || 0) || 0,
+    durationSeconds: Number(item?.durationSeconds || 0) || 0,
+    remainingSeconds: Math.max(0, Number(item?.remainingSeconds || 0) || 0),
+    readyToClaim: Boolean(item?.readyToClaim)
+  };
+}
+
+async function loadInfirmaryData() {
+  const payload = await apiRequest('/api/mercenary/infirmary', { perfScope: 'mercenary-infirmary' });
+  updateMercenaryCurrencyDisplay(payload);
+  infirmaryState.injured = Array.isArray(payload?.injured)
+    ? payload.injured.map(normalizeMercenaryForRoster)
+    : [];
+  infirmaryState.treating = Array.isArray(payload?.treating)
+    ? payload.treating.map(normalizeInfirmaryTreatment)
+    : [];
+  infirmaryState.errorMessage = '';
+}
+
+async function openInfirmaryView() {
+  if (!requireMercenaryAuth()) return;
+  const screen = document.querySelector('#mercenary-infirmary-view');
+  if (!screen) return;
+  screen.hidden = false;
+  document.body.classList.add('infirmary-open');
+  infirmaryState.loading = true;
+  infirmaryState.errorMessage = '';
+  renderInfirmaryLoading();
+
+  try {
+    await loadInfirmaryData();
+  } catch (error) {
+    console.warn('[mercenary/infirmary] load failed', error);
+    if (error.status === 401) {
+      closeInfirmaryView();
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    infirmaryState.errorMessage = '의무실 정보를 불러오지 못했습니다.';
+  } finally {
+    infirmaryState.loading = false;
+  }
+  renderInfirmaryView();
+  bindInfirmaryControls();
+  startInfirmaryTimer();
+}
+
+function closeInfirmaryView() {
+  document.querySelector('#mercenary-infirmary-view')?.setAttribute('hidden', '');
+  document.body.classList.remove('infirmary-open');
+  stopInfirmaryTimer();
+}
+
+function renderInfirmaryLoading() {
+  const injured = document.querySelector('#infirmary-injured-list');
+  const treating = document.querySelector('#infirmary-treating-list');
+  if (injured) injured.innerHTML = '<p class="infirmary-empty">부상자 명단을 불러오는 중입니다.</p>';
+  if (treating) treating.innerHTML = '<p class="infirmary-empty">치료 기록을 불러오는 중입니다.</p>';
+}
+
+function renderInfirmaryError(message) {
+  const injured = document.querySelector('#infirmary-injured-list');
+  const treating = document.querySelector('#infirmary-treating-list');
+  if (injured) injured.innerHTML = `<p class="infirmary-empty">${escapeHtml(message)}</p>`;
+  if (treating) treating.innerHTML = '<p class="infirmary-empty">다시 시도해 주세요.</p>';
+}
+
+function renderInfirmaryView() {
+  if (infirmaryState.errorMessage) {
+    renderInfirmaryError(infirmaryState.errorMessage);
+    return;
+  }
+  const gold = document.querySelector('#infirmary-gold');
+  const injuredCount = document.querySelector('#infirmary-injured-count');
+  const treatingCount = document.querySelector('#infirmary-treating-count');
+  if (gold) gold.textContent = `${formatNumber(mercenaryLobbyState.gold)}G`;
+  if (injuredCount) injuredCount.textContent = `${formatNumber(infirmaryState.injured.length)}명`;
+  if (treatingCount) treatingCount.textContent = `${formatNumber(infirmaryState.treating.length)}명`;
+  renderInfirmaryInjured();
+  renderInfirmaryTreating();
+}
+
+function renderInfirmaryInjured() {
+  const list = document.querySelector('#infirmary-injured-list');
+  if (!list) return;
+  if (!infirmaryState.injured.length) {
+    list.innerHTML = '<p class="infirmary-empty">부상자가 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = infirmaryState.injured.map((item) => {
+    const cost = Number(item.treatmentCostGold || 0) || 0;
+    const canAfford = mercenaryLobbyState.gold >= cost;
+    return `
+      <article class="infirmary-card is-injured">
+        ${renderImageWithPlaceholder(item, 'infirmary-portrait')}
+        <div class="infirmary-card-body">
+          <span class="infirmary-grade ${getGradeClass(item.grade)}">${escapeHtml(item.grade)}</span>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p>Lv.${formatNumber(item.level)} · ${escapeHtml(item.species || item.role || '용병')}</p>
+          <em>상태: 부상</em>
+        </div>
+        <div class="infirmary-card-action">
+          <span>치료비 ${formatNumber(cost)}G</span>
+          <span>${formatMissionDuration(item.treatmentDurationSeconds || 0)}</span>
+          <button type="button" data-treatment-start="${escapeHtml(item.ownedId)}" ${canAfford ? '' : 'disabled'}>${canAfford ? '치료 시작' : '골드 부족'}</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+  list.querySelectorAll('[data-treatment-start]').forEach((button) => {
+    button.addEventListener('click', () => startInfirmaryTreatment(button.dataset.treatmentStart));
+  });
+}
+
+function renderInfirmaryTreating() {
+  const list = document.querySelector('#infirmary-treating-list');
+  if (!list) return;
+  if (!infirmaryState.treating.length) {
+    list.innerHTML = '<p class="infirmary-empty">치료 중인 용병이 없습니다.</p>';
+    return;
+  }
+  list.innerHTML = infirmaryState.treating.map((item) => `
+    <article class="infirmary-card is-treating">
+      ${renderImageWithPlaceholder(item, 'infirmary-portrait')}
+      <div class="infirmary-card-body">
+        <span class="infirmary-grade ${getGradeClass(item.grade)}">${escapeHtml(item.grade)}</span>
+        <strong>${escapeHtml(item.name)}</strong>
+        <p>Lv.${formatNumber(item.level)} · 치료비 ${formatNumber(item.costGold)}G</p>
+        <em>${item.readyToClaim ? '치료 완료 대기' : `남은 시간 ${formatMissionDuration(item.remainingSeconds)}`}</em>
+      </div>
+      <div class="infirmary-card-action">
+        <span>${item.readyToClaim ? '복귀 가능' : '치료 진행 중'}</span>
+        <button type="button" data-treatment-claim="${escapeHtml(item.treatmentId)}" ${item.readyToClaim ? '' : 'disabled'}>${item.readyToClaim ? '치료 완료' : '대기'}</button>
+      </div>
+    </article>
+  `).join('');
+  list.querySelectorAll('[data-treatment-claim]').forEach((button) => {
+    button.addEventListener('click', () => claimInfirmaryTreatment(button.dataset.treatmentClaim));
+  });
+}
+
+async function startInfirmaryTreatment(ownedMercenaryId) {
+  try {
+    const payload = await apiRequest('/api/mercenary/infirmary/treat/start', {
+      method: 'POST',
+      body: JSON.stringify({ ownedMercenaryId }),
+      perfScope: 'mercenary-treatment-start'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    infirmaryState.injured = Array.isArray(payload?.injured) ? payload.injured.map(normalizeMercenaryForRoster) : infirmaryState.injured;
+    infirmaryState.treating = Array.isArray(payload?.treating) ? payload.treating.map(normalizeInfirmaryTreatment) : infirmaryState.treating;
+    renderInfirmaryView();
+    showReadyNotice('치료를 시작했습니다. 용병단 골드가 차감되었습니다.');
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '치료 시작에 실패했습니다.');
+  }
+}
+
+async function claimInfirmaryTreatment(treatmentId) {
+  try {
+    const payload = await apiRequest('/api/mercenary/infirmary/treat/claim', {
+      method: 'POST',
+      body: JSON.stringify({ treatmentId }),
+      perfScope: 'mercenary-treatment-claim'
+    });
+    updateMercenaryCurrencyDisplay(payload);
+    infirmaryState.injured = Array.isArray(payload?.injured) ? payload.injured.map(normalizeMercenaryForRoster) : infirmaryState.injured;
+    infirmaryState.treating = Array.isArray(payload?.treating) ? payload.treating.map(normalizeInfirmaryTreatment) : infirmaryState.treating;
+    renderInfirmaryView();
+    showReadyNotice('치료가 완료되었습니다. 용병이 대기 중으로 복귀했습니다.');
+  } catch (error) {
+    showReadyNotice(error.data?.message || error.message || '치료 완료 처리에 실패했습니다.');
+  }
+}
+
+function startInfirmaryTimer() {
+  stopInfirmaryTimer();
+  infirmaryTimer = window.setInterval(() => {
+    if (document.querySelector('#mercenary-infirmary-view')?.hidden) {
+      stopInfirmaryTimer();
+      return;
+    }
+    let changed = false;
+    infirmaryState.treating = infirmaryState.treating.map((item) => {
+      if (item.readyToClaim || item.remainingSeconds <= 0) return item;
+      changed = true;
+      const nextRemaining = Math.max(0, item.remainingSeconds - 1);
+      return { ...item, remainingSeconds: nextRemaining, readyToClaim: nextRemaining <= 0 };
+    });
+    if (changed) renderInfirmaryTreating();
+  }, 1000);
+}
+
+function stopInfirmaryTimer() {
+  if (infirmaryTimer) {
+    window.clearInterval(infirmaryTimer);
+    infirmaryTimer = null;
+  }
+}
+
+function bindInfirmaryControls() {
+  const closeButton = document.querySelector('#infirmary-close-button');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeInfirmaryView);
+  }
 }
 
 function startMissionTimer() {
@@ -2030,6 +2268,10 @@ function renderHotspots(hotspots) {
         openMissionView();
         return;
       }
+      if (button.classList.contains('hotspot-infirmary')) {
+        openInfirmaryView();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -2063,6 +2305,10 @@ function renderQuickNav(items) {
       }
       if (button.dataset.quickAction === 'missions') {
         openMissionView();
+        return;
+      }
+      if (button.dataset.quickAction === 'infirmary') {
+        openInfirmaryView();
         return;
       }
       showReadyNotice();

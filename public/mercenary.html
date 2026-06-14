@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=233" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=234" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -229,6 +229,50 @@
       </div>
     </section>
 
+    <section class="mercenary-infirmary-view" id="mercenary-infirmary-view" aria-label="용병단 의무실" hidden>
+      <div class="infirmary-background-scrim" aria-hidden="true"></div>
+      <div class="infirmary-shell">
+        <header class="infirmary-topbar">
+          <div class="infirmary-title-block">
+            <span class="infirmary-kicker">부상 치료 0.2</span>
+            <h2>용병단 의무실</h2>
+            <p>부상 치료 · 복귀 관리</p>
+          </div>
+          <button class="infirmary-close-button" id="infirmary-close-button" type="button">닫기</button>
+        </header>
+
+        <div class="infirmary-layout">
+          <aside class="infirmary-status-panel" aria-label="의무실 안내">
+            <div class="infirmary-panel-heading">
+              <h3>치료 장부</h3>
+              <span id="infirmary-gold">0G</span>
+            </div>
+            <div class="infirmary-guide">
+              <p>부상자는 의뢰에 파견할 수 없습니다.</p>
+              <p>치료 시작 시 용병단 골드가 차감됩니다.</p>
+              <p>치료 완료 수령 후 대기 중 상태로 복귀합니다.</p>
+            </div>
+          </aside>
+
+          <section class="infirmary-panel" aria-label="부상자 목록">
+            <div class="infirmary-panel-heading">
+              <h3>부상자</h3>
+              <span id="infirmary-injured-count">0명</span>
+            </div>
+            <div class="infirmary-list" id="infirmary-injured-list"></div>
+          </section>
+
+          <section class="infirmary-panel" aria-label="치료 중 목록">
+            <div class="infirmary-panel-heading">
+              <h3>치료 중</h3>
+              <span id="infirmary-treating-count">0명</span>
+            </div>
+            <div class="infirmary-list" id="infirmary-treating-list"></div>
+          </section>
+        </div>
+      </div>
+    </section>
+
     <section class="recruitment-board-screen" id="recruitment-board-screen" aria-label="채용 게시판" hidden>
       <div class="recruitment-background-scrim" aria-hidden="true"></div>
       <div class="recruitment-shell">
@@ -318,6 +362,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=233"></script>
+  <script src="/js/mercenary-lobby.js?v=234"></script>
 </body>
 </html>

@@ -460,6 +460,19 @@ CREATE TABLE IF NOT EXISTS user_mercenary_mission_offers (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_mercenary_treatments (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  owned_mercenary_id TEXT NOT NULL,
+  cost_gold INTEGER NOT NULL DEFAULT 0,
+  duration_seconds INTEGER NOT NULL DEFAULT 0,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completes_at TIMESTAMPTZ NOT NULL,
+  claimed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS guestbook_entries (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -711,6 +724,10 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_merc
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_mission ON user_mercenary_mission_offers(mission_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_run ON user_mercenary_mission_offers(accepted_run_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user ON user_mercenary_treatments(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_owned ON user_mercenary_treatments(owned_mercenary_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_claimed ON user_mercenary_treatments(user_id, claimed_at);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_completes ON user_mercenary_treatments(user_id, completes_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active ON seasons(is_active) WHERE is_active = TRUE;
 CREATE INDEX IF NOT EXISTS idx_seasons_status_dates ON seasons(status, starts_at DESC, ends_at DESC);
 CREATE INDEX IF NOT EXISTS idx_season_hall_of_fame_season_category ON season_hall_of_fame(season_id, category, rank);

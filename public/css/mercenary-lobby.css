@@ -2840,6 +2840,232 @@ body.mission-open {
   color: rgba(244, 223, 180, 0.8);
 }
 
+.mission-injury-alert {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+  border: 1px solid rgba(196, 66, 48, 0.48);
+  background:
+    radial-gradient(circle at top left, rgba(160, 42, 32, 0.24), transparent 44%),
+    rgba(38, 15, 12, 0.76);
+  padding: 11px;
+}
+
+.mission-injury-alert strong {
+  color: #ffb39c;
+}
+
+.mission-injury-alert p {
+  margin: 0;
+  color: rgba(255, 220, 195, 0.82);
+}
+
+.mission-injury-alert button {
+  justify-self: start;
+}
+
+.mercenary-infirmary-view {
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.mercenary-infirmary-view[hidden] {
+  display: none;
+}
+
+.infirmary-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(110, 35, 28, 0.28), transparent 34%),
+    linear-gradient(120deg, rgba(4, 5, 6, 0.72), rgba(30, 16, 10, 0.8));
+  backdrop-filter: blur(3px);
+}
+
+.infirmary-shell {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 1380px);
+  height: min(90vh, 820px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(214, 168, 93, 0.42);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(138, 45, 34, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(25, 14, 10, 0.97), rgba(7, 6, 5, 0.98));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 235, 180, 0.06),
+    0 24px 70px rgba(0, 0, 0, 0.68);
+  color: #f4dfb4;
+  overflow: hidden;
+}
+
+.infirmary-topbar,
+.infirmary-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.infirmary-title-block h2,
+.infirmary-panel-heading h3 {
+  margin: 0;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.infirmary-title-block h2 {
+  font-size: 31px;
+  color: #ffe2a4;
+}
+
+.infirmary-kicker {
+  display: inline-block;
+  margin-bottom: 3px;
+  color: #c07963;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.infirmary-title-block p,
+.infirmary-guide,
+.infirmary-card,
+.infirmary-empty,
+.infirmary-panel-heading span {
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+}
+
+.infirmary-close-button,
+.infirmary-card-action button {
+  min-height: 38px;
+  border: 1px solid rgba(214, 168, 93, 0.45);
+  background: linear-gradient(180deg, rgba(74, 47, 22, 0.9), rgba(31, 20, 12, 0.92));
+  color: #ffe2a4;
+  padding: 8px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.infirmary-card-action button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.infirmary-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.infirmary-status-panel,
+.infirmary-panel {
+  min-height: 0;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: linear-gradient(180deg, rgba(27, 19, 12, 0.78), rgba(8, 7, 6, 0.84));
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.42);
+  padding: 13px;
+  overflow: hidden;
+}
+
+.infirmary-guide {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  color: rgba(244, 223, 180, 0.74);
+  line-height: 1.55;
+}
+
+.infirmary-guide p {
+  margin: 0;
+  border-left: 2px solid rgba(196, 66, 48, 0.54);
+  padding-left: 9px;
+}
+
+.infirmary-list {
+  margin-top: 11px;
+  display: grid;
+  gap: 10px;
+  max-height: calc(100% - 42px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.infirmary-card {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(152, 108, 58, 0.38);
+  background: rgba(18, 13, 9, 0.72);
+  padding: 11px;
+}
+
+.infirmary-card.is-injured {
+  border-color: rgba(188, 60, 45, 0.42);
+}
+
+.infirmary-card.is-treating {
+  border-color: rgba(218, 171, 70, 0.42);
+}
+
+.infirmary-portrait {
+  width: 82px;
+  height: 92px;
+  overflow: hidden;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.infirmary-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.infirmary-card-body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.infirmary-card-body strong {
+  color: #fff1c2;
+}
+
+.infirmary-card-body p,
+.infirmary-card-body em,
+.infirmary-card-action span,
+.infirmary-empty {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.72);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.infirmary-grade {
+  justify-self: start;
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  background: rgba(0, 0, 0, 0.34);
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.infirmary-card-action {
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  text-align: right;
+}
+
 .mercenary-auth-overlay {
   position: fixed;
   inset: 0;
@@ -3002,6 +3228,19 @@ body.mission-open {
   .squad-roster-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .infirmary-shell {
+    width: calc(100vw - 20px);
+    height: calc(100vh - 20px);
+  }
+
+  .infirmary-layout {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .infirmary-panel:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 900px) {
@@ -3071,6 +3310,19 @@ body.mission-open {
 
   .roster-layout {
     overflow: visible;
+  }
+
+  .infirmary-layout,
+  .infirmary-card {
+    grid-template-columns: 1fr;
+  }
+
+  .infirmary-shell {
+    overflow: auto;
+  }
+
+  .infirmary-list {
+    max-height: none;
   }
 
   .roster-list-panel,

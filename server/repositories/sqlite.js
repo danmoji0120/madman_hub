@@ -337,6 +337,21 @@ async function runMigrations() {
      )`
   );
   await run(
+    `CREATE TABLE IF NOT EXISTS user_mercenary_treatments (
+       id TEXT PRIMARY KEY,
+       user_id INTEGER NOT NULL,
+       owned_mercenary_id TEXT NOT NULL,
+       cost_gold INTEGER NOT NULL DEFAULT 0,
+       duration_seconds INTEGER NOT NULL DEFAULT 0,
+       started_at TEXT NOT NULL,
+       completes_at TEXT NOT NULL,
+       claimed_at TEXT,
+       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+     )`
+  );
+  await run(
     `CREATE TABLE IF NOT EXISTS user_recruit_boards (
        user_id INTEGER PRIMARY KEY,
        board_date TEXT NOT NULL,
@@ -412,6 +427,10 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_mission ON user_mercenary_mission_offers(mission_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_run ON user_mercenary_mission_offers(accepted_run_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user ON user_mercenary_treatments(user_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_owned ON user_mercenary_treatments(owned_mercenary_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_claimed ON user_mercenary_treatments(user_id, claimed_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_completes ON user_mercenary_treatments(user_id, completes_at)');
   await run(
     `CREATE TABLE IF NOT EXISTS seasons (
        id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL UNIQUE, name TEXT NOT NULL,

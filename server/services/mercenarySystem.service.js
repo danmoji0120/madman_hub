@@ -41,6 +41,26 @@ const BASE_EXP_BY_GRADE = {
   SSR: 320,
   EX: 260
 };
+const INJURY_CHANCE_BY_RISK = {
+  '낮음': 5,
+  '보통': 12,
+  '높음': 25,
+  '위험': 40
+};
+const TREATMENT_COST_BY_GRADE = {
+  N: { base: 300, perLevel: 40 },
+  R: { base: 800, perLevel: 90 },
+  SR: { base: 1800, perLevel: 180 },
+  SSR: { base: 4000, perLevel: 350 },
+  EX: { base: 3000, perLevel: 300 }
+};
+const TREATMENT_DURATION_BY_GRADE = {
+  N: 180,
+  R: 300,
+  SR: 600,
+  SSR: 1200,
+  EX: 900
+};
 const OFFICE_UNLOCK_MILESTONES = [
   {
     level: 1,
@@ -870,6 +890,49 @@ function decideMissionResult(successRate, randomValue = Math.random()) {
   return randomValue * 100 < safeRate ? 'success' : 'failure';
 }
 
+function getInjuryChanceByRisk(risk) {
+  return INJURY_CHANCE_BY_RISK[String(risk || '낮음')] ?? 0;
+}
+
+function pickInjuredMember(members, randomFn = Math.random) {
+  const safeMembers = Array.isArray(members) ? members.filter(Boolean) : [];
+  if (!safeMembers.length) return null;
+  return safeMembers[Math.floor(randomFn() * safeMembers.length)] || safeMembers[0];
+}
+
+function rollMissionInjury(mission, members, randomFn = Math.random) {
+  const chance = getInjuryChanceByRisk(mission?.risk);
+  if (chance <= 0 || !members?.length) {
+    return { occurred: false, chance, injuredMember: null };
+  }
+  if (randomFn() * 100 >= chance) {
+    return { occurred: false, chance, injuredMember: null };
+  }
+  const injured = pickInjuredMember(members, randomFn);
+  return {
+    occurred: Boolean(injured),
+    chance,
+    injuredMember: injured ? {
+      ownedId: String(injured.id || injured.ownedId),
+      name: injured.name || '이름 없는 용병'
+    } : null
+  };
+}
+
+function calculateTreatmentCost(grade, level) {
+  const key = String(grade || 'N').toUpperCase();
+  const rule = TREATMENT_COST_BY_GRADE[key] || TREATMENT_COST_BY_GRADE.N;
+  const safeLevel = Math.max(1, Number(level || 1) || 1);
+  return Math.max(1, Math.floor(rule.base + safeLevel * rule.perLevel));
+}
+
+function calculateTreatmentDurationSeconds(grade, level) {
+  const key = String(grade || 'N').toUpperCase();
+  const base = TREATMENT_DURATION_BY_GRADE[key] || TREATMENT_DURATION_BY_GRADE.N;
+  const safeLevel = Math.max(1, Number(level || 1) || 1);
+  return Math.max(1, Math.floor(base + safeLevel * 10));
+}
+
 function serializeRun(runRow, members = []) {
   const now = Date.now();
   const completesAtMs = new Date(runRow.completesAt).getTime();
@@ -895,6 +958,39 @@ function serializeRun(runRow, members = []) {
     resultText: runRow.resultText,
     remainingSeconds,
     readyToClaim: remainingSeconds <= 0 && !runRow.claimedAt
+  };
+}
+
+function serializeTreatment(treatment, item) {
+  const now = Date.now();
+  const completesAtMs = new Date(treatment.completesAt).getTime();
+  const remainingSeconds = Math.max(0, Math.ceil((completesAtMs - now) / 1000));
+  return {
+    treatmentId: treatment.id,
+    ownedId: treatment.ownedMercenaryId,
+    name: item?.name || '이름 없는 용병',
+    grade: item?.grade || 'N',
+    level: item?.level || 1,
+    imageKey: item?.imageKey || '',
+    species: item?.species || '',
+    role: item?.role || '',
+    position: item?.position || '',
+    costGold: treatment.costGold,
+    durationSeconds: treatment.durationSeconds,
+    startedAt: treatment.startedAt,
+    completesAt: treatment.completesAt,
+    claimedAt: treatment.claimedAt,
+    remainingSeconds,
+    readyToClaim: remainingSeconds <= 0 && !treatment.claimedAt
+  };
+}
+
+function attachTreatmentQuote(item) {
+  const level = Number(item?.level || 1) || 1;
+  return {
+    ...item,
+    treatmentCostGold: calculateTreatmentCost(item?.grade, level),
+    treatmentDurationSeconds: calculateTreatmentDurationSeconds(item?.grade, level)
   };
 }
 
@@ -1408,6 +1504,139 @@ async function listRuns(userId) {
   };
 }
 
+async function getInfirmaryState(userId) {
+  const [ownedRows, treatments, profile, communityPoints] = await Promise.all([
+    repo.listUserMercenaries(userId),
+    repo.listActiveTreatments(userId),
+    getOrCreateMercenaryProfile(userId),
+    getCommunityPoints(userId)
+  ]);
+  const lookup = masterById();
+  const itemByOwnedId = new Map(ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean)
+    .map((item) => [String(item.ownedId), item]));
+  const treatmentOwnedIds = new Set(treatments.map((treatment) => String(treatment.ownedMercenaryId)));
+  const injured = [...itemByOwnedId.values()]
+    .filter((item) => item.operationalStatus === 'injured' && !treatmentOwnedIds.has(String(item.ownedId)))
+    .map(attachTreatmentQuote);
+  const treating = treatments
+    .map((treatment) => serializeTreatment(treatment, itemByOwnedId.get(String(treatment.ownedMercenaryId))))
+    .filter(Boolean);
+  const mercenaryProfile = publicMercenaryProfile(profile);
+
+  return {
+    ok: true,
+    injured,
+    treating,
+    gold: mercenaryProfile.gold,
+    mercenaryGold: mercenaryProfile.gold,
+    communityPoints,
+    mercenaryProfile
+  };
+}
+
+async function startTreatment(userId, ownedMercenaryId) {
+  const ownedId = String(ownedMercenaryId || '').trim();
+  if (!ownedId) throw httpError(400, '치료할 보유 용병을 선택해 주세요.', 'MERCENARY_NOT_OWNED');
+  const owned = await repo.getUserMercenary(userId, ownedId);
+  if (!owned) throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
+  if (owned.operationalStatus !== 'injured') {
+    throw httpError(409, '부상 상태인 용병만 치료를 시작할 수 있습니다.', 'MERCENARY_NOT_INJURED');
+  }
+  const existing = await repo.getActiveTreatmentByOwnedMercenaryId(userId, ownedId);
+  if (existing) throw httpError(409, '이미 치료 중인 용병입니다.', 'TREATMENT_ALREADY_ACTIVE');
+  const master = masterById().get(owned.mercenaryId);
+  if (!master) throw httpError(404, '용병 마스터 정보를 찾을 수 없습니다.', 'MERCENARY_NOT_OWNED');
+  const item = buildOwnedMercenaryItem(owned, master);
+  const costGold = calculateTreatmentCost(master.grade, item.level);
+  const durationSeconds = calculateTreatmentDurationSeconds(master.grade, item.level);
+  const now = new Date();
+  const treatmentId = `treat_${randomUUID()}`;
+  const completesAt = new Date(now.getTime() + durationSeconds * 1000);
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const spent = await spendMercenaryGold(userId, costGold, `의무실 치료: ${master.name}`);
+    const treatment = await repo.createTreatment({
+      id: treatmentId,
+      userId,
+      ownedMercenaryId: ownedId,
+      costGold,
+      durationSeconds,
+      startedAt: now.toISOString(),
+      completesAt: completesAt.toISOString()
+    });
+    await repo.updateUserMercenaryStatus(userId, ownedId, {
+      operationalStatus: 'treating',
+      currentActivityType: 'treatment',
+      currentActivityId: treatmentId
+    });
+    await repo.createRecruitLog({
+      userId,
+      action: 'start_treatment',
+      mercenaryId: owned.mercenaryId,
+      goldDelta: -costGold
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    const mercenaryProfile = publicMercenaryProfile(spent.profile);
+    return {
+      ok: true,
+      treatment: serializeTreatment(treatment, item),
+      gold: mercenaryProfile.gold,
+      mercenaryGold: mercenaryProfile.gold,
+      communityPoints: await getCommunityPoints(userId),
+      mercenaryProfile,
+      ...(await getInfirmaryState(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    if (error.code === 'NOT_ENOUGH_GOLD') {
+      throw httpError(400, '용병단 골드가 부족합니다.', 'INSUFFICIENT_MERCENARY_GOLD');
+    }
+    throw error;
+  }
+}
+
+async function claimTreatment(userId, treatmentId) {
+  const id = String(treatmentId || '').trim();
+  if (!id) throw httpError(404, '치료 기록을 찾을 수 없습니다.', 'TREATMENT_NOT_FOUND');
+  const treatment = await repo.getTreatment(userId, id);
+  if (!treatment) throw httpError(404, '치료 기록을 찾을 수 없습니다.', 'TREATMENT_NOT_FOUND');
+  if (treatment.claimedAt) throw httpError(409, '이미 치료 완료 처리된 기록입니다.', 'TREATMENT_ALREADY_CLAIMED');
+  if (new Date(treatment.completesAt).getTime() > Date.now()) {
+    throw httpError(409, '아직 치료가 끝나지 않았습니다.', 'TREATMENT_NOT_COMPLETE');
+  }
+  const owned = await repo.getUserMercenary(userId, treatment.ownedMercenaryId);
+  if (!owned) throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
+  if (owned.operationalStatus !== 'treating') {
+    throw httpError(409, '치료 중 상태인 용병만 복귀할 수 있습니다.', 'MERCENARY_NOT_TREATING');
+  }
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    const claimed = await repo.claimTreatment(userId, id, new Date().toISOString());
+    if (!claimed?.claimedAt) throw httpError(409, '이미 치료 완료 처리된 기록입니다.', 'TREATMENT_ALREADY_CLAIMED');
+    const statusRow = await repo.updateUserMercenaryStatus(userId, treatment.ownedMercenaryId, {
+      operationalStatus: 'idle',
+      currentActivityType: null,
+      currentActivityId: null
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    return {
+      ok: true,
+      treatmentId: id,
+      ownedId: treatment.ownedMercenaryId,
+      status: 'idle',
+      mercenary: buildOwnedMercenaryItem(statusRow, masterById().get(statusRow.mercenaryId)),
+      ...(await getInfirmaryState(userId))
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 async function startMissionRun(userId, payload = {}) {
   const profile = await getOrCreateMercenaryProfile(userId);
   const mercenaryProfile = publicMercenaryProfile(profile);
@@ -1546,9 +1775,23 @@ async function claimMissionRun(userId, runId) {
   const gainedGold = succeeded ? runRow.rewardGold : runRow.failureRewardGold;
   const gainedOfficeExp = succeeded ? runRow.officeExp : runRow.failureOfficeExp;
   const gainedMercenaryExp = succeeded ? runRow.mercenaryExp : runRow.failureMercenaryExp;
-  const resultText = succeeded
+  const injury = succeeded
+    ? { occurred: false, chance: 0, injuredMember: null }
+    : rollMissionInjury(mission, selectedRows.map((row) => {
+      const master = lookup.get(row.mercenaryId);
+      return {
+        id: row.id,
+        ownedId: row.id,
+        name: master?.name || row.mercenaryId || '이름 없는 용병'
+      };
+    }));
+  const injuredOwnedId = injury.occurred ? String(injury.injuredMember?.ownedId || '') : '';
+  const baseResultText = succeeded
     ? (mission.successText || '의뢰를 완료했습니다.')
     : (mission.failureText || '의뢰를 완수하지 못했습니다.');
+  const resultText = injury.occurred && injury.injuredMember
+    ? `${baseResultText} ${injury.injuredMember.name}가 부상당했습니다. 의무실에서 치료가 필요합니다.`
+    : baseResultText;
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
@@ -1570,8 +1813,9 @@ async function claimMissionRun(userId, runId) {
         currentLevel: afterProgress.currentLevel,
         currentExp: afterProgress.currentExp
       });
+      const nextOperationalStatus = !succeeded && injuredOwnedId === String(row.id) ? 'injured' : 'idle';
       const statusRow = await repo.updateUserMercenaryStatus(userId, row.id, {
-        operationalStatus: 'idle',
+        operationalStatus: nextOperationalStatus,
         currentActivityType: null,
         currentActivityId: null
       });
@@ -1588,6 +1832,8 @@ async function claimMissionRun(userId, runId) {
         expProgress: afterProgress.expProgress,
         isMaxLevel: afterProgress.isMaxLevel,
         levelUps: Math.max(0, afterProgress.currentLevel - beforeProgress.currentLevel),
+        operationalStatus: afterItem.operationalStatus,
+        statusLabel: afterItem.statusLabel,
         effectiveStats: afterItem.effectiveStats,
         workPower: afterItem.workPower,
         combatPower: afterItem.combatPower
@@ -1618,8 +1864,10 @@ async function claimMissionRun(userId, runId) {
         resultText,
         gainedGold,
         gainedOfficeExp,
-        gainedMercenaryExp
+        gainedMercenaryExp,
+        injury
       },
+      injury,
       run: serializeRun(claimed, memberResults),
       members: memberResults,
       gold: mercenaryProfile.gold,
@@ -1671,11 +1919,18 @@ module.exports = {
   countMatchedMissionTags,
   countMatchedMissionPositions,
   decideMissionResult,
+  getInjuryChanceByRisk,
+  rollMissionInjury,
+  calculateTreatmentCost,
+  calculateTreatmentDurationSeconds,
   summarizeSquad,
   getMissionOfferBoardLimit,
   getMissionOfferRefillIntervalSeconds,
   listMissions,
   listRuns,
+  getInfirmaryState,
+  startTreatment,
+  claimTreatment,
   startMissionRun,
   rejectMissionOffer,
   claimMissionRun,
