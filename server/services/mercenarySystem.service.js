@@ -12,17 +12,17 @@ const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 10;
 const DEFAULT_RECRUIT_GRADE_RATES = [
-  { grade: 'N', rate: 94.9 },
-  { grade: 'R', rate: 5.0 },
-  { grade: 'SR', rate: 0.1 }
+  { grade: 'N', rate: 69.5 },
+  { grade: 'R', rate: 30.0 },
+  { grade: 'SR', rate: 0.5 }
 ];
 const RECRUIT_GRADE_RATE_TIERS = [
-  { minLevel: 40, rates: [{ grade: 'N', rate: 80.0 }, { grade: 'R', rate: 17.0 }, { grade: 'SR', rate: 3.0 }] },
-  { minLevel: 30, rates: [{ grade: 'N', rate: 82.5 }, { grade: 'R', rate: 15.0 }, { grade: 'SR', rate: 2.5 }] },
-  { minLevel: 20, rates: [{ grade: 'N', rate: 85.0 }, { grade: 'R', rate: 13.0 }, { grade: 'SR', rate: 2.0 }] },
-  { minLevel: 10, rates: [{ grade: 'N', rate: 87.5 }, { grade: 'R', rate: 11.0 }, { grade: 'SR', rate: 1.5 }] },
-  { minLevel: 5, rates: [{ grade: 'N', rate: 89.5 }, { grade: 'R', rate: 9.5 }, { grade: 'SR', rate: 1.0 }] },
-  { minLevel: 1, rates: [{ grade: 'N', rate: 91.0 }, { grade: 'R', rate: 8.5 }, { grade: 'SR', rate: 0.5 }] }
+  { minLevel: 40, rates: [{ grade: 'N', rate: 52.0 }, { grade: 'R', rate: 45.0 }, { grade: 'SR', rate: 3.0 }] },
+  { minLevel: 30, rates: [{ grade: 'N', rate: 57.5 }, { grade: 'R', rate: 40.0 }, { grade: 'SR', rate: 2.5 }] },
+  { minLevel: 20, rates: [{ grade: 'N', rate: 60.0 }, { grade: 'R', rate: 38.0 }, { grade: 'SR', rate: 2.0 }] },
+  { minLevel: 10, rates: [{ grade: 'N', rate: 63.5 }, { grade: 'R', rate: 35.0 }, { grade: 'SR', rate: 1.5 }] },
+  { minLevel: 5, rates: [{ grade: 'N', rate: 66.0 }, { grade: 'R', rate: 33.0 }, { grade: 'SR', rate: 1.0 }] },
+  { minLevel: 1, rates: [{ grade: 'N', rate: 69.5 }, { grade: 'R', rate: 30.0 }, { grade: 'SR', rate: 0.5 }] }
 ];
 const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;

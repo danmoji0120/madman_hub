@@ -486,9 +486,9 @@ const RECRUIT_DAILY_REFRESH_LIMIT = 10;
 const SQUAD_SLOT_LIMIT = 3;
 const SQUAD_MEMBER_LIMIT = 3;
 const RECRUIT_GRADE_RATES = [
-  { grade: 'N', rate: 94.9 },
-  { grade: 'R', rate: 5.0 },
-  { grade: 'SR', rate: 0.1 }
+  { grade: 'N', rate: 69.5 },
+  { grade: 'R', rate: 30.0 },
+  { grade: 'SR', rate: 0.5 }
 ];
 
 const RECRUIT_STORAGE_KEYS = {
