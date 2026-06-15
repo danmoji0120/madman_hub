@@ -409,12 +409,23 @@ const rosterSortOptions = [
   { value: 'species', label: '종족순' }
 ];
 
+const RECRUIT_BOARD_SIZE = 5;
+const RECRUIT_REFRESH_COST = 20000;
+const RECRUIT_DAILY_REFRESH_LIMIT = 10;
+const SQUAD_SLOT_LIMIT = 3;
+const SQUAD_MEMBER_LIMIT = 3;
+const RECRUIT_GRADE_RATES = [
+  { grade: 'N', rate: 69.5 },
+  { grade: 'R', rate: 30 },
+  { grade: 'SR', rate: 0.5 }
+];
+
 const recruitmentState = {
   refreshIndex: 0,
   refreshCount: 0,
-  refreshRemaining: 4,
-  maxRefresh: 4,
-  refreshCost: 20000,
+  refreshRemaining: RECRUIT_DAILY_REFRESH_LIMIT,
+  maxRefresh: RECRUIT_DAILY_REFRESH_LIMIT,
+  refreshCost: RECRUIT_REFRESH_COST,
   gold: mercenaryLobbyState.gold,
   gradeRates: RECRUIT_GRADE_RATES.map((item) => ({ ...item })),
   candidates: [],
@@ -480,17 +491,6 @@ const caseState = {
   errorMessage: ''
 };
 let caseTimer = null;
-
-const RECRUIT_BOARD_SIZE = 5;
-const RECRUIT_REFRESH_COST = 20000;
-const RECRUIT_DAILY_REFRESH_LIMIT = 10;
-const SQUAD_SLOT_LIMIT = 3;
-const SQUAD_MEMBER_LIMIT = 3;
-const RECRUIT_GRADE_RATES = [
-  { grade: 'N', rate: 69.5 },
-  { grade: 'R', rate: 30.0 },
-  { grade: 'SR', rate: 0.5 }
-];
 
 const RECRUIT_STORAGE_KEYS = {
   date: 'mercenaryRecruitRefreshDate',
