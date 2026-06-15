@@ -416,6 +416,7 @@ const recruitmentState = {
   maxRefresh: 4,
   refreshCost: 20000,
   gold: mercenaryLobbyState.gold,
+  gradeRates: RECRUIT_GRADE_RATES.map((item) => ({ ...item })),
   candidates: [],
   hiredCandidateIds: [],
   serverMode: false,
@@ -863,8 +864,44 @@ function applyRecruitBoardPayload(payload) {
   updateMercenaryCurrencyDisplay(payload);
   recruitmentState.gold = mercenaryGold;
   recruitmentState.hiredCandidateIds = Array.isArray(board.hiredCandidateIds) ? board.hiredCandidateIds : [];
+  recruitmentState.gradeRates = extractRecruitGradeRates(payload, board);
   recruitmentState.candidates = (board.candidates || []).map(normalizeMercenaryForRoster);
   return true;
+}
+
+function normalizeRecruitGradeRates(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => ({
+        grade: String(item?.grade || '').trim().toUpperCase(),
+        rate: Number(item?.rate)
+      }))
+      .filter((item) => item.grade && Number.isFinite(item.rate));
+  }
+
+  if (value && typeof value === 'object') {
+    return ['N', 'R', 'SR']
+      .map((grade) => ({ grade, rate: Number(value[grade]) }))
+      .filter((item) => Number.isFinite(item.rate));
+  }
+
+  return [];
+}
+
+function extractRecruitGradeRates(payload, board = payload?.board) {
+  const candidates = [
+    board?.gradeRates,
+    board?.recruitGradeRates,
+    payload?.gradeRates,
+    payload?.recruitGradeRates,
+    board?.rates,
+    payload?.rates
+  ];
+  for (const candidate of candidates) {
+    const rates = normalizeRecruitGradeRates(candidate);
+    if (rates.length) return rates;
+  }
+  return RECRUIT_GRADE_RATES.map((item) => ({ ...item }));
 }
 
 async function loadRecruitBoardFromApi() {
@@ -3477,6 +3514,21 @@ function renderRecruitmentBoard() {
     ? `게시판 갱신 · ${formatNumber(recruitmentState.refreshCost)}G`
     : '오늘 갱신 한도 소진';
   refreshButton.disabled = recruitmentState.refreshRemaining <= 0;
+  renderRecruitGradeRateBox();
+}
+
+function renderRecruitGradeRateBox() {
+  const box = document.querySelector('.recruit-rate-box');
+  if (!box) return;
+  const rates = recruitmentState.gradeRates?.length
+    ? recruitmentState.gradeRates
+    : RECRUIT_GRADE_RATES;
+  box.innerHTML = `
+    <h4>등급 등장 확률</h4>
+    ${rates.map((item) => `
+      <p><span>${escapeHtml(item.grade)}</span><strong>${formatNumber(item.rate)}%</strong></p>
+    `).join('')}
+  `;
 }
 
 async function openRecruitmentBoard() {

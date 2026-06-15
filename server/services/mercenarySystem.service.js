@@ -1341,6 +1341,7 @@ async function serializeBoard(userId, board, profile) {
   const mercenaryProfile = publicMercenaryProfile(profile);
   const communityPoints = await getCommunityPoints(userId);
   const recruitRates = getRecruitGradeRates(mercenaryProfile.officeLevel);
+  const gradeRates = recruitRates.map((item) => ({ grade: item.grade, rate: item.rate }));
   return {
     ok: true,
     board: {
@@ -1354,7 +1355,9 @@ async function serializeBoard(userId, board, profile) {
       candidateIds: board.candidateIds,
       hiredCandidateIds: hiredIds,
       candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
-      rates: recruitRates
+      gradeRates,
+      recruitGradeRates: gradeRates,
+      rates: gradeRates
     },
     candidates: board.candidateIds.map((id) => attachCandidate(lookup.get(id), hiredIds)).filter(Boolean),
     boardDate: board.boardDate,
@@ -1362,6 +1365,8 @@ async function serializeBoard(userId, board, profile) {
     refreshLimit: RECRUIT_DAILY_REFRESH_LIMIT,
     remainingRefreshes: Math.max(0, RECRUIT_DAILY_REFRESH_LIMIT - board.refreshCount),
     refreshCost: RECRUIT_REFRESH_COST,
+    gradeRates,
+    recruitGradeRates: gradeRates,
     rates: recruitRates.reduce((acc, item) => ({ ...acc, [item.grade]: item.rate }), {}),
     gold: mercenaryProfile.gold,
     mercenaryGold: mercenaryProfile.gold,
