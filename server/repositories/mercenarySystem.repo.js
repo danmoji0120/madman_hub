@@ -483,6 +483,75 @@ async function updateUserMercenaryStatus(userId, ownedMercenaryId, {
   return getUserMercenary(userId, ownedMercenaryId);
 }
 
+async function updateUserMercenaryStatusIfCurrent(userId, ownedMercenaryId, expected = {}, next = {}) {
+  const patch = {
+    operational_status: next.operationalStatus,
+    current_activity_type: next.currentActivityType ?? null,
+    current_activity_id: next.currentActivityId ?? null
+  };
+
+  if (provider === 'supabase') {
+    let query = getSupabaseAdminClient()
+      .from('user_mercenaries')
+      .update({
+        ...patch,
+        status_updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', ownedMercenaryId);
+
+    if (expected.operationalStatus !== undefined) query = query.eq('operational_status', expected.operationalStatus);
+    if (expected.currentActivityType === null) query = query.is('current_activity_type', null);
+    else if (expected.currentActivityType !== undefined) query = query.eq('current_activity_type', expected.currentActivityType);
+    if (expected.currentActivityId === null) query = query.is('current_activity_id', null);
+    else if (expected.currentActivityId !== undefined) query = query.eq('current_activity_id', expected.currentActivityId);
+    if (expected.isLocked !== undefined) query = query.eq('is_locked', Boolean(expected.isLocked));
+
+    const { data, error } = await query.select().maybeSingle();
+    if (error) throw error;
+    return normalizeOwned(data);
+  }
+
+  const conditions = ['user_id = ?', 'id = ?'];
+  const params = [
+    patch.operational_status,
+    patch.current_activity_type,
+    patch.current_activity_id,
+    userId,
+    ownedMercenaryId
+  ];
+  if (expected.operationalStatus !== undefined) {
+    conditions.push('operational_status = ?');
+    params.push(expected.operationalStatus);
+  }
+  if (expected.currentActivityType === null) conditions.push('current_activity_type IS NULL');
+  else if (expected.currentActivityType !== undefined) {
+    conditions.push('current_activity_type = ?');
+    params.push(expected.currentActivityType);
+  }
+  if (expected.currentActivityId === null) conditions.push('current_activity_id IS NULL');
+  else if (expected.currentActivityId !== undefined) {
+    conditions.push('current_activity_id = ?');
+    params.push(expected.currentActivityId);
+  }
+  if (expected.isLocked !== undefined) {
+    conditions.push('is_locked = ?');
+    params.push(expected.isLocked ? 1 : 0);
+  }
+
+  const result = await run(
+    `UPDATE user_mercenaries
+     SET operational_status = ?,
+         current_activity_type = ?,
+         current_activity_id = ?,
+         status_updated_at = CURRENT_TIMESTAMP
+     WHERE ${conditions.join(' AND ')}`,
+    params
+  );
+  if (!result.changes) return null;
+  return getUserMercenary(userId, ownedMercenaryId);
+}
+
 async function updateUserMercenaryProgress(userId, ownedMercenaryId, { currentLevel, currentExp }) {
   const safeLevel = Math.max(1, Number(currentLevel || 1) || 1);
   const safeExp = Math.max(0, Number(currentExp || 0) || 0);
@@ -777,7 +846,7 @@ async function claimMercenaryRun(userId, runId, { resultStatus, resultText, clai
     return normalizeRun(data);
   }
 
-  await run(
+  const result = await run(
     `UPDATE user_mercenary_runs
      SET claimed_at = ?,
          result_status = ?,
@@ -786,6 +855,7 @@ async function claimMercenaryRun(userId, runId, { resultStatus, resultText, clai
      WHERE user_id = ? AND id = ? AND claimed_at IS NULL`,
     [claimedAt, resultStatus, resultText, userId, runId]
   );
+  if (!result.changes) return null;
   return getMercenaryRun(userId, runId);
 }
 
@@ -1021,13 +1091,14 @@ async function claimTreatment(userId, treatmentId, claimedAt) {
     return normalizeTreatment(data);
   }
 
-  await run(
+  const result = await run(
     `UPDATE user_mercenary_treatments
      SET claimed_at = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE user_id = ? AND id = ? AND claimed_at IS NULL`,
     [claimedAt, userId, treatmentId]
   );
+  if (!result.changes) return null;
   return getTreatment(userId, treatmentId);
 }
 
@@ -1426,6 +1497,7 @@ module.exports = {
   hasOwnedMercenary,
   createUserMercenary,
   updateUserMercenaryStatus,
+  updateUserMercenaryStatusIfCurrent,
   updateUserMercenaryProgress,
   listUserSquads,
   getUserSquad,

@@ -764,6 +764,7 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_me
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_run ON user_mercenary_case_step_runs(run_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_running ON user_mercenary_case_step_runs(user_id, case_id, step_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_one_running ON user_mercenary_case_step_runs(user_id, case_id, step_id) WHERE status = 'running';
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_user ON user_mercenary_mission_offers(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_active ON user_mercenary_mission_offers(user_id, accepted_at, rejected_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_mission_offers_generated ON user_mercenary_mission_offers(user_id, generated_at DESC);
@@ -773,6 +774,7 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user ON user_mercenary_
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_owned ON user_mercenary_treatments(owned_mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_claimed ON user_mercenary_treatments(user_id, claimed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_treatments_user_completes ON user_mercenary_treatments(user_id, completes_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mercenary_treatments_one_active ON user_mercenary_treatments(user_id, owned_mercenary_id) WHERE claimed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_office_assignments_user_id ON user_mercenary_office_assignments(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_office_assignments_owned_id ON user_mercenary_office_assignments(owned_mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_office_assignments_facility ON user_mercenary_office_assignments(user_id, facility_key);

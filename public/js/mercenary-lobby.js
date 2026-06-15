@@ -73,6 +73,8 @@ const bgmState = {
   failedTrackIds: new Set()
 };
 
+const mercenaryActionLocks = new Map();
+
 const mercenaryLobbyState = {
   officeName: '폐급 용병단 사무소',
   level: 1,
@@ -568,6 +570,71 @@ function clampNumber(value, min, max, fallback = min) {
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.min(max, Math.max(min, number));
+}
+
+function createClientRequestId(prefix = 'mercenary') {
+  const cryptoObject = window.crypto || window.msCrypto;
+  if (cryptoObject && typeof cryptoObject.randomUUID === 'function') {
+    return `${prefix}:${cryptoObject.randomUUID()}`;
+  }
+  return `${prefix}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+}
+
+function buildMercenaryActionKey(action, payload = {}) {
+  const stablePayload = {
+    action,
+    id: payload.id || payload.runId || payload.offerId || payload.caseId || payload.treatmentId || payload.assignmentId || payload.squadId || '',
+    missionId: payload.missionId || payload.missionCode || '',
+    mercenaryId: payload.mercenaryId || payload.ownedMercenaryId || '',
+    facilityKey: payload.facilityKey || '',
+    slotIndex: payload.slotIndex ?? '',
+    stepId: payload.stepId || '',
+    ownedMercenaryIds: Array.isArray(payload.ownedMercenaryIds)
+      ? payload.ownedMercenaryIds.slice().sort()
+      : []
+  };
+  return JSON.stringify(stablePayload);
+}
+
+function isMercenaryActionPending(key) {
+  return mercenaryActionLocks.has(key);
+}
+
+function lockMercenaryAction(key, button, label = '처리 중...') {
+  if (mercenaryActionLocks.has(key)) return false;
+  const originalText = button ? button.textContent : '';
+  mercenaryActionLocks.set(key, { button, originalText });
+
+  if (button) {
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.dataset.loading = 'true';
+    button.textContent = label;
+  }
+
+  return true;
+}
+
+function unlockMercenaryAction(key) {
+  const lock = mercenaryActionLocks.get(key);
+  if (!lock) return;
+  const { button, originalText } = lock;
+  if (button && button.isConnected) {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+    delete button.dataset.loading;
+    button.textContent = originalText;
+  }
+  mercenaryActionLocks.delete(key);
+}
+
+async function runLockedMercenaryAction({ key, button = null, label = '처리 중...', task }) {
+  if (!lockMercenaryAction(key, button, label)) return null;
+  try {
+    return await task();
+  } finally {
+    unlockMercenaryAction(key);
+  }
 }
 
 function readBgmSettings() {
@@ -1624,7 +1691,7 @@ function renameCurrentSquad() {
   renderSquadView();
 }
 
-async function saveCurrentSquad() {
+async function saveCurrentSquad(button = null) {
   if (!squadState.draft) return;
   if (!squadState.draft.ownedMercenaryIds.length) {
     showReadyNotice('편성에는 최소 1명의 용병이 필요합니다.');
@@ -1636,17 +1703,28 @@ async function saveCurrentSquad() {
     ownedMercenaryIds: squadState.draft.ownedMercenaryIds,
     leaderOwnedMercenaryId: squadState.draft.leaderOwnedMercenaryId || squadState.draft.ownedMercenaryIds[0]
   };
+  const actionKey = buildMercenaryActionKey('squad-save', {
+    squadId: squadState.draft.id || '',
+    id: squadState.draft.id || `slot-${squadState.draft.slotIndex}`,
+    ownedMercenaryIds: payload.ownedMercenaryIds
+  });
   const path = squadState.draft.id
     ? `/api/mercenary/squads/${encodeURIComponent(squadState.draft.id)}`
     : '/api/mercenary/squads';
   const method = squadState.draft.id ? 'PATCH' : 'POST';
 
   try {
-    const result = await apiRequest(path, {
-      method,
-      body: JSON.stringify(payload),
-      perfScope: 'mercenary-squads-save'
+    const result = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '저장 중...',
+      task: () => apiRequest(path, {
+        method,
+        body: JSON.stringify({ ...payload, clientRequestId: createClientRequestId('squad-save') }),
+        perfScope: 'mercenary-squads-save'
+      })
     });
+    if (!result) return;
     updateMercenaryCurrencyDisplay(result);
     await loadSquadData();
     renderSquadView();
@@ -1656,17 +1734,25 @@ async function saveCurrentSquad() {
   }
 }
 
-async function deleteCurrentSquad() {
+async function deleteCurrentSquad(button = null) {
   if (!squadState.draft?.id) {
     showReadyNotice('삭제할 저장 편성이 없습니다.');
     return;
   }
   if (!window.confirm('이 편성을 삭제하시겠습니까?')) return;
+  const actionKey = buildMercenaryActionKey('squad-delete', { squadId: squadState.draft.id, id: squadState.draft.id });
   try {
-    const result = await apiRequest(`/api/mercenary/squads/${encodeURIComponent(squadState.draft.id)}`, {
-      method: 'DELETE',
-      perfScope: 'mercenary-squads-delete'
+    const result = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '삭제 중...',
+      task: () => apiRequest(`/api/mercenary/squads/${encodeURIComponent(squadState.draft.id)}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ clientRequestId: createClientRequestId('squad-delete') }),
+        perfScope: 'mercenary-squads-delete'
+      })
     });
+    if (!result) return;
     updateMercenaryCurrencyDisplay(result);
     await loadSquadData();
     renderSquadView();
@@ -1685,7 +1771,7 @@ function bindSquadControls() {
   const saveButton = document.querySelector('#squad-save-button');
   if (saveButton && saveButton.dataset.bound !== 'true') {
     saveButton.dataset.bound = 'true';
-    saveButton.addEventListener('click', saveCurrentSquad);
+    saveButton.addEventListener('click', () => saveCurrentSquad(saveButton));
   }
   const renameButton = document.querySelector('#squad-rename-button');
   if (renameButton && renameButton.dataset.bound !== 'true') {
@@ -1695,7 +1781,7 @@ function bindSquadControls() {
   const deleteButton = document.querySelector('#squad-delete-button');
   if (deleteButton && deleteButton.dataset.bound !== 'true') {
     deleteButton.dataset.bound = 'true';
-    deleteButton.addEventListener('click', deleteCurrentSquad);
+    deleteButton.addEventListener('click', () => deleteCurrentSquad(deleteButton));
   }
   const expandButton = document.querySelector('#squad-expand-button');
   if (expandButton && expandButton.dataset.bound !== 'true') {
@@ -2027,7 +2113,7 @@ function renderMissionDetail() {
       <span>거부한 의뢰는 즉시 보충되지 않습니다.</span>
     </div>`}
   `;
-  root.querySelector('[data-mission-reject]')?.addEventListener('click', () => rejectSelectedMissionOffer());
+  root.querySelector('[data-mission-reject]')?.addEventListener('click', (event) => rejectSelectedMissionOffer(event.currentTarget));
   renderMissionStartState();
 }
 
@@ -2110,11 +2196,11 @@ function renderMissionRuns() {
     </article>
   `).join('');
   list.querySelectorAll('[data-mission-claim]').forEach((button) => {
-    button.addEventListener('click', () => claimMissionRun(button.dataset.missionClaim));
+    button.addEventListener('click', () => claimMissionRun(button.dataset.missionClaim, button));
   });
 }
 
-async function startSelectedMission() {
+async function startSelectedMission(button = null) {
   const mission = selectedMission();
   const squad = selectedMissionSquad();
   const blockReason = missionStartBlockReason();
@@ -2123,12 +2209,27 @@ async function startSelectedMission() {
     renderMissionStartState();
     return;
   }
+  const actionKey = buildMercenaryActionKey('mission-start', {
+    offerId: mission.offerId,
+    squadId: squad.id,
+    ownedMercenaryIds: (squad.ownedMercenaryIds || []).map(String)
+  });
   try {
-    const payload = await apiRequest('/api/mercenary/runs/start', {
-      method: 'POST',
-      body: JSON.stringify({ offerId: mission.offerId, squadId: squad.id }),
-      perfScope: 'mercenary-run-start'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '파견 중...',
+      task: () => apiRequest('/api/mercenary/runs/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          offerId: mission.offerId,
+          squadId: squad.id,
+          clientRequestId: createClientRequestId('run-start')
+        }),
+        perfScope: 'mercenary-run-start'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     showReadyNotice('의뢰를 시작했습니다. 용병들이 파견 중 상태가 됩니다.');
     await loadMissionData();
@@ -2138,7 +2239,7 @@ async function startSelectedMission() {
   }
 }
 
-async function rejectSelectedMissionOffer() {
+async function rejectSelectedMissionOffer(button = null) {
   const mission = selectedMission();
   if (!mission?.offerId) {
     showReadyNotice('거부할 의뢰를 선택하세요.');
@@ -2147,12 +2248,22 @@ async function rejectSelectedMissionOffer() {
   const confirmed = window.confirm('이 의뢰를 거부하시겠습니까? 거부한 의뢰는 게시판에서 사라지고, 새 의뢰는 다음 보충 시간에 들어옵니다.');
   if (!confirmed) return;
 
+  const actionKey = buildMercenaryActionKey('mission-reject', { offerId: mission.offerId });
   try {
-    const payload = await apiRequest('/api/mercenary/mission-offers/reject', {
-      method: 'POST',
-      body: JSON.stringify({ offerId: mission.offerId }),
-      perfScope: 'mercenary-mission-reject'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '거부 중...',
+      task: () => apiRequest('/api/mercenary/mission-offers/reject', {
+        method: 'POST',
+        body: JSON.stringify({
+          offerId: mission.offerId,
+          clientRequestId: createClientRequestId('mission-reject')
+        }),
+        perfScope: 'mercenary-mission-reject'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     if (missionState.selectedOfferId === mission.offerId) {
       missionState.selectedOfferId = '';
@@ -2166,13 +2277,23 @@ async function rejectSelectedMissionOffer() {
   }
 }
 
-async function claimMissionRun(runId) {
+async function claimMissionRun(runId, button = null) {
+  const actionKey = buildMercenaryActionKey('mission-claim', { runId, id: runId });
   try {
-    const payload = await apiRequest('/api/mercenary/runs/claim', {
-      method: 'POST',
-      body: JSON.stringify({ runId }),
-      perfScope: 'mercenary-run-claim'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '수령 중...',
+      task: () => apiRequest('/api/mercenary/runs/claim', {
+        method: 'POST',
+        body: JSON.stringify({
+          runId,
+          clientRequestId: createClientRequestId('run-claim')
+        }),
+        perfScope: 'mercenary-run-claim'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     renderMissionResult(payload);
     await loadMissionData();
@@ -2339,7 +2460,7 @@ function renderInfirmaryInjured() {
     `;
   }).join('');
   list.querySelectorAll('[data-treatment-start]').forEach((button) => {
-    button.addEventListener('click', () => startInfirmaryTreatment(button.dataset.treatmentStart));
+    button.addEventListener('click', () => startInfirmaryTreatment(button.dataset.treatmentStart, button));
   });
 }
 
@@ -2366,17 +2487,27 @@ function renderInfirmaryTreating() {
     </article>
   `).join('');
   list.querySelectorAll('[data-treatment-claim]').forEach((button) => {
-    button.addEventListener('click', () => claimInfirmaryTreatment(button.dataset.treatmentClaim));
+    button.addEventListener('click', () => claimInfirmaryTreatment(button.dataset.treatmentClaim, button));
   });
 }
 
-async function startInfirmaryTreatment(ownedMercenaryId) {
+async function startInfirmaryTreatment(ownedMercenaryId, button = null) {
+  const actionKey = buildMercenaryActionKey('treatment-start', { ownedMercenaryId, mercenaryId: ownedMercenaryId });
   try {
-    const payload = await apiRequest('/api/mercenary/infirmary/treat/start', {
-      method: 'POST',
-      body: JSON.stringify({ ownedMercenaryId }),
-      perfScope: 'mercenary-treatment-start'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '치료 중...',
+      task: () => apiRequest('/api/mercenary/infirmary/treat/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          ownedMercenaryId,
+          clientRequestId: createClientRequestId('treatment-start')
+        }),
+        perfScope: 'mercenary-treatment-start'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     infirmaryState.injured = Array.isArray(payload?.injured) ? payload.injured.map(normalizeMercenaryForRoster) : infirmaryState.injured;
     infirmaryState.treating = Array.isArray(payload?.treating) ? payload.treating.map(normalizeInfirmaryTreatment) : infirmaryState.treating;
@@ -2387,13 +2518,23 @@ async function startInfirmaryTreatment(ownedMercenaryId) {
   }
 }
 
-async function claimInfirmaryTreatment(treatmentId) {
+async function claimInfirmaryTreatment(treatmentId, button = null) {
+  const actionKey = buildMercenaryActionKey('treatment-claim', { treatmentId, id: treatmentId });
   try {
-    const payload = await apiRequest('/api/mercenary/infirmary/treat/claim', {
-      method: 'POST',
-      body: JSON.stringify({ treatmentId }),
-      perfScope: 'mercenary-treatment-claim'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '완료 중...',
+      task: () => apiRequest('/api/mercenary/infirmary/treat/claim', {
+        method: 'POST',
+        body: JSON.stringify({
+          treatmentId,
+          clientRequestId: createClientRequestId('treatment-claim')
+        }),
+        perfScope: 'mercenary-treatment-claim'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     infirmaryState.injured = Array.isArray(payload?.injured) ? payload.injured.map(normalizeMercenaryForRoster) : infirmaryState.injured;
     infirmaryState.treating = Array.isArray(payload?.treating) ? payload.treating.map(normalizeInfirmaryTreatment) : infirmaryState.treating;
@@ -2585,7 +2726,7 @@ function renderOfficeDetail() {
     </div>
   `;
   root.querySelectorAll('[data-office-unassign]').forEach((button) => {
-    button.addEventListener('click', () => unassignOfficeMercenary(button.dataset.officeUnassign));
+    button.addEventListener('click', () => unassignOfficeMercenary(button.dataset.officeUnassign, button));
   });
 }
 
@@ -2617,7 +2758,7 @@ function renderOfficeRoster() {
     </article>
   `).join('');
   list.querySelectorAll('[data-office-assign]').forEach((button) => {
-    button.addEventListener('click', () => assignOfficeMercenary(button.dataset.officeAssign));
+    button.addEventListener('click', () => assignOfficeMercenary(button.dataset.officeAssign, button));
   });
 }
 
@@ -2638,19 +2779,35 @@ function renderOfficeView() {
   renderOfficeEffectsSummary();
 }
 
-async function assignOfficeMercenary(ownedMercenaryId) {
+async function assignOfficeMercenary(ownedMercenaryId, button = null) {
   const facility = selectedOfficeFacility();
   const slot = (facility?.slots || []).find((item) => !item.assignment);
   if (!facility || !slot) {
     showReadyNotice('빈 사무실 슬롯이 없습니다.');
     return;
   }
+  const actionKey = buildMercenaryActionKey('office-assign', {
+    ownedMercenaryId,
+    facilityKey: facility.key,
+    slotIndex: slot.slotIndex
+  });
   try {
-    const payload = await apiRequest('/api/mercenary/office/assign', {
-      method: 'POST',
-      body: JSON.stringify({ facilityKey: facility.key, slotIndex: slot.slotIndex, ownedMercenaryId }),
-      perfScope: 'mercenary-office-assign'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '배치 중...',
+      task: () => apiRequest('/api/mercenary/office/assign', {
+        method: 'POST',
+        body: JSON.stringify({
+          facilityKey: facility.key,
+          slotIndex: slot.slotIndex,
+          ownedMercenaryId,
+          clientRequestId: createClientRequestId('office-assign')
+        }),
+        perfScope: 'mercenary-office-assign'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     showReadyNotice('용병을 사무실에 배치했습니다.');
     await loadOfficeData();
@@ -2659,14 +2816,24 @@ async function assignOfficeMercenary(ownedMercenaryId) {
   }
 }
 
-async function unassignOfficeMercenary(assignmentId) {
+async function unassignOfficeMercenary(assignmentId, button = null) {
   if (!assignmentId) return;
+  const actionKey = buildMercenaryActionKey('office-unassign', { assignmentId, id: assignmentId });
   try {
-    const payload = await apiRequest('/api/mercenary/office/unassign', {
-      method: 'POST',
-      body: JSON.stringify({ assignmentId }),
-      perfScope: 'mercenary-office-unassign'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '해제 중...',
+      task: () => apiRequest('/api/mercenary/office/unassign', {
+        method: 'POST',
+        body: JSON.stringify({
+          assignmentId,
+          clientRequestId: createClientRequestId('office-unassign')
+        }),
+        perfScope: 'mercenary-office-unassign'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     showReadyNotice('사무실 배치를 해제했습니다.');
     await loadOfficeData();
@@ -2885,10 +3052,10 @@ function renderCaseDetail() {
       </div>
     </div>
   `;
-  document.querySelector('#case-start-button')?.addEventListener('click', startSelectedCase);
-  document.querySelector('#case-step-start-button')?.addEventListener('click', startSelectedCaseStep);
-  document.querySelector('#case-step-claim-button')?.addEventListener('click', claimSelectedCaseStep);
-  document.querySelector('#case-reward-button')?.addEventListener('click', claimSelectedCaseReward);
+  document.querySelector('#case-start-button')?.addEventListener('click', (event) => startSelectedCase(event.currentTarget));
+  document.querySelector('#case-step-start-button')?.addEventListener('click', (event) => startSelectedCaseStep(event.currentTarget));
+  document.querySelector('#case-step-claim-button')?.addEventListener('click', (event) => claimSelectedCaseStep(event.currentTarget));
+  document.querySelector('#case-reward-button')?.addEventListener('click', (event) => claimSelectedCaseReward(event.currentTarget));
 }
 
 function renderCaseDispatch() {
@@ -2956,15 +3123,22 @@ async function refreshSelectedCase() {
   renderCaseView();
 }
 
-async function startSelectedCase() {
+async function startSelectedCase(button = null) {
   const item = selectedCaseSummary();
   if (!item) return;
+  const actionKey = buildMercenaryActionKey('case-start', { caseId: item.caseId, id: item.caseId });
   try {
-    await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/start`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-      perfScope: 'mercenary-case-start'
+    const result = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '시작 중...',
+      task: () => apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/start`, {
+        method: 'POST',
+        body: JSON.stringify({ clientRequestId: createClientRequestId('case-start') }),
+        perfScope: 'mercenary-case-start'
+      })
     });
+    if (!result) return;
     showReadyNotice('사건 파일을 시작했습니다.');
     await refreshSelectedCase();
   } catch (error) {
@@ -2972,7 +3146,7 @@ async function startSelectedCase() {
   }
 }
 
-async function startSelectedCaseStep() {
+async function startSelectedCaseStep(button = null) {
   const item = selectedCaseSummary();
   const step = selectedCaseStep();
   if (!item || !step) return;
@@ -2980,12 +3154,26 @@ async function startSelectedCaseStep() {
     showReadyNotice('파견할 용병을 선택하세요.');
     return;
   }
+  const actionKey = buildMercenaryActionKey('case-step-start', {
+    caseId: item.caseId,
+    stepId: step.stepId,
+    ownedMercenaryIds: caseState.selectedOwnedIds
+  });
   try {
-    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/start`, {
-      method: 'POST',
-      body: JSON.stringify({ ownedMercenaryIds: caseState.selectedOwnedIds }),
-      perfScope: 'mercenary-case-step-start'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '파견 중...',
+      task: () => apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/start`, {
+        method: 'POST',
+        body: JSON.stringify({
+          ownedMercenaryIds: caseState.selectedOwnedIds,
+          clientRequestId: createClientRequestId('case-step-start')
+        }),
+        perfScope: 'mercenary-case-step-start'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     caseState.selectedOwnedIds = [];
     showReadyNotice('사건 단계 의뢰를 시작했습니다.');
@@ -2995,16 +3183,23 @@ async function startSelectedCaseStep() {
   }
 }
 
-async function claimSelectedCaseStep() {
+async function claimSelectedCaseStep(button = null) {
   const item = selectedCaseSummary();
   const step = selectedCaseStep();
   if (!item || !step) return;
+  const actionKey = buildMercenaryActionKey('case-step-claim', { caseId: item.caseId, stepId: step.stepId });
   try {
-    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/claim`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-      perfScope: 'mercenary-case-step-claim'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '수령 중...',
+      task: () => apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/steps/${encodeURIComponent(step.stepId)}/claim`, {
+        method: 'POST',
+        body: JSON.stringify({ clientRequestId: createClientRequestId('case-step-claim') }),
+        perfScope: 'mercenary-case-step-claim'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     showReadyNotice(payload?.result?.status === 'success' ? '사건 단계 결과를 수령했습니다.' : '사건 단계는 실패했지만 다음 단서로 이어졌습니다.');
     await refreshSelectedCase();
@@ -3013,15 +3208,22 @@ async function claimSelectedCaseStep() {
   }
 }
 
-async function claimSelectedCaseReward() {
+async function claimSelectedCaseReward(button = null) {
   const item = selectedCaseSummary();
   if (!item) return;
+  const actionKey = buildMercenaryActionKey('case-reward-claim', { caseId: item.caseId, id: item.caseId });
   try {
-    const payload = await apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/reward/claim`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-      perfScope: 'mercenary-case-reward'
+    const payload = await runLockedMercenaryAction({
+      key: actionKey,
+      button,
+      label: '수령 중...',
+      task: () => apiRequest(`/api/mercenary/cases/${encodeURIComponent(item.caseId)}/reward/claim`, {
+        method: 'POST',
+        body: JSON.stringify({ clientRequestId: createClientRequestId('case-reward') }),
+        perfScope: 'mercenary-case-reward'
+      })
     });
+    if (!payload) return;
     updateMercenaryCurrencyDisplay(payload);
     showReadyNotice(payload.completionText || '사건 최종 보상을 수령했습니다.');
     await refreshSelectedCase();
@@ -3115,7 +3317,7 @@ function bindMissionControls() {
   const startButton = document.querySelector('#mission-start-button');
   if (startButton && startButton.dataset.bound !== 'true') {
     startButton.dataset.bound = 'true';
-    startButton.addEventListener('click', startSelectedMission);
+    startButton.addEventListener('click', () => startSelectedMission(startButton));
   }
   const resultClose = document.querySelector('#mission-result-close');
   if (resultClose && resultClose.dataset.bound !== 'true') {
@@ -4076,16 +4278,26 @@ function recruitErrorMessage(error) {
   return error?.message || '영입 처리에 실패했습니다.';
 }
 
-async function recruitCandidate(candidate) {
+async function recruitCandidate(candidate, button = null) {
   if (!recruitmentState.serverMode) {
     showReadyNotice(`${candidate.name} 영입 기능은 로그인 API 연결 후 사용할 수 있습니다.`);
     return;
   }
-  const payload = await apiRequest('/api/mercenary/recruit-board/hire', {
-    method: 'POST',
-    body: JSON.stringify({ mercenaryId: candidate.id }),
-    perfScope: 'mercenary-recruit'
+  const actionKey = buildMercenaryActionKey('recruit-hire', { mercenaryId: candidate.id, id: candidate.id });
+  const payload = await runLockedMercenaryAction({
+    key: actionKey,
+    button,
+    label: '영입 중...',
+    task: () => apiRequest('/api/mercenary/recruit-board/hire', {
+      method: 'POST',
+      body: JSON.stringify({
+        mercenaryId: candidate.id,
+        clientRequestId: createClientRequestId('recruit-hire')
+      }),
+      perfScope: 'mercenary-recruit'
+    })
   });
+  if (!payload) return;
   applyRecruitBoardPayload(payload);
   renderRecruitmentBoard();
   showReadyNotice(`${candidate.name} 계약이 완료되었습니다. 골드가 차감되었습니다.`);
@@ -4097,8 +4309,9 @@ async function handleRecruitConfirmPrimary() {
 
   if (pending.type === 'hire') {
     const candidate = getRecruitCandidate(pending.id);
+    const primary = document.querySelector('#recruit-confirm-primary');
     try {
-      if (candidate) await recruitCandidate(candidate);
+      if (candidate) await recruitCandidate(candidate, primary);
       closeRecruitConfirm();
       closeRecruitDetail();
     } catch (error) {
@@ -4109,11 +4322,20 @@ async function handleRecruitConfirmPrimary() {
 
   if (pending.type === 'refresh') {
     if (recruitmentState.serverMode) {
+      const primary = document.querySelector('#recruit-confirm-primary');
+      const actionKey = buildMercenaryActionKey('recruit-refresh', { id: getTodayKey() });
       try {
-        const payload = await apiRequest('/api/mercenary/recruit-board/refresh', {
-          method: 'POST',
-          perfScope: 'mercenary-recruit'
+        const payload = await runLockedMercenaryAction({
+          key: actionKey,
+          button: primary,
+          label: '갱신 중...',
+          task: () => apiRequest('/api/mercenary/recruit-board/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ clientRequestId: createClientRequestId('recruit-refresh') }),
+            perfScope: 'mercenary-recruit'
+          })
         });
+        if (!payload) return;
         applyRecruitBoardPayload(payload);
         closeRecruitConfirm();
         renderRecruitmentBoard();

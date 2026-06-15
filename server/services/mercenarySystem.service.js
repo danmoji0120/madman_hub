@@ -1400,13 +1400,17 @@ async function getRecruitBoard(userId) {
 }
 
 async function refreshRecruitBoard(userId) {
-  const board = await ensureTodayBoard(userId);
+  let board = await ensureTodayBoard(userId);
   if (board.refreshCount >= RECRUIT_DAILY_REFRESH_LIMIT) {
     throw httpError(429, '오늘 게시판 갱신 한도를 모두 사용했습니다.', 'recruit_refresh_limit');
   }
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    board = await ensureTodayBoard(userId);
+    if (board.refreshCount >= RECRUIT_DAILY_REFRESH_LIMIT) {
+      throw httpError(429, '오늘 게시판 갱신 한도를 모두 사용했습니다.', 'recruit_refresh_limit');
+    }
     const spent = await spendMercenaryGold(userId, RECRUIT_REFRESH_COST, '용병 채용 게시판 유료 갱신');
     const profile = publicMercenaryProfile(spent.profile);
     const nextCount = board.refreshCount + 1;
@@ -1431,7 +1435,7 @@ async function refreshRecruitBoard(userId) {
 }
 
 async function hireRecruitCandidate(userId, mercenaryId) {
-  const board = await ensureTodayBoard(userId);
+  let board = await ensureTodayBoard(userId);
   if (!board.candidateIds.includes(mercenaryId)) {
     throw httpError(400, '이 후보는 현재 게시판에 없습니다.', 'CANDIDATE_NOT_FOUND');
   }
@@ -1450,6 +1454,16 @@ async function hireRecruitCandidate(userId, mercenaryId) {
   const hireCost = getRecruitCost(mercenary);
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    board = await ensureTodayBoard(userId);
+    if (!board.candidateIds.includes(mercenaryId)) {
+      throw httpError(400, '이 후보는 현재 게시판에 없습니다.', 'CANDIDATE_NOT_FOUND');
+    }
+    if (board.hiredCandidateIds.includes(mercenaryId)) {
+      throw httpError(409, '오늘 게시판의 이 전단은 이미 계약되었습니다.', 'ALREADY_HIRED');
+    }
+    if (isUniqueGrade(mercenary.grade) && await repo.hasOwnedMercenary(userId, mercenary.id)) {
+      throw httpError(409, '이미 보유 중인 고유 용병입니다.', 'ALREADY_OWNED');
+    }
     const spent = await spendMercenaryGold(userId, hireCost, `용병 영입: ${mercenary.name}`);
     const owned = await repo.createUserMercenary({
       userId,
@@ -1522,6 +1536,31 @@ async function assertOwnedMercenariesAvailable(userId, ownedMercenaryIds) {
   }
 
   return selected;
+}
+
+async function lockOwnedMercenaryForActivity(userId, ownedMercenaryId, {
+  operationalStatus,
+  currentActivityType,
+  currentActivityId,
+  fromStatus = 'idle',
+  requireNoActivity = true,
+  errorCode = 'MERCENARY_BUSY',
+  errorMessage = '용병이 이미 다른 작업 중입니다.'
+}) {
+  const updated = await repo.updateUserMercenaryStatusIfCurrent(userId, ownedMercenaryId, {
+    operationalStatus: fromStatus,
+    currentActivityType: requireNoActivity ? null : undefined,
+    currentActivityId: requireNoActivity ? null : undefined,
+    isLocked: false
+  }, {
+    operationalStatus,
+    currentActivityType,
+    currentActivityId
+  });
+  if (!updated) {
+    throw httpError(409, errorMessage, errorCode);
+  }
+  return updated;
 }
 
 async function listMyMercenaries(userId) {
@@ -1607,17 +1646,19 @@ async function assignMercenaryToOffice(userId, payload = {}) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    await lockOwnedMercenaryForActivity(userId, ownedMercenaryId, {
+      operationalStatus: 'office_assigned',
+      currentActivityType: 'office',
+      currentActivityId: facilityKey,
+      errorCode: 'MERCENARY_NOT_IDLE',
+      errorMessage: '대기 중인 용병만 사무실에 배치할 수 있습니다.'
+    });
     const assignment = await repo.createOfficeAssignment({
       id: `office_${randomUUID()}`,
       userId,
       facilityKey,
       slotIndex,
       ownedMercenaryId
-    });
-    await repo.updateUserMercenaryStatus(userId, ownedMercenaryId, {
-      operationalStatus: 'office_assigned',
-      currentActivityType: 'office',
-      currentActivityId: facilityKey
     });
     if (provider === 'sqlite') await run('COMMIT');
     return {
@@ -1650,11 +1691,16 @@ async function unassignMercenaryFromOffice(userId, payload = {}) {
   try {
     const deleted = await repo.deleteOfficeAssignment(userId, assignment.id);
     if (!deleted) throw httpError(404, '사무실 배치를 찾을 수 없습니다.', 'OFFICE_ASSIGNMENT_NOT_FOUND');
-    await repo.updateUserMercenaryStatus(userId, assignment.ownedMercenaryId, {
+    const statusRow = await repo.updateUserMercenaryStatusIfCurrent(userId, assignment.ownedMercenaryId, {
+      operationalStatus: 'office_assigned',
+      currentActivityType: 'office',
+      currentActivityId: assignment.facilityKey
+    }, {
       operationalStatus: 'idle',
       currentActivityType: null,
       currentActivityId: null
     });
+    if (!statusRow) throw httpError(409, '사무실 배치 상태가 아닙니다.', 'INVALID_STATE');
     if (provider === 'sqlite') await run('COMMIT');
     return {
       ok: true,
@@ -2074,7 +2120,10 @@ async function startCaseStepRun(userId, caseId, stepId, payload = {}) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
-    const created = await createDirectMissionRun(userId, mission, memberIds);
+    if (await repo.getRunningCaseStepRun(userId, caseFile.caseId, step.stepId)) {
+      throw httpError(409, '이미 진행 중인 사건 단계입니다.', 'CASE_STEP_ALREADY_RUNNING');
+    }
+    const created = await createDirectMissionRun(userId, mission, memberIds, { inTransaction: true });
     const bridge = await repo.createCaseStepRun({
       id: `case_step_${randomUUID()}`,
       userId,
@@ -2155,6 +2204,18 @@ async function claimCaseReward(userId, caseId) {
   const rewards = caseFile.finalRewards || {};
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    const latestProgress = await repo.getCaseProgress(userId, caseFile.caseId);
+    if (!latestProgress || latestProgress.status !== 'completed' || latestProgress.rewardClaimedAt) {
+      throw httpError(409, '이미 사건 최종 보상을 수령했거나 아직 수령할 수 없습니다.', latestProgress?.rewardClaimedAt ? 'CASE_REWARD_ALREADY_CLAIMED' : 'CASE_REWARD_NOT_READY');
+    }
+    const claimedAt = new Date().toISOString();
+    const updatedProgress = await repo.updateCaseProgress(userId, caseFile.caseId, {
+      status: 'reward_claimed',
+      rewardClaimedAt: claimedAt
+    });
+    if (!updatedProgress || updatedProgress.status !== 'reward_claimed') {
+      throw httpError(409, '이미 사건 최종 보상을 수령했습니다.', 'CASE_REWARD_ALREADY_CLAIMED');
+    }
     const profile = await getOrCreateMercenaryProfile(userId);
     const officeProgress = applyOfficeExpProgress(profile, rewards.officeExp || 0);
     const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
@@ -2162,11 +2223,6 @@ async function claimCaseReward(userId, caseId) {
       officeLevel: officeProgress.officeLevel,
       officeExp: officeProgress.officeExp,
       reputation: Number(profile.reputation || 0) + Number(rewards.officeReputation || 0)
-    });
-    const claimedAt = new Date().toISOString();
-    const updatedProgress = await repo.updateCaseProgress(userId, caseFile.caseId, {
-      status: 'reward_claimed',
-      rewardClaimedAt: claimedAt
     });
     await repo.createRecruitLog({
       userId,
@@ -2294,7 +2350,7 @@ async function buildRunMembers(userId, memberIds) {
   }).filter(Boolean);
 }
 
-async function createDirectMissionRun(userId, mission, memberIds) {
+async function createDirectMissionRun(userId, mission, memberIds, options = {}) {
   const profile = await getOrCreateMercenaryProfile(userId);
   const mercenaryProfile = publicMercenaryProfile(profile);
   const openRuns = await repo.listOpenMercenaryRuns(userId);
@@ -2319,32 +2375,43 @@ async function createDirectMissionRun(userId, mission, memberIds) {
   const runId = `run_${randomUUID()}`;
   const completesAt = new Date(now.getTime() + durationSeconds * 1000);
 
-  const runRow = await repo.createMercenaryRun({
-    id: runId,
-    userId,
-    missionId: mission.missionId,
-    missionTitle: mission.title,
-    selectedMercenaryIds: memberIds,
-    successRate: successPreview.successRate,
-    rewardGold,
-    failureRewardGold: mission.failureRewardGold,
-    officeExp: mission.officeExp,
-    mercenaryExp: mission.mercenaryExp,
-    failureOfficeExp: mission.failureOfficeExp,
-    failureMercenaryExp: mission.failureMercenaryExp,
-    durationSeconds,
-    startedAt: now.toISOString(),
-    completesAt: completesAt.toISOString()
-  });
-  for (const ownedId of memberIds) {
-    await repo.updateUserMercenaryStatus(userId, ownedId, {
-      operationalStatus: 'dispatched',
-      currentActivityType: 'mission',
-      currentActivityId: runId
-    });
-  }
+  const ownsTransaction = provider === 'sqlite' && !options.inTransaction;
+  if (ownsTransaction) await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    for (const ownedId of memberIds) {
+      await lockOwnedMercenaryForActivity(userId, ownedId, {
+        operationalStatus: 'dispatched',
+        currentActivityType: 'mission',
+        currentActivityId: runId,
+        errorCode: 'MERCENARY_NOT_AVAILABLE',
+        errorMessage: '파견할 수 없는 상태의 용병이 포함되어 있습니다.'
+      });
+    }
 
-  return { runRow, members, successPreview, officeEffects, startedAt: now.toISOString() };
+    const runRow = await repo.createMercenaryRun({
+      id: runId,
+      userId,
+      missionId: mission.missionId,
+      missionTitle: mission.title,
+      selectedMercenaryIds: memberIds,
+      successRate: successPreview.successRate,
+      rewardGold,
+      failureRewardGold: mission.failureRewardGold,
+      officeExp: mission.officeExp,
+      mercenaryExp: mission.mercenaryExp,
+      failureOfficeExp: mission.failureOfficeExp,
+      failureMercenaryExp: mission.failureMercenaryExp,
+      durationSeconds,
+      startedAt: now.toISOString(),
+      completesAt: completesAt.toISOString()
+    });
+
+    if (ownsTransaction) await run('COMMIT');
+    return { runRow, members, successPreview, officeEffects, startedAt: now.toISOString() };
+  } catch (error) {
+    if (ownsTransaction) await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
 }
 
 async function listRuns(userId) {
@@ -2428,6 +2495,15 @@ async function startTreatment(userId, ownedMercenaryId) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    await lockOwnedMercenaryForActivity(userId, ownedId, {
+      operationalStatus: 'treating',
+      currentActivityType: 'treatment',
+      currentActivityId: treatmentId,
+      fromStatus: 'injured',
+      requireNoActivity: false,
+      errorCode: 'MERCENARY_NOT_INJURED',
+      errorMessage: '부상 상태인 용병만 치료를 시작할 수 있습니다.'
+    });
     const spent = await spendMercenaryGold(userId, costGold, `의무실 치료: ${master.name}`);
     const treatment = await repo.createTreatment({
       id: treatmentId,
@@ -2437,11 +2513,6 @@ async function startTreatment(userId, ownedMercenaryId) {
       durationSeconds,
       startedAt: now.toISOString(),
       completesAt: completesAt.toISOString()
-    });
-    await repo.updateUserMercenaryStatus(userId, ownedId, {
-      operationalStatus: 'treating',
-      currentActivityType: 'treatment',
-      currentActivityId: treatmentId
     });
     await repo.createRecruitLog({
       userId,
@@ -2489,11 +2560,16 @@ async function claimTreatment(userId, treatmentId) {
   try {
     const claimed = await repo.claimTreatment(userId, id, new Date().toISOString());
     if (!claimed?.claimedAt) throw httpError(409, '이미 치료 완료 처리된 기록입니다.', 'TREATMENT_ALREADY_CLAIMED');
-    const statusRow = await repo.updateUserMercenaryStatus(userId, treatment.ownedMercenaryId, {
+    const statusRow = await repo.updateUserMercenaryStatusIfCurrent(userId, treatment.ownedMercenaryId, {
+      operationalStatus: 'treating',
+      currentActivityType: 'treatment',
+      currentActivityId: id
+    }, {
       operationalStatus: 'idle',
       currentActivityType: null,
       currentActivityId: null
     });
+    if (!statusRow) throw httpError(409, '치료 중 상태인 용병만 복귀할 수 있습니다.', 'MERCENARY_NOT_TREATING');
     if (provider === 'sqlite') await run('COMMIT');
     return {
       ok: true,
@@ -2547,6 +2623,19 @@ async function startMissionRun(userId, payload = {}) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    const accepted = await repo.markMissionOfferAccepted(userId, offer.id, runId, now.toISOString());
+    if (!accepted?.acceptedAt || accepted.acceptedRunId !== runId) {
+      throw httpError(409, '이미 처리된 의뢰 제안입니다.', accepted?.rejectedAt ? 'OFFER_ALREADY_REJECTED' : 'OFFER_ALREADY_ACCEPTED');
+    }
+    for (const ownedId of memberIds) {
+      await lockOwnedMercenaryForActivity(userId, ownedId, {
+        operationalStatus: 'dispatched',
+        currentActivityType: 'mission',
+        currentActivityId: runId,
+        errorCode: 'MERCENARY_NOT_AVAILABLE',
+        errorMessage: '파견할 수 없는 상태의 용병이 포함되어 있습니다.'
+      });
+    }
     const runRow = await repo.createMercenaryRun({
       id: runId,
       userId,
@@ -2564,17 +2653,6 @@ async function startMissionRun(userId, payload = {}) {
       startedAt: now.toISOString(),
       completesAt: completesAt.toISOString()
     });
-    for (const ownedId of memberIds) {
-      await repo.updateUserMercenaryStatus(userId, ownedId, {
-        operationalStatus: 'dispatched',
-        currentActivityType: 'mission',
-        currentActivityId: runId
-      });
-    }
-    const accepted = await repo.markMissionOfferAccepted(userId, offer.id, runId, now.toISOString());
-    if (!accepted?.acceptedAt || accepted.acceptedRunId !== runId) {
-      throw httpError(409, '이미 처리된 의뢰 제안입니다.', accepted?.rejectedAt ? 'OFFER_ALREADY_REJECTED' : 'OFFER_ALREADY_ACCEPTED');
-    }
     await pushMissionOfferRefillIfDue(userId, profile, officeEffects);
     if (provider === 'sqlite') await run('COMMIT');
     return {
@@ -2674,6 +2752,15 @@ async function claimMissionRun(userId, runId) {
 
   if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
   try {
+    const claimed = await repo.claimMercenaryRun(userId, runRow.id, {
+      resultStatus,
+      resultText,
+      claimedAt: new Date().toISOString()
+    });
+    if (!claimed?.claimedAt) {
+      throw httpError(409, '이미 수령한 의뢰 결과입니다.', 'RUN_ALREADY_CLAIMED');
+    }
+
     const profile = await getOrCreateMercenaryProfile(userId);
     const officeProgress = applyOfficeExpProgress(profile, gainedOfficeExp);
     const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
@@ -2693,11 +2780,16 @@ async function claimMissionRun(userId, runId) {
         currentExp: afterProgress.currentExp
       });
       const nextOperationalStatus = !succeeded && injuredOwnedId === String(row.id) ? 'injured' : 'idle';
-      const statusRow = await repo.updateUserMercenaryStatus(userId, row.id, {
+      const statusRow = await repo.updateUserMercenaryStatusIfCurrent(userId, row.id, {
+        operationalStatus: 'dispatched',
+        currentActivityType: 'mission',
+        currentActivityId: runRow.id
+      }, {
         operationalStatus: nextOperationalStatus,
         currentActivityType: null,
         currentActivityId: null
       });
+      if (!statusRow) throw httpError(409, '파견 용병 상태가 변경되어 결과를 수령할 수 없습니다.', 'MERCENARY_NOT_AVAILABLE');
       const afterItem = buildOwnedMercenaryItem(statusRow, master);
       memberResults.push({
         ownedId: row.id,
@@ -2719,11 +2811,6 @@ async function claimMissionRun(userId, runId) {
       });
     }
 
-    const claimed = await repo.claimMercenaryRun(userId, runRow.id, {
-      resultStatus,
-      resultText,
-      claimedAt: new Date().toISOString()
-    });
     if (gainedGold > 0) {
       await repo.createRecruitLog({
         userId,
