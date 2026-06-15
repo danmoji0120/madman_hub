@@ -20,6 +20,59 @@ const mercenaryIcons = {
   point: '18_point.png'
 };
 
+const MERCENARY_BGM_TRACKS = [
+  {
+    id: 'lobby_01',
+    title: '용병 대기실',
+    src: '/assets/mercenary/bgm/lobby_01.mp3'
+  },
+  {
+    id: 'lobby_02',
+    title: '채용 게시판',
+    src: '/assets/mercenary/bgm/lobby_02.mp3'
+  },
+  {
+    id: 'lobby_03',
+    title: '폐급 사무소 야근',
+    src: '/assets/mercenary/bgm/lobby_03.mp3'
+  },
+  {
+    id: 'lobby_04',
+    title: '늦은 의뢰 접수',
+    src: '/assets/mercenary/bgm/lobby_04.mp3'
+  },
+  {
+    id: 'lobby_05',
+    title: '장부와 촛불',
+    src: '/assets/mercenary/bgm/lobby_05.mp3'
+  },
+  {
+    id: 'lobby_06',
+    title: '새벽의 작전 테이블',
+    src: '/assets/mercenary/bgm/lobby_06.mp3'
+  }
+];
+
+const MERCENARY_BGM_STORAGE_KEYS = {
+  enabled: 'mercenary.bgm.enabled',
+  volume: 'mercenary.bgm.volume',
+  mode: 'mercenary.bgm.mode',
+  currentTrackId: 'mercenary.bgm.currentTrackId'
+};
+
+const bgmState = {
+  audio: null,
+  enabled: true,
+  volume: 0.35,
+  mode: 'shuffle',
+  currentTrackId: '',
+  currentTrackIndex: -1,
+  shuffleQueue: [],
+  initialized: false,
+  unlocked: false,
+  failedTrackIds: new Set()
+};
+
 const mercenaryLobbyState = {
   officeName: '폐급 용병단 사무소',
   level: 1,
@@ -509,6 +562,242 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function clampNumber(value, min, max, fallback = min) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.min(max, Math.max(min, number));
+}
+
+function readBgmSettings() {
+  let enabledRaw = null;
+  let volumeRaw = null;
+  let modeRaw = null;
+  let currentTrackId = '';
+  try {
+    enabledRaw = localStorage.getItem(MERCENARY_BGM_STORAGE_KEYS.enabled);
+    volumeRaw = localStorage.getItem(MERCENARY_BGM_STORAGE_KEYS.volume);
+    modeRaw = localStorage.getItem(MERCENARY_BGM_STORAGE_KEYS.mode);
+    currentTrackId = localStorage.getItem(MERCENARY_BGM_STORAGE_KEYS.currentTrackId) || '';
+  } catch (error) {
+    console.warn('[mercenary-bgm] localStorage unavailable:', error);
+  }
+
+  const enabled = enabledRaw === null ? true : enabledRaw === 'true';
+  const volume = clampNumber(volumeRaw, 0, 1, 0.35);
+  const mode = modeRaw === 'sequence' || modeRaw === 'shuffle' ? modeRaw : 'shuffle';
+  const hasSavedTrack = MERCENARY_BGM_TRACKS.some((track) => track.id === currentTrackId);
+
+  return {
+    enabled,
+    volume,
+    mode,
+    currentTrackId: hasSavedTrack ? currentTrackId : ''
+  };
+}
+
+function saveBgmSettings() {
+  try {
+    localStorage.setItem(MERCENARY_BGM_STORAGE_KEYS.enabled, String(Boolean(bgmState.enabled)));
+    localStorage.setItem(MERCENARY_BGM_STORAGE_KEYS.volume, String(bgmState.volume));
+    localStorage.setItem(MERCENARY_BGM_STORAGE_KEYS.mode, bgmState.mode);
+    localStorage.setItem(MERCENARY_BGM_STORAGE_KEYS.currentTrackId, bgmState.currentTrackId || '');
+  } catch (error) {
+    console.warn('[mercenary-bgm] failed to save settings:', error);
+  }
+}
+
+function getAvailableBgmTracks() {
+  return MERCENARY_BGM_TRACKS.filter((track) => (
+    track
+    && track.id
+    && track.src
+    && !bgmState.failedTrackIds.has(track.id)
+  ));
+}
+
+function buildShuffleQueue() {
+  const tracks = getAvailableBgmTracks();
+  if (tracks.length <= 1) {
+    bgmState.shuffleQueue = tracks.map((track) => track.id);
+    return;
+  }
+
+  const ids = tracks.map((track) => track.id);
+  for (let index = ids.length - 1; index > 0; index -= 1) {
+    const nextIndex = Math.floor(Math.random() * (index + 1));
+    [ids[index], ids[nextIndex]] = [ids[nextIndex], ids[index]];
+  }
+
+  if (ids[0] === bgmState.currentTrackId && ids.length > 1) {
+    [ids[0], ids[1]] = [ids[1], ids[0]];
+  }
+
+  bgmState.shuffleQueue = ids;
+}
+
+function getNextBgmTrack() {
+  const tracks = getAvailableBgmTracks();
+  if (!tracks.length) return null;
+
+  if (bgmState.mode === 'sequence') {
+    const currentIndex = tracks.findIndex((track) => track.id === bgmState.currentTrackId);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % tracks.length : 0;
+    return tracks[nextIndex];
+  }
+
+  if (!bgmState.shuffleQueue.length) {
+    buildShuffleQueue();
+  }
+
+  const nextId = bgmState.shuffleQueue.shift();
+  return tracks.find((track) => track.id === nextId) || tracks[0] || null;
+}
+
+function updateBgmCurrentTrackLabel() {
+  const currentTrackLabel = document.querySelector('[data-setting="bgm-current-track"]');
+  if (!currentTrackLabel) return;
+  const track = MERCENARY_BGM_TRACKS.find((item) => item.id === bgmState.currentTrackId);
+  currentTrackLabel.textContent = `현재 재생 중인 곡: ${track ? track.title : '-'}`;
+}
+
+function getMercenaryBgmAudio() {
+  if (bgmState.audio) return bgmState.audio;
+  if (typeof Audio === 'undefined') return null;
+
+  const audio = new Audio();
+  audio.loop = false;
+  audio.preload = 'auto';
+  audio.volume = bgmState.volume;
+
+  audio.addEventListener('ended', () => {
+    if (!bgmState.enabled) return;
+    const nextTrack = getNextBgmTrack();
+    if (nextTrack) playBgmTrack(nextTrack);
+  });
+
+  audio.addEventListener('error', () => {
+    const failedId = bgmState.currentTrackId;
+    if (failedId) bgmState.failedTrackIds.add(failedId);
+    console.warn('[mercenary-bgm] failed to load track:', failedId);
+
+    if (!bgmState.enabled) return;
+    const nextTrack = getNextBgmTrack();
+    if (nextTrack) playBgmTrack(nextTrack);
+  });
+
+  bgmState.audio = audio;
+  return audio;
+}
+
+function loadBgmTrack(track) {
+  const audio = getMercenaryBgmAudio();
+  if (!audio || !track || !track.src) return null;
+  bgmState.currentTrackId = track.id;
+  bgmState.currentTrackIndex = MERCENARY_BGM_TRACKS.findIndex((item) => item.id === track.id);
+  audio.src = track.src;
+  audio.volume = bgmState.volume;
+  saveBgmSettings();
+  updateBgmCurrentTrackLabel();
+  return audio;
+}
+
+function playBgmTrack(track) {
+  if (!track || !track.src || !bgmState.enabled) return;
+  const audio = loadBgmTrack(track);
+  if (!audio) return;
+
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(() => {
+      // Browser autoplay blocking is expected until the first user gesture.
+    });
+  }
+}
+
+function playMercenaryBgmSafely() {
+  if (!bgmState.enabled || !MERCENARY_BGM_TRACKS.length) return;
+  const tracks = getAvailableBgmTracks();
+  if (!tracks.length) return;
+
+  const currentTrack = tracks.find((track) => track.id === bgmState.currentTrackId)
+    || getNextBgmTrack()
+    || tracks[0];
+  playBgmTrack(currentTrack);
+}
+
+function pauseMercenaryBgm() {
+  if (bgmState.audio) {
+    bgmState.audio.pause();
+  }
+}
+
+function unlockMercenaryBgmOnUserGesture() {
+  if (bgmState.unlocked) return;
+  bgmState.unlocked = true;
+  if (bgmState.enabled) playMercenaryBgmSafely();
+}
+
+function bindBgmUnlockEvents() {
+  const pointerOptions = { once: true, passive: true };
+  document.addEventListener('pointerdown', unlockMercenaryBgmOnUserGesture, pointerOptions);
+  document.addEventListener('click', unlockMercenaryBgmOnUserGesture, pointerOptions);
+  document.addEventListener('keydown', unlockMercenaryBgmOnUserGesture, { once: true });
+}
+
+function setMercenaryBgmEnabled(enabled) {
+  bgmState.enabled = Boolean(enabled);
+  saveBgmSettings();
+
+  if (bgmState.enabled) {
+    bgmState.unlocked = true;
+    playMercenaryBgmSafely();
+  } else {
+    pauseMercenaryBgm();
+  }
+}
+
+function setMercenaryBgmVolume(volume) {
+  const nextVolume = clampNumber(volume, 0, 1, 0);
+  bgmState.volume = nextVolume;
+  if (bgmState.audio) {
+    bgmState.audio.volume = nextVolume;
+  }
+  saveBgmSettings();
+}
+
+function setMercenaryBgmMode(mode) {
+  bgmState.mode = mode === 'sequence' ? 'sequence' : 'shuffle';
+  bgmState.shuffleQueue = [];
+  saveBgmSettings();
+}
+
+function initMercenaryBgm() {
+  if (bgmState.initialized) return;
+  bgmState.initialized = true;
+
+  const settings = readBgmSettings();
+  bgmState.enabled = settings.enabled;
+  bgmState.volume = settings.volume;
+  bgmState.mode = settings.mode;
+  bgmState.currentTrackId = settings.currentTrackId;
+
+  getMercenaryBgmAudio();
+  bindBgmUnlockEvents();
+
+  document.addEventListener('visibilitychange', () => {
+    if (!bgmState.audio) return;
+    if (document.hidden) {
+      bgmState.audio.pause();
+      return;
+    }
+    if (bgmState.enabled) playMercenaryBgmSafely();
+  });
+
+  if (bgmState.enabled) {
+    playMercenaryBgmSafely();
+  }
 }
 
 function iconUrl(key) {
@@ -2853,20 +3142,105 @@ function showReadyNotice(message = '준비 중입니다.') {
   }, 1800);
 }
 
+function renderBgmSettingsControls(container) {
+  if (!container) return;
+  const hasTracks = MERCENARY_BGM_TRACKS.length > 0;
+  const currentTrack = MERCENARY_BGM_TRACKS.find((item) => item.id === bgmState.currentTrackId);
+  container.innerHTML = `
+    <section class="setting-section mercenary-bgm-settings">
+      <div class="setting-section-heading">
+        <h3>배경음악</h3>
+        <p>브라우저 정책상 첫 클릭 이후부터 재생됩니다.</p>
+      </div>
+      <label class="setting-row">
+        <span>배경음악</span>
+        <input type="checkbox" data-setting="bgm-enabled" ${bgmState.enabled ? 'checked' : ''} ${hasTracks ? '' : 'disabled'} />
+      </label>
+      <label class="setting-row setting-row-column">
+        <span>음량 <b data-setting="bgm-volume-label">${Math.round(bgmState.volume * 100)}%</b></span>
+        <input type="range" min="0" max="100" step="1" value="${Math.round(bgmState.volume * 100)}" data-setting="bgm-volume" ${hasTracks ? '' : 'disabled'} />
+      </label>
+      <label class="setting-row setting-row-column">
+        <span>재생 방식</span>
+        <select data-setting="bgm-mode" ${hasTracks ? '' : 'disabled'}>
+          <option value="shuffle" ${bgmState.mode === 'shuffle' ? 'selected' : ''}>셔플</option>
+          <option value="sequence" ${bgmState.mode === 'sequence' ? 'selected' : ''}>순서대로</option>
+        </select>
+      </label>
+      <p class="setting-hint" data-setting="bgm-current-track">
+        현재 재생 중인 곡: ${currentTrack ? escapeHtml(currentTrack.title) : '-'}
+      </p>
+      <p class="setting-hint">
+        등록된 곡: ${hasTracks ? MERCENARY_BGM_TRACKS.map((track) => escapeHtml(track.title)).join(' · ') : '없음'}
+      </p>
+    </section>
+  `;
+
+  const enabledInput = container.querySelector('[data-setting="bgm-enabled"]');
+  const volumeInput = container.querySelector('[data-setting="bgm-volume"]');
+  const volumeLabel = container.querySelector('[data-setting="bgm-volume-label"]');
+  const modeInput = container.querySelector('[data-setting="bgm-mode"]');
+
+  enabledInput?.addEventListener('change', () => {
+    setMercenaryBgmEnabled(enabledInput.checked);
+    updateBgmCurrentTrackLabel();
+  });
+
+  volumeInput?.addEventListener('input', () => {
+    const percent = Number(volumeInput.value) || 0;
+    if (volumeLabel) volumeLabel.textContent = `${percent}%`;
+    setMercenaryBgmVolume(percent / 100);
+  });
+
+  modeInput?.addEventListener('change', () => {
+    setMercenaryBgmMode(modeInput.value);
+  });
+}
+
+function openMercenarySettingsModal() {
+  const modal = document.querySelector('#mercenary-settings-modal');
+  const body = document.querySelector('#mercenary-settings-body');
+  if (!modal || !body) return;
+  renderBgmSettingsControls(body);
+  modal.hidden = false;
+}
+
+function closeMercenarySettingsModal() {
+  document.querySelector('#mercenary-settings-modal')?.setAttribute('hidden', '');
+}
+
+function bindMercenarySettingsModal() {
+  const modal = document.querySelector('#mercenary-settings-modal');
+  const closeButton = document.querySelector('#mercenary-settings-close');
+  if (closeButton && closeButton.dataset.bound !== 'true') {
+    closeButton.dataset.bound = 'true';
+    closeButton.addEventListener('click', closeMercenarySettingsModal);
+  }
+  if (modal && modal.dataset.bound !== 'true') {
+    modal.dataset.bound = 'true';
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) closeMercenarySettingsModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeMercenarySettingsModal();
+    });
+  }
+}
+
 function renderTopActions(state) {
   const topActions = document.querySelector('#top-actions');
   if (!topActions) return;
 
   const actions = [
-    { title: '골드', label: `${formatNumber(state.gold)}G`, icon: 'coin', showLabel: true },
-    { title: '포인트', label: `${formatNumber(state.points)}P`, icon: 'point', showLabel: true },
-    { title: '우편', label: state.mailCount ? String(state.mailCount) : '', icon: 'envelope', showLabel: false },
-    { title: '알림', label: String(state.alertCount), icon: 'bell', showLabel: false, badge: state.alertCount },
-    { title: '설정', label: '', icon: 'settings', showLabel: false }
+    { title: '골드', label: `${formatNumber(state.gold)}G`, icon: 'coin', showLabel: true, action: 'ready' },
+    { title: '포인트', label: `${formatNumber(state.points)}P`, icon: 'point', showLabel: true, action: 'ready' },
+    { title: '우편', label: state.mailCount ? String(state.mailCount) : '', icon: 'envelope', showLabel: false, action: 'ready' },
+    { title: '알림', label: String(state.alertCount), icon: 'bell', showLabel: false, badge: state.alertCount, action: 'ready' },
+    { title: '설정', label: '', icon: 'settings', showLabel: false, action: 'settings' }
   ];
 
   topActions.innerHTML = actions.map((action) => `
-    <button class="top-action" type="button" title="${action.title}" aria-label="${action.title}">
+    <button class="top-action" type="button" title="${action.title}" aria-label="${action.title}" data-top-action="${action.action}">
       ${renderIcon(action.icon, 'medium')}
       ${action.showLabel ? `<span>${action.label}</span>` : ''}
       ${action.badge ? `<em class="count-badge">${action.badge}</em>` : ''}
@@ -2874,7 +3248,13 @@ function renderTopActions(state) {
   `).join('');
 
   topActions.querySelectorAll('button').forEach((button) => {
-    button.addEventListener('click', showReadyNotice);
+    button.addEventListener('click', () => {
+      if (button.dataset.topAction === 'settings') {
+        openMercenarySettingsModal();
+        return;
+      }
+      showReadyNotice();
+    });
   });
 }
 
@@ -3924,8 +4304,10 @@ function renderLobby(state) {
 async function initializeMercenaryLobby() {
   bindMercenaryAuthOverlay();
   bindOfficeGrowthPopover();
+  bindMercenarySettingsModal();
   bindOfficeControls();
   bindCaseControls();
+  initMercenaryBgm();
   renderLobby(mercenaryLobbyState);
   document.querySelector('#roster-close-button')?.addEventListener('click', closeMercenaryRoster);
   bindRecruitmentBoard();

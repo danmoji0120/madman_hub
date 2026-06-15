@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=245" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=246" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -429,6 +429,19 @@
       </div>
     </section>
 
+    <section class="settings-overlay" id="mercenary-settings-modal" aria-labelledby="mercenary-settings-title" aria-modal="true" role="dialog" hidden>
+      <article class="settings-panel">
+        <header class="settings-header">
+          <div>
+            <span class="settings-kicker">환경 설정</span>
+            <h2 id="mercenary-settings-title">용병단 설정</h2>
+          </div>
+          <button class="settings-close-button" id="mercenary-settings-close" type="button" aria-label="설정 닫기">닫기</button>
+        </header>
+        <div class="settings-body" id="mercenary-settings-body"></div>
+      </article>
+    </section>
+
     <section class="mercenary-auth-overlay" id="mercenary-auth-overlay" aria-labelledby="mercenary-auth-title" aria-modal="true" role="dialog" hidden>
       <div class="mercenary-auth-modal">
         <button class="mercenary-auth-close" id="mercenary-auth-close" type="button" aria-label="로그인 안내 닫기">×</button>
@@ -448,6 +461,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=245"></script>
+  <script src="/js/mercenary-lobby.js?v=246"></script>
 </body>
 </html>
