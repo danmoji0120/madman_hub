@@ -494,6 +494,13 @@ const squadState = {
   owned: [],
   selectedSlotIndex: 1,
   draft: null,
+  rosterFilters: {
+    search: '',
+    availability: 'all',
+    grade: 'all',
+    role: 'all',
+    sort: 'workPowerDesc'
+  },
   loading: false,
   errorMessage: ''
 };
@@ -1604,18 +1611,120 @@ function renderSquadDetail() {
   });
 }
 
+function getSquadRosterRoleBucket(member) {
+  const text = [
+    member.role,
+    member.job,
+    member.position,
+    ...(Array.isArray(member.tags) ? member.tags : [])
+  ].filter(Boolean).join(' ').toLowerCase();
+  if (/tank|탱|방어|기사|방패/.test(text)) return 'tank';
+  if (/deal|딜|공격|검|사격|마법|암살/.test(text)) return 'dealer';
+  if (/heal|힐|치료|의무|회복|응급/.test(text)) return 'healer';
+  if (/support|지원|보조|정화/.test(text)) return 'support';
+  if (/admin|행정|회계|장부|서류|접수|협상/.test(text)) return 'admin';
+  return 'other';
+}
+
+function getSquadRosterGradeRank(grade) {
+  return ({ EX: 5, SSR: 4, SR: 3, R: 2, N: 1 })[String(grade || '').toUpperCase()] || 0;
+}
+
+function getFilteredSquadRosterMembers() {
+  const filters = squadState.rosterFilters;
+  const selectedIds = new Set(squadState.draft?.ownedMercenaryIds || []);
+  const search = String(filters.search || '').trim().toLowerCase();
+  const filtered = squadState.owned.filter((member) => {
+    const ownedId = getOwnedRosterKey(member);
+    const selected = selectedIds.has(ownedId);
+    const available = member.available !== false;
+    if (search && !String(member.name || '').toLowerCase().includes(search)) return false;
+    if (filters.availability === 'available' && !available) return false;
+    if (filters.availability === 'unavailable' && available) return false;
+    if (filters.availability === 'selected' && !selected) return false;
+    if (filters.grade !== 'all' && String(member.grade || '').toUpperCase() !== filters.grade) return false;
+    if (filters.role !== 'all' && getSquadRosterRoleBucket(member) !== filters.role) return false;
+    return true;
+  });
+  return filtered.sort((a, b) => {
+    if (filters.sort === 'levelDesc') return Number(b.level || 0) - Number(a.level || 0);
+    if (filters.sort === 'gradeDesc') return getSquadRosterGradeRank(b.grade) - getSquadRosterGradeRank(a.grade) || calculateBaseWorkPower(b) - calculateBaseWorkPower(a);
+    if (filters.sort === 'nameAsc') return String(a.name || '').localeCompare(String(b.name || ''), 'ko');
+    return calculateBaseWorkPower(b) - calculateBaseWorkPower(a);
+  });
+}
+
+function renderSquadRosterFilters(totalCount, visibleCount) {
+  const root = document.querySelector('#squad-roster-filterbar');
+  if (!root) return;
+  const filters = squadState.rosterFilters;
+  root.innerHTML = `
+    <label class="squad-roster-search">
+      <span>이름 검색</span>
+      <input type="search" data-squad-roster-filter="search" placeholder="용병 이름" value="${escapeHtml(filters.search)}" />
+    </label>
+    <div class="squad-roster-filter-row">
+      <select data-squad-roster-filter="availability" aria-label="상태 필터">
+        ${[
+    ['all', '상태 전체'],
+    ['available', '사용 가능'],
+    ['unavailable', '사용 불가'],
+    ['selected', '현재 편성됨']
+  ].map(([value, label]) => `<option value="${value}" ${filters.availability === value ? 'selected' : ''}>${label}</option>`).join('')}
+      </select>
+      <select data-squad-roster-filter="grade" aria-label="등급 필터">
+        ${['all', 'N', 'R', 'SR', 'SSR', 'EX'].map((value) => `<option value="${value}" ${filters.grade === value ? 'selected' : ''}>${value === 'all' ? '등급 전체' : value}</option>`).join('')}
+      </select>
+      <select data-squad-roster-filter="role" aria-label="역할 필터">
+        ${[
+    ['all', '역할 전체'],
+    ['tank', '탱커'],
+    ['dealer', '딜러'],
+    ['support', '지원'],
+    ['healer', '힐러'],
+    ['admin', '행정'],
+    ['other', '기타']
+  ].map(([value, label]) => `<option value="${value}" ${filters.role === value ? 'selected' : ''}>${label}</option>`).join('')}
+      </select>
+      <select data-squad-roster-filter="sort" aria-label="정렬">
+        ${[
+    ['workPowerDesc', '작업력 높은순'],
+    ['levelDesc', '레벨 높은순'],
+    ['gradeDesc', '등급 높은순'],
+    ['nameAsc', '이름순']
+  ].map(([value, label]) => `<option value="${value}" ${filters.sort === value ? 'selected' : ''}>${label}</option>`).join('')}
+      </select>
+    </div>
+    <p class="squad-roster-filter-result">표시 ${formatNumber(visibleCount)}명 / 전체 ${formatNumber(totalCount)}명</p>
+  `;
+  root.querySelectorAll('[data-squad-roster-filter]').forEach((control) => {
+    const update = () => {
+      squadState.rosterFilters[control.dataset.squadRosterFilter] = control.value;
+      renderSquadOwnedRoster();
+    };
+    control.addEventListener('input', update);
+    control.addEventListener('change', update);
+  });
+}
+
 function renderSquadOwnedRoster() {
   const roster = document.querySelector('#squad-roster-grid');
   const count = document.querySelector('#squad-roster-count');
   if (!roster) return;
-  if (count) count.textContent = `${squadState.owned.length}명`;
+  const visibleMembers = getFilteredSquadRosterMembers();
+  if (count) count.textContent = `${visibleMembers.length}/${squadState.owned.length}명`;
+  renderSquadRosterFilters(squadState.owned.length, visibleMembers.length);
   if (!squadState.owned.length) {
     roster.innerHTML = '<p class="squad-empty">아직 보유한 용병이 없습니다. 채용 게시판에서 용병을 영입해 보세요.</p>';
     return;
   }
+  if (!visibleMembers.length) {
+    roster.innerHTML = '<p class="squad-empty">조건에 맞는 용병이 없습니다.</p>';
+    return;
+  }
 
   const selectedIds = new Set(squadState.draft?.ownedMercenaryIds || []);
-  roster.innerHTML = squadState.owned.map((member) => {
+  roster.innerHTML = visibleMembers.map((member) => {
     const ownedId = getOwnedRosterKey(member);
     const selected = selectedIds.has(ownedId);
     const unavailable = member.available === false;
@@ -1623,12 +1732,12 @@ function renderSquadOwnedRoster() {
       <article class="squad-roster-card ${getGradeClass(member.grade)} ${selected ? 'is-selected' : ''} ${unavailable ? 'is-unavailable' : ''}" data-owned-id="${escapeHtml(ownedId)}">
         <button type="button" class="squad-add-button" data-squad-add="${escapeHtml(ownedId)}" ${selected || unavailable ? 'disabled' : ''}>${selected ? '✓' : '+'}</button>
         <div class="squad-roster-portrait">${renderImageWithPlaceholder(member, 'squad-roster-portrait-img')}</div>
-        <div>
+        <div class="squad-roster-card-main">
           <span class="merc-grade-badge ${getGradeClass(member.grade)}">${escapeHtml(member.grade)}</span>
           <h4>${escapeHtml(member.name)}</h4>
-          <p>${member.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(member.level)} / ${formatNumber(member.maxLevel)}`} · 작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
-          <p><span class="squad-status-badge status-${escapeHtml(member.operationalStatus || 'idle')}">${escapeHtml(member.statusLabel || member.status)}</span>${member.isLocked ? '<span class="squad-lock-mark">잠금</span>' : ''}</p>
-          ${selected ? '<em>현재 편성됨</em>' : unavailable ? '<em>사용 불가</em>' : ''}
+          <p class="squad-roster-meta">${member.isMaxLevel ? 'Lv.MAX' : `Lv. ${formatNumber(member.level)} / ${formatNumber(member.maxLevel)}`} · 작업력 ${formatNumber(calculateBaseWorkPower(member))}</p>
+          <p class="squad-roster-status-row"><span class="squad-status-badge status-${escapeHtml(member.operationalStatus || 'idle')}">${escapeHtml(member.statusLabel || member.status)}</span>${member.isLocked ? '<span class="squad-lock-mark">잠금</span>' : ''}</p>
+          ${selected ? '<em class="squad-roster-note">현재 편성됨</em>' : unavailable ? '<em class="squad-roster-note">사용 불가</em>' : ''}
         </div>
       </article>
     `;

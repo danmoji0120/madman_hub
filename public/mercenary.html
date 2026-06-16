@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=246" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=247" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -168,10 +168,8 @@
               <h3>보유 용병 목록</h3>
               <span id="squad-roster-count">0명</span>
             </div>
-            <div class="squad-roster-tools">
-              <button type="button" id="squad-filter-button">필터 준비 중</button>
-            </div>
-            <div class="squad-roster-grid" id="squad-roster-grid"></div>
+            <div class="squad-roster-tools squad-roster-filterbar" id="squad-roster-filterbar"></div>
+            <div class="squad-roster-grid squad-roster-list" id="squad-roster-grid"></div>
           </aside>
         </div>
 
@@ -461,6 +459,6 @@
 
   <script src="/js/api.js?v=219"></script>
   <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=246"></script>
+  <script src="/js/mercenary-lobby.js?v=247"></script>
 </body>
 </html>

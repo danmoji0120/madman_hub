@@ -2328,6 +2328,68 @@ body.mission-open {
   padding-right: 4px;
 }
 
+.squad-roster-list,
+.squad-roster-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-content: stretch;
+  gap: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+.squad-roster-list > *,
+.squad-roster-grid > * {
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.squad-roster-filterbar {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+.squad-roster-search {
+  display: grid;
+  gap: 4px;
+  color: rgba(237, 216, 176, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.squad-roster-search input,
+.squad-roster-filter-row select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(151, 111, 59, 0.42);
+  background: rgba(7, 5, 4, 0.78);
+  color: #f5dfb5;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+.squad-roster-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.squad-roster-filter-row select {
+  flex: 1 1 118px;
+  min-width: 0;
+}
+
+.squad-roster-filter-result {
+  margin: 0;
+  color: rgba(238, 219, 185, 0.66);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
 .squad-slot-card {
   width: 100%;
   display: grid;
@@ -2530,12 +2592,16 @@ body.mission-open {
 }
 
 .squad-roster-card {
-  min-height: 104px;
+  min-height: 112px;
+  height: auto;
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 34px 72px 1fr;
-  gap: 9px;
-  align-items: center;
-  padding: 9px;
+  grid-template-columns: 34px 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 .squad-roster-card.is-selected {
@@ -2565,6 +2631,47 @@ body.mission-open {
 .squad-roster-portrait {
   width: 72px;
   height: 86px;
+  align-self: start;
+  pointer-events: none;
+}
+
+.squad-roster-card-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.squad-roster-card-main h4 {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.squad-roster-card-main p,
+.squad-roster-card-main em,
+.squad-roster-meta,
+.squad-roster-note {
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.squad-roster-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.squad-roster-note {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 2px;
+  color: rgba(255, 225, 174, 0.82);
+  font-style: normal;
 }
 
 .squad-status-badge,
