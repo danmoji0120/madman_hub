@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=247" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=285" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -237,6 +237,85 @@
       </div>
     </section>
 
+    <section class="mercenary-battle-view" id="mercenary-battle-view" aria-label="전투 작전판" hidden>
+      <div class="battle-board-scrim" aria-hidden="true"></div>
+      <div class="battle-board-shell">
+        <header class="battle-board-topbar">
+          <div class="battle-board-title">
+            <span class="battle-board-kicker">단발 전투 작전</span>
+            <h2>전투 작전판</h2>
+            <p>5인 전투 파티로 즉시 오토배틀을 관전하는 목업 작전판입니다.</p>
+          </div>
+          <button class="battle-board-close" id="battle-board-close" type="button">닫기</button>
+        </header>
+        <div class="battle-board-layout">
+          <aside class="battle-operation-list-panel" aria-label="전투 작전 목록">
+            <div class="battle-board-panel-heading">
+              <h3>작전 목록</h3>
+              <span id="battle-operation-count">0건</span>
+            </div>
+            <div class="battle-operation-list" id="battle-operation-list"></div>
+          </aside>
+          <section class="battle-operation-detail" aria-label="전투 작전 상세">
+            <div id="battle-operation-detail"></div>
+          </section>
+          <aside class="battle-party-ready-panel" aria-label="출격 파티">
+            <div class="battle-board-panel-heading">
+              <h3>출격 파티</h3>
+              <span>5인 고정</span>
+            </div>
+            <div id="battle-party-readiness"></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="battle-viewer-layer" id="battle-viewer-layer" aria-label="오토배틀 관전" hidden>
+      <article class="battle-viewer-modal">
+        <div id="battle-viewer-content"></div>
+      </article>
+    </section>
+
+    <section class="battle-result-modal-layer" id="battle-result-modal" aria-label="전투 결과" hidden>
+      <div class="battle-result-modal-backdrop" aria-hidden="true"></div>
+      <article class="battle-result-modal-card" id="battle-result-modal-content"></article>
+    </section>
+
+    <section class="battle-party-editor-modal" id="battle-party-editor-modal" aria-label="전투 파티 편성" hidden>
+      <div class="battle-party-editor-scrim" aria-hidden="true"></div>
+      <article class="battle-party-editor">
+        <header class="battle-party-editor-header">
+          <div>
+            <span class="battle-board-kicker">전열 2 / 중열 2 / 후열 1</span>
+            <h2>전투 파티 편성</h2>
+            <p>브라우저 localStorage에만 저장되는 목업 전투 파티입니다.</p>
+          </div>
+          <button type="button" id="battle-party-editor-close">닫기</button>
+        </header>
+        <div class="battle-party-editor-layout">
+          <aside class="battle-party-editor-list-panel" aria-label="저장된 전투 파티">
+            <div class="battle-party-editor-panel-head">
+              <h3>저장된 전투 파티</h3>
+              <button type="button" id="battle-party-new-button">새 전투 파티</button>
+            </div>
+            <div class="battle-party-editor-list" id="battle-party-editor-list"></div>
+          </aside>
+          <section class="battle-party-editor-board-panel" aria-label="전투 진형판">
+            <div id="battle-party-editor-board"></div>
+          </section>
+          <aside class="battle-party-editor-roster-panel" aria-label="전투 편성 보유 용병">
+            <div class="battle-party-editor-panel-head">
+              <h3>보유 용병</h3>
+              <span id="battle-party-roster-count">0명</span>
+            </div>
+            <div class="battle-party-editor-filters" id="battle-party-editor-filters"></div>
+            <div class="battle-party-editor-roster" id="battle-party-editor-roster"></div>
+          </aside>
+        </div>
+        <footer class="battle-party-editor-footer" id="battle-party-editor-footer"></footer>
+      </article>
+    </section>
+
     <section class="mercenary-infirmary-view" id="mercenary-infirmary-view" aria-label="용병단 의무실" hidden>
       <div class="infirmary-background-scrim" aria-hidden="true"></div>
       <div class="infirmary-shell">
@@ -458,7 +537,8 @@
   </main>
 
   <script src="/js/api.js?v=219"></script>
-  <script src="/js/mercenary-data-loader.js?v=221"></script>
-  <script src="/js/mercenary-lobby.js?v=247"></script>
+  <script src="/js/mercenary-data-loader.js?v=285"></script>
+  <script src="/js/mercenary-audio.js?v=285"></script>
+  <script src="/js/mercenary-lobby.js?v=285"></script>
 </body>
 </html>

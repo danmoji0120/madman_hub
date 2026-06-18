@@ -489,6 +489,22 @@ button {
   accent-color: #d69b45;
 }
 
+.audio-test-button {
+  justify-self: start;
+  min-height: 38px;
+  border: 1px solid rgba(220, 178, 86, 0.34);
+  padding: 0 14px;
+  color: #f6ddb0;
+  background: linear-gradient(180deg, rgba(74, 47, 22, 0.88), rgba(24, 17, 10, 0.9));
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.audio-test-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .setting-row select {
   min-height: 38px;
   border: 1px solid rgba(220, 178, 86, 0.28);
@@ -1203,7 +1219,11 @@ body.mission-open {
   color: #b9d9ff;
 }
 
-.merc-status-badge.status-injured {
+.merc-status-badge.status-injured,
+.merc-status-badge.status-injured_light,
+.merc-status-badge.status-injured_heavy,
+.merc-status-badge.status-treatment_required,
+.merc-status-badge.status-incapacitated {
   border-color: rgba(177, 58, 46, 0.48);
   color: #ffb7aa;
 }
@@ -1445,6 +1465,310 @@ body.mission-open {
   color: #fff1c2;
   font-family: "MercTitle", "Malgun Gothic", serif;
   font-size: 19px;
+}
+
+.merc-combat-schema-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.merc-combat-schema-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-combat-schema-card {
+  min-width: 0;
+  border: 1px solid rgba(151, 113, 58, 0.34);
+  padding: 10px;
+  background: rgba(8, 5, 3, 0.28);
+}
+
+.merc-combat-schema-card span,
+.merc-combat-tag-groups span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(224, 194, 138, 0.76);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.merc-combat-schema-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #fff1c2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.merc-combat-schema-card p,
+.merc-combat-schema-card em {
+  display: block;
+  margin: 0;
+  color: rgba(238, 217, 179, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-style: normal;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.merc-combat-schema-card em {
+  margin-top: 4px;
+  color: rgba(255, 209, 116, 0.76);
+  font-size: 12px;
+}
+
+.merc-combat-stat-grid {
+  display: grid;
+}
+
+.merc-combat-stat-grid .merc-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.merc-combat-tag-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-combat-tag-groups div {
+  min-width: 0;
+  border: 1px solid rgba(151, 113, 58, 0.28);
+  padding: 9px;
+  background: rgba(218, 184, 119, 0.06);
+}
+
+.merc-combat-tag-groups p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+}
+
+.merc-combat-tag-groups p span {
+  border: 1px solid rgba(214, 171, 82, 0.25);
+  padding: 3px 7px;
+  color: rgba(246, 226, 185, 0.84);
+  background: rgba(10, 7, 5, 0.46);
+  font-size: 12px;
+}
+
+.merc-combat-tag-groups p span.is-muted {
+  border-style: dashed;
+  color: rgba(224, 194, 138, 0.54);
+}
+
+.merc-detail-summary {
+  align-items: center;
+}
+
+.merc-detail-current-stats,
+.merc-detail-combat-panel,
+.merc-detail-skill-list,
+.merc-detail-secondary-stats,
+.merc-detail-operation-panel,
+.merc-detail-tag-group {
+  display: grid;
+  gap: 10px;
+}
+
+.merc-detail-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-detail-stat-grid.is-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.merc-detail-stat-card {
+  min-width: 0;
+  border: 1px solid rgba(214, 171, 82, 0.28);
+  padding: 10px 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 233, 172, 0.08), rgba(8, 5, 3, 0.28)),
+    rgba(17, 11, 7, 0.52);
+}
+
+.merc-detail-stat-card span,
+.merc-detail-combat-grid span,
+.merc-detail-skill-card span,
+.merc-detail-tag-grid > div > span,
+.merc-detail-breakdown-row strong,
+.merc-detail-dev-grid span,
+.merc-detail-secondary-stats .section-row-title span,
+.merc-detail-operation-panel .section-row-title span,
+.merc-detail-tag-group .section-row-title span,
+.merc-detail-skill-list .section-row-title span {
+  color: rgba(224, 194, 138, 0.76);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.merc-detail-stat-card strong {
+  display: block;
+  margin-top: 3px;
+  color: #fff1c2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.merc-detail-stat-card em {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 209, 116, 0.7);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.merc-detail-combat-grid,
+.merc-detail-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-detail-combat-grid > div,
+.merc-detail-skill-card {
+  min-width: 0;
+  border: 1px solid rgba(151, 113, 58, 0.3);
+  padding: 10px;
+  background: rgba(8, 5, 3, 0.25);
+}
+
+.merc-detail-combat-grid > div.is-wide {
+  grid-column: 1 / -1;
+}
+
+.merc-detail-combat-grid strong,
+.merc-detail-skill-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff1c2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.merc-detail-skill-card p {
+  margin: 6px 0 8px;
+  color: rgba(238, 217, 179, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.merc-detail-status-chip,
+.merc-detail-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  border: 1px solid rgba(214, 171, 82, 0.28);
+  padding: 3px 7px;
+  color: rgba(246, 226, 185, 0.88);
+  background: rgba(10, 7, 5, 0.48);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.merc-detail-status-chip.is-muted,
+.merc-detail-tag-chip.is-muted,
+.merc-detail-tag-chip.is-more {
+  border-style: dashed;
+  color: rgba(224, 194, 138, 0.58);
+}
+
+.merc-detail-tag-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.merc-detail-tag-grid > div {
+  min-width: 0;
+  border: 1px solid rgba(151, 113, 58, 0.24);
+  padding: 9px;
+  background: rgba(218, 184, 119, 0.05);
+}
+
+.merc-detail-tag-grid p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 6px 0 0;
+}
+
+.merc-detail-collapsible {
+  border: 1px solid rgba(151, 113, 58, 0.3);
+  padding: 9px 10px;
+  background: rgba(8, 5, 3, 0.22);
+}
+
+.merc-detail-collapsible summary {
+  cursor: pointer;
+  color: #ffe6aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.merc-detail-breakdown,
+.merc-detail-dev-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.merc-detail-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.9fr) repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  align-items: center;
+  border-top: 1px solid rgba(214, 171, 82, 0.12);
+  padding-top: 7px;
+}
+
+.merc-detail-breakdown-row span {
+  color: rgba(238, 217, 179, 0.82);
+  font-family: "MercText", "Malgun Gothic", serif;
+  font-size: 12px;
+}
+
+.merc-detail-breakdown-row.is-current span,
+.merc-detail-breakdown-row.is-current strong {
+  color: #fff1c2;
+}
+
+.merc-detail-breakdown-row.is-muted {
+  opacity: 0.68;
+}
+
+.merc-detail-dev-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.merc-detail-dev-grid > div {
+  min-width: 0;
+}
+
+.merc-detail-dev-grid > div.is-wide {
+  grid-column: 1 / -1;
+}
+
+.merc-detail-dev-grid code {
+  display: block;
+  margin-top: 4px;
+  color: rgba(238, 217, 179, 0.84);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .merc-bonus-grid {
@@ -2692,7 +3016,11 @@ body.mission-open {
 }
 
 .squad-status-badge.status-dispatched,
-.squad-status-badge.status-injured {
+.squad-status-badge.status-injured,
+.squad-status-badge.status-injured_light,
+.squad-status-badge.status-injured_heavy,
+.squad-status-badge.status-treatment_required,
+.squad-status-badge.status-incapacitated {
   background: rgba(132, 35, 28, 0.82);
   color: #ffd4ca;
 }
@@ -2970,6 +3298,94 @@ body.mission-open {
 
 .mission-growth-milestones p.is-locked {
   opacity: 0.72;
+}
+
+.merc-growth-summary {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.merc-growth-head {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.7fr) minmax(0, 1.3fr);
+  gap: 8px;
+}
+
+.merc-growth-head > div,
+.merc-growth-office,
+.merc-growth-merc-card {
+  min-width: 0;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  border-radius: 8px;
+  background: rgba(9, 7, 5, 0.58);
+}
+
+.merc-growth-head > div,
+.merc-growth-office {
+  display: grid;
+  gap: 3px;
+  padding: 9px 10px;
+}
+
+.merc-growth-summary span,
+.merc-growth-summary em,
+.merc-growth-summary p {
+  color: rgba(245, 223, 186, 0.76);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.merc-growth-summary strong {
+  color: #ffe2a4;
+  overflow-wrap: anywhere;
+}
+
+.merc-growth-levelup {
+  border-color: rgba(255, 209, 122, 0.58);
+  box-shadow: inset 0 0 18px rgba(206, 137, 45, 0.12);
+}
+
+.merc-growth-merc-list {
+  display: grid;
+  gap: 8px;
+}
+
+.merc-growth-merc-card {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+}
+
+.merc-growth-merc-card > div:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.merc-growth-stat-delta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.merc-growth-stat-up {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(128, 181, 111, 0.35);
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #c9f0bd;
+  background: rgba(44, 101, 52, 0.22);
+  white-space: nowrap;
+}
+
+.merc-growth-stat-up.is-muted {
+  border-color: rgba(214, 168, 93, 0.22);
+  color: rgba(245, 223, 186, 0.62);
+  background: rgba(255, 224, 158, 0.06);
 }
 
 .mission-board-state strong {
@@ -3273,6 +3689,2299 @@ body.mission-open {
 
 .mission-injury-alert button {
   justify-self: start;
+}
+
+body.battle-board-open {
+  overflow: hidden;
+}
+
+.mercenary-battle-view,
+.battle-viewer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 34;
+  display: grid;
+  place-items: center;
+  padding: 10px;
+}
+
+.mercenary-battle-view[hidden],
+.battle-viewer-layer[hidden] {
+  display: none;
+}
+
+.battle-result-modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 68;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.battle-result-modal-layer[hidden] {
+  display: none;
+}
+
+.battle-result-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 3, 2, 0.78);
+  backdrop-filter: blur(3px);
+}
+
+.battle-result-modal-card {
+  position: relative;
+  width: min(920px, 96vw);
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(224, 174, 91, 0.55);
+  background:
+    linear-gradient(180deg, rgba(29, 18, 10, 0.98), rgba(7, 6, 5, 0.98)),
+    radial-gradient(circle at 50% 0, rgba(151, 92, 35, 0.24), transparent 58%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+  color: rgba(237, 216, 176, 0.84);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.battle-board-scrim,
+.battle-viewer-layer {
+  background:
+    radial-gradient(circle at center, rgba(81, 42, 25, 0.2), transparent 48%),
+    rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.battle-board-scrim {
+  position: absolute;
+  inset: 0;
+}
+
+.battle-result-modal-header {
+  padding: 16px;
+  border: 1px solid rgba(214, 168, 93, 0.36);
+  background: rgba(11, 8, 5, 0.62);
+}
+
+.battle-result-modal-header.is-victory {
+  border-color: rgba(246, 198, 99, 0.72);
+}
+
+.battle-result-modal-header.is-defeat {
+  border-color: rgba(217, 95, 79, 0.72);
+}
+
+.battle-result-modal-header span,
+.battle-result-modal-section h3,
+.battle-result-modal-summary strong {
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-result-modal-header h2 {
+  margin: 4px 0;
+  color: #fff0c5;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: clamp(32px, 6vw, 62px);
+  letter-spacing: 0;
+}
+
+.battle-result-modal-header p,
+.battle-result-modal-header em,
+.battle-result-modal-section p,
+.battle-result-settlement,
+.battle-result-injury-list em {
+  margin: 0;
+  color: rgba(237, 216, 176, 0.78);
+}
+
+.battle-result-modal-summary,
+.battle-result-reward-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.battle-result-modal-section {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(151, 111, 59, 0.32);
+  background: rgba(11, 8, 5, 0.5);
+}
+
+.battle-result-modal-section h3 {
+  margin: 0;
+}
+
+.battle-result-reward-grid div,
+.battle-result-modal-summary .merc-battle-report-card {
+  padding: 10px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(65, 39, 17, 0.42);
+}
+
+.battle-result-reward-grid span,
+.battle-result-modal-summary span {
+  color: rgba(231, 209, 171, 0.7);
+}
+
+.battle-result-reward-grid strong {
+  display: block;
+  margin-top: 2px;
+  color: #ffe5aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-result-settlement.is-error {
+  color: #ffb1a4;
+}
+
+.battle-result-injury-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.battle-result-injury-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  padding: 9px;
+  border: 1px solid rgba(214, 168, 93, 0.24);
+  background: rgba(24, 16, 10, 0.62);
+}
+
+.battle-result-injury-list em,
+.battle-result-injury-list small {
+  grid-column: 1 / -1;
+}
+
+.battle-result-injury-list small,
+.battle-result-injury-empty {
+  color: #c8f0b4;
+}
+
+.battle-result-modal-summary.is-compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.battle-result-detail-report,
+.battle-result-detail-section {
+  display: grid;
+  gap: 10px;
+}
+
+.battle-result-detail-section h4 {
+  margin: 0;
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-result-unit-record-grid,
+.battle-result-record-list {
+  display: grid;
+  gap: 8px;
+}
+
+.battle-result-unit-record-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.battle-result-unit-record,
+.battle-result-record-row {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(214, 168, 93, 0.24);
+  background: rgba(24, 16, 10, 0.62);
+}
+
+.battle-result-unit-record.is-knocked-out {
+  opacity: 0.78;
+  background: rgba(17, 14, 13, 0.7);
+}
+
+.battle-result-unit-record header {
+  display: grid;
+  gap: 2px;
+}
+
+.battle-result-unit-record strong,
+.battle-result-record-row strong {
+  color: #ffe5aa;
+}
+
+.battle-result-unit-record em,
+.battle-result-record-row em,
+.battle-result-record-row span,
+.battle-result-record-row p {
+  margin: 0;
+  color: rgba(237, 216, 176, 0.75);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.battle-result-unit-record dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.battle-result-unit-record dl div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.battle-result-unit-record dt {
+  color: rgba(231, 209, 171, 0.64);
+}
+
+.battle-result-unit-record dd {
+  margin: 0;
+  color: #f6d89e;
+}
+
+.battle-result-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+}
+
+.battle-result-chip-list span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 7px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(69, 43, 20, 0.48);
+  color: rgba(246, 216, 158, 0.88);
+}
+
+.battle-operation-empty {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(16, 10, 6, 0.62);
+}
+
+.battle-operation-empty strong,
+.battle-operation-empty h3 {
+  color: #ffe2a2;
+}
+
+.battle-operation-empty p,
+.battle-operation-empty em {
+  margin: 0;
+  color: rgba(237, 216, 176, 0.74);
+}
+
+.battle-operation-empty button {
+  justify-self: start;
+  min-height: 34px;
+  border: 1px solid rgba(214, 168, 93, 0.38);
+  background: rgba(68, 43, 20, 0.75);
+  color: #f6d89e;
+  cursor: pointer;
+}
+
+.battle-result-log-details {
+  border: 1px solid rgba(151, 111, 59, 0.28);
+  padding: 10px;
+  background: rgba(6, 5, 4, 0.5);
+}
+
+.battle-result-log-details summary {
+  cursor: pointer;
+  color: #f6d89e;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-result-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.battle-result-modal-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(214, 168, 93, 0.4);
+  background: linear-gradient(180deg, rgba(68, 43, 20, 0.9), rgba(23, 15, 9, 0.95));
+  color: #f6d89e;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.battle-result-modal-actions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.battle-board-shell,
+.battle-viewer-modal {
+  position: relative;
+  border: 1px solid rgba(214, 168, 93, 0.44);
+  background:
+    linear-gradient(180deg, rgba(22, 15, 10, 0.96), rgba(6, 5, 4, 0.97)),
+    rgba(10, 7, 5, 0.94);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 235, 180, 0.06),
+    0 24px 70px rgba(0, 0, 0, 0.72);
+  color: #f4dfb4;
+}
+
+.battle-board-shell {
+  width: min(98vw, 1640px);
+  height: min(94vh, 900px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.battle-board-topbar,
+.battle-board-panel-heading,
+.battle-viewer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.battle-board-title h2,
+.battle-operation-brief h3,
+.battle-board-panel-heading h3,
+.battle-viewer-topbar h3 {
+  margin: 0;
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-board-title h2 {
+  font-size: 34px;
+}
+
+.battle-board-title p,
+.battle-board-kicker,
+.battle-board-panel-heading span,
+.battle-board-note,
+.battle-operation-copy,
+.battle-operation-card,
+.battle-party-slot,
+.battle-viewer-topbar p,
+.battle-viewer-log,
+.battle-viewer-loot {
+  color: rgba(237, 216, 176, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.battle-board-kicker {
+  display: block;
+  color: rgba(210, 161, 91, 0.9);
+  letter-spacing: 0.04em;
+}
+
+.battle-board-close,
+.battle-party-actions button,
+.battle-viewer-controls button,
+.battle-viewer-loot button {
+  min-height: 36px;
+  border: 1px solid rgba(214, 168, 93, 0.4);
+  background: linear-gradient(180deg, rgba(68, 43, 20, 0.9), rgba(23, 15, 9, 0.95));
+  color: #f6d89e;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.battle-party-actions button:disabled,
+.battle-viewer-loot button:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+.battle-board-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(520px, 1fr) 340px;
+  gap: 12px;
+}
+
+.battle-operation-list-panel,
+.battle-operation-detail,
+.battle-party-ready-panel {
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid rgba(151, 111, 59, 0.48);
+  background:
+    linear-gradient(180deg, rgba(20, 13, 8, 0.9), rgba(7, 6, 5, 0.9)),
+    radial-gradient(circle at 50% 0, rgba(114, 73, 35, 0.16), transparent 55%);
+}
+
+.battle-operation-list-panel,
+.battle-party-ready-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.battle-operation-list,
+.battle-party-lanes {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.battle-operation-card {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(155, 112, 62, 0.38);
+  background: linear-gradient(180deg, rgba(36, 25, 15, 0.92), rgba(14, 10, 7, 0.95));
+  text-align: left;
+  cursor: pointer;
+}
+
+.battle-operation-card.is-selected {
+  border-color: rgba(239, 190, 96, 0.82);
+  box-shadow: 0 0 18px rgba(221, 160, 67, 0.28);
+}
+
+.battle-operation-card strong,
+.battlefield-enemy-card strong,
+.battle-party-lane > strong,
+.battle-party-slot b,
+.battle-viewer-unit strong {
+  color: #ffe6ae;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-operation-card span {
+  width: fit-content;
+  padding: 2px 7px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(65, 39, 17, 0.74);
+  color: #ffd89b;
+}
+
+.battle-operation-brief {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(280px, 1fr) auto;
+  gap: 12px;
+}
+
+.battlefield-preview,
+.battle-viewer-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(151, 111, 59, 0.42);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.54)),
+    var(--battle-bg, radial-gradient(circle, rgba(110, 72, 38, 0.35), rgba(5, 4, 3, 0.96))) center / cover no-repeat;
+}
+
+.battlefield-enemy-row {
+  position: absolute;
+  inset: auto 16px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.battlefield-enemy-card {
+  width: 112px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid rgba(214, 168, 93, 0.26);
+  background: rgba(10, 7, 5, 0.72);
+  text-align: center;
+}
+
+.battlefield-enemy-card img {
+  width: 72px;
+  height: 78px;
+  object-fit: contain;
+}
+
+.battle-operation-copy,
+.battle-party-ready-panel #battle-party-readiness {
+  display: grid;
+  gap: 10px;
+}
+
+.battle-operation-copy p,
+.battle-viewer-log p,
+.battle-viewer-loot p {
+  margin: 0 0 4px;
+}
+
+.battle-operation-copy dl,
+.battle-power-summary,
+.battle-party-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.battle-operation-copy dl div,
+.battle-power-summary div,
+.battle-party-summary div {
+  padding: 9px;
+  border: 1px solid rgba(151, 111, 59, 0.32);
+  background: rgba(11, 8, 5, 0.58);
+}
+
+.battle-operation-copy dt,
+.battle-power-summary dt,
+.battle-party-summary span {
+  color: rgba(231, 209, 171, 0.68);
+  font-size: 12px;
+}
+
+.battle-operation-copy dd,
+.battle-power-summary dd,
+.battle-party-summary strong {
+  margin: 3px 0 0;
+  color: #ffe5aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-reward-preview,
+.battle-viewer-loot div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.battle-reward-preview span,
+.battle-viewer-loot span {
+  padding: 4px 8px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(65, 39, 17, 0.66);
+}
+
+.battle-operation-copy .battle-reward-preview {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(151, 111, 59, 0.32);
+  background: rgba(11, 8, 5, 0.5);
+}
+
+.battle-operation-copy .battle-reward-preview h4 {
+  margin: 0;
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-operation-copy .battle-reward-preview ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.battle-operation-copy .battle-reward-preview li {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(65, 39, 17, 0.42);
+}
+
+.battle-operation-copy .battle-reward-preview li span,
+.battle-operation-copy .battle-reward-preview small,
+.battle-reward-extra {
+  color: rgba(231, 209, 171, 0.7);
+}
+
+.battle-operation-copy .battle-reward-preview li strong {
+  color: #ffe5aa;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-party-lane,
+.battle-party-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.battle-party-slot-row {
+  display: grid;
+  gap: 6px;
+}
+
+.battle-party-slot {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(139, 101, 55, 0.42);
+  background: rgba(12, 8, 5, 0.74);
+}
+
+.battle-party-slot.is-empty {
+  display: grid;
+  grid-template-columns: 1fr;
+  place-items: center;
+  border-style: dashed;
+}
+
+.battle-party-slot.is-unavailable {
+  opacity: 0.6;
+}
+
+.battle-party-portrait {
+  width: 54px;
+  height: 64px;
+  overflow: hidden;
+}
+
+.battle-party-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.battle-party-slot span,
+.battle-party-slot em {
+  display: block;
+  font-size: 12px;
+}
+
+.battle-board-note {
+  margin: 0;
+  font-size: 12px;
+}
+
+.battle-viewer-modal {
+  width: min(96vw, 1500px);
+  height: 92vh;
+  max-height: 92vh;
+  overflow: visible;
+}
+
+#battle-viewer-content,
+.battle-viewer-shell {
+  height: 100%;
+}
+
+.battle-viewer-shell {
+  display: grid;
+  grid-template-rows: minmax(48px, auto) minmax(520px, 1fr) 154px;
+  gap: 8px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.battle-viewer-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.battle-viewer-controls button.is-active {
+  border-color: rgba(246, 206, 120, 0.78);
+  background: rgba(105, 62, 19, 0.86);
+}
+
+.battle-viewer-stage {
+  position: relative;
+  isolation: isolate;
+  min-height: 0;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(229, 181, 100, 0.34);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(244, 188, 89, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(255, 230, 168, 0.04), rgba(12, 7, 5, 0.18)),
+    var(--battle-bg, linear-gradient(135deg, #24160f, #0a0706));
+  background-size: cover;
+  background-position: center;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.22), 0 18px 42px rgba(0, 0, 0, 0.42);
+}
+
+.battlefield-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background:
+    linear-gradient(180deg, rgba(255, 231, 176, 0.06), rgba(0, 0, 0, 0.1)),
+    radial-gradient(circle at 50% 24%, rgba(255, 224, 142, 0.14), transparent 30%),
+    radial-gradient(circle at 24% 82%, rgba(167, 82, 34, 0.12), transparent 28%);
+}
+
+.battlefield-depth-line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 24%;
+  z-index: -1;
+  height: 28%;
+  border-radius: 999px 999px 34px 34px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 220, 140, 0.18), transparent 66%),
+    linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.12));
+  transform: perspective(520px) rotateX(68deg);
+  filter: blur(0.2px);
+  opacity: 0.9;
+}
+
+.battle-viewer-row {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  pointer-events: none;
+}
+
+.battle-viewer-row-enemy {
+  z-index: 2;
+}
+
+.battle-viewer-row-ally {
+  z-index: 5;
+}
+
+.battle-viewer-unit {
+  --unit-x: 50%;
+  --unit-y: 50%;
+  --unit-scale: 1;
+  --unit-z: 20;
+  --sprite-shift: 0px;
+  --nameplate-bottom: 0px;
+  --nameplate-scale: 1;
+  position: absolute;
+  left: var(--unit-x);
+  top: var(--unit-y);
+  width: 178px;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.52));
+  transform: translate(-50%, -50%) scale(var(--unit-scale));
+  transform-origin: center bottom;
+  transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+  overflow: visible;
+  pointer-events: none;
+  z-index: var(--unit-z);
+}
+
+.battle-viewer-unit.is-ally {
+  width: 202px;
+  min-height: 340px;
+  padding-bottom: 108px;
+}
+
+.battle-viewer-unit.is-enemy {
+  width: 174px;
+}
+
+.battle-viewer-row-ally .battle-viewer-unit[data-slot="front_1"] {
+  --unit-x: 44%;
+  --unit-y: 61%;
+  --unit-scale: 1.14;
+  --unit-z: 40;
+  --sprite-shift: 28px;
+  --nameplate-bottom: 54px;
+  --nameplate-scale: 0.84;
+}
+
+.battle-viewer-row-ally .battle-viewer-unit[data-slot="front_2"] {
+  --unit-x: 56%;
+  --unit-y: 61%;
+  --unit-scale: 1.14;
+  --unit-z: 40;
+  --sprite-shift: 28px;
+  --nameplate-bottom: 54px;
+  --nameplate-scale: 0.84;
+}
+
+.battle-viewer-row-ally .battle-viewer-unit[data-slot="middle_1"] {
+  --unit-x: 30%;
+  --unit-y: 75%;
+  --unit-scale: 1.3;
+  --unit-z: 50;
+  --sprite-shift: 66px;
+  --nameplate-bottom: 92px;
+  --nameplate-scale: 0.76;
+}
+
+.battle-viewer-row-ally .battle-viewer-unit[data-slot="middle_2"] {
+  --unit-x: 70%;
+  --unit-y: 75%;
+  --unit-scale: 1.3;
+  --unit-z: 50;
+  --sprite-shift: 66px;
+  --nameplate-bottom: 92px;
+  --nameplate-scale: 0.76;
+}
+
+.battle-viewer-row-ally .battle-viewer-unit[data-slot="back_1"] {
+  --unit-x: 50%;
+  --unit-y: 88%;
+  --unit-scale: 1.44;
+  --unit-z: 60;
+  --sprite-shift: 100px;
+  --nameplate-bottom: 132px;
+  --nameplate-scale: 0.72;
+}
+
+.battle-viewer-row-enemy .battle-viewer-unit {
+  --unit-y: 28%;
+  --unit-scale: 0.96;
+  --unit-z: 20;
+}
+
+.battle-viewer-row-enemy[data-pattern="single_boss"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 50%;
+  --unit-y: 24%;
+  --unit-scale: 1.02;
+  --unit-z: 22;
+}
+
+.battle-viewer-row-enemy[data-pattern="swarm"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 35%;
+  --unit-y: 14%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="swarm"] .battle-viewer-unit:nth-child(2) {
+  --unit-x: 50%;
+  --unit-y: 12%;
+  --unit-scale: 0.78;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="swarm"] .battle-viewer-unit:nth-child(3) {
+  --unit-x: 65%;
+  --unit-y: 14%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="swarm"] .battle-viewer-unit:nth-child(4) {
+  --unit-x: 43%;
+  --unit-y: 31%;
+  --unit-scale: 1.02;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="swarm"] .battle-viewer-unit:nth-child(5) {
+  --unit-x: 57%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="vanguard"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 42%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="vanguard"] .battle-viewer-unit:nth-child(2) {
+  --unit-x: 58%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="vanguard"] .battle-viewer-unit:nth-child(3) {
+  --unit-x: 50%;
+  --unit-y: 21%;
+  --unit-scale: 0.9;
+  --unit-z: 20;
+}
+
+.battle-viewer-row-enemy[data-pattern="backline_support"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 43%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="backline_support"] .battle-viewer-unit:nth-child(2) {
+  --unit-x: 57%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="backline_support"] .battle-viewer-unit:nth-child(3) {
+  --unit-x: 46%;
+  --unit-y: 13%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="backline_support"] .battle-viewer-unit:nth-child(4) {
+  --unit-x: 60%;
+  --unit-y: 20%;
+  --unit-scale: 0.88;
+  --unit-z: 20;
+}
+
+.battle-viewer-row-enemy[data-pattern="flank"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 31%;
+  --unit-y: 22%;
+  --unit-scale: 0.92;
+  --unit-z: 20;
+}
+
+.battle-viewer-row-enemy[data-pattern="flank"] .battle-viewer-unit:nth-child(2) {
+  --unit-x: 69%;
+  --unit-y: 22%;
+  --unit-scale: 0.92;
+  --unit-z: 20;
+}
+
+.battle-viewer-row-enemy[data-pattern="flank"] .battle-viewer-unit:nth-child(3) {
+  --unit-x: 50%;
+  --unit-y: 13%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="flank"] .battle-viewer-unit:nth-child(4) {
+  --unit-x: 40%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="flank"] .battle-viewer-unit:nth-child(5) {
+  --unit-x: 60%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="boss_minions"] .battle-viewer-unit:nth-child(1) {
+  --unit-x: 36%;
+  --unit-y: 13%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battle-viewer-row-enemy[data-pattern="boss_minions"] .battle-viewer-unit:nth-child(2) {
+  --unit-x: 40%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="boss_minions"] .battle-viewer-unit:nth-child(3) {
+  --unit-x: 60%;
+  --unit-y: 32%;
+  --unit-scale: 1.04;
+  --unit-z: 30;
+}
+
+.battle-viewer-row-enemy[data-pattern="boss_minions"] .battle-viewer-unit:nth-child(4) {
+  --unit-x: 50%;
+  --unit-y: 24%;
+  --unit-scale: 1.06;
+  --unit-z: 24;
+}
+
+.battle-viewer-row-enemy[data-pattern="boss_minions"] .battle-viewer-unit:nth-child(5) {
+  --unit-x: 64%;
+  --unit-y: 14%;
+  --unit-scale: 0.8;
+  --unit-z: 10;
+}
+
+.battlefield-unit-sprite {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  min-height: 168px;
+  transition: transform 0.18s ease, filter 0.18s ease;
+  overflow: visible;
+}
+
+.battlefield-unit-sprite::after {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 72%;
+  height: 18px;
+  content: "";
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.42), transparent 68%);
+  transform: translateX(-50%);
+  z-index: -1;
+}
+
+.battle-viewer-unit.is-hit {
+  animation: battleUnitHitShake 0.28s ease both;
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.52)) brightness(1.25);
+}
+
+.battle-viewer-unit.is-hit .battlefield-unit-sprite {
+  animation: battleUnitFlash 0.32s ease both;
+}
+
+.battle-viewer-unit.is-acting {
+  filter: drop-shadow(0 0 18px rgba(248, 207, 108, 0.58)) drop-shadow(0 18px 18px rgba(0, 0, 0, 0.52));
+}
+
+.battle-viewer-unit.is-acting .battlefield-unit-sprite {
+  animation: battleUnitAct 0.62s ease both;
+}
+
+.battle-viewer-unit.is-ally.is-acting .battlefield-unit-sprite {
+  animation: battleUnitActForeground 0.62s ease both;
+}
+
+.battle-viewer-unit.is-healed {
+  filter: drop-shadow(0 0 18px rgba(143, 242, 134, 0.42)) drop-shadow(0 18px 18px rgba(0, 0, 0, 0.52));
+}
+
+.battle-viewer-unit.is-defeated {
+  opacity: 0.5;
+  filter: grayscale(0.9) brightness(0.64) drop-shadow(0 12px 12px rgba(0, 0, 0, 0.46));
+}
+
+.battle-viewer-unit.is-ally .battlefield-unit-sprite {
+  transform: translateY(var(--sprite-shift));
+}
+
+.battle-viewer-unit.is-ally.is-acting .battlefield-unit-sprite {
+  transform: translateY(var(--sprite-shift));
+}
+
+.battle-viewer-unit-img {
+  width: 150px;
+  height: 176px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.battle-viewer-unit-img.merc-image-wrap {
+  overflow: visible;
+  background: transparent;
+}
+
+.battle-viewer-unit-img.merc-image-wrap.is-missing {
+  min-width: 130px;
+  min-height: 150px;
+  border: 1px dashed rgba(246, 206, 120, 0.16);
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 229, 162, 0.08), transparent 62%);
+}
+
+.battle-viewer-unit-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.battle-viewer-unit.is-ally .battle-viewer-unit-img {
+  width: 198px;
+  height: 286px;
+}
+
+.battle-viewer-unit.is-enemy .battle-viewer-unit-img {
+  width: 150px;
+  height: 178px;
+}
+
+.battlefield-unit-nameplate {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid rgba(246, 206, 120, 0.18);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(32, 21, 15, 0.54), rgba(8, 6, 5, 0.58));
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.22);
+}
+
+.battle-viewer-unit.is-ally .battlefield-unit-nameplate {
+  position: absolute;
+  left: 50%;
+  bottom: var(--nameplate-bottom);
+  width: 76%;
+  transform: translateX(-50%) scale(var(--nameplate-scale));
+  transform-origin: bottom center;
+  z-index: 6;
+}
+
+.battlefield-unit-name {
+  min-width: 0;
+  color: #fff2c5;
+  font-size: 13px;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-viewer-unit em {
+  font-size: 11px;
+  font-style: normal;
+  color: rgba(238, 218, 179, 0.82);
+}
+
+.battle-hp-bar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.6);
+  border-radius: 999px;
+  background: rgba(50, 12, 9, 0.85);
+}
+
+.battle-hp-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #7fd05f, #f0c15d);
+  border-radius: inherit;
+  transition: width 0.28s ease;
+}
+
+.battle-hp-bar.is-low span {
+  background: linear-gradient(90deg, #d64d3f, #f1a753);
+}
+
+.battle-floating-number {
+  position: absolute;
+  top: 20px;
+  right: 8px;
+  z-index: 4;
+  color: #ffb38f;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 #140604, 0 0 12px rgba(255, 80, 36, 0.72);
+  pointer-events: none;
+  animation: battleFloatingDamage 0.86s ease-out both;
+}
+
+.battle-viewer-unit.is-ally .battle-floating-number {
+  top: 70px;
+  right: 26px;
+  transform-origin: center center;
+}
+
+.battle-floating-number.is-damage {
+  color: #ffb38f;
+}
+
+.battle-floating-number.is-heal {
+  color: #a6f1a0;
+  text-shadow: 0 3px 0 #031106, 0 0 12px rgba(120, 255, 134, 0.66);
+  animation-name: battleFloatingHeal;
+}
+
+.battle-attack-effect,
+.battle-heal-effect {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.battle-viewer-unit.is-ally .battle-attack-effect,
+.battle-viewer-unit.is-ally .battle-heal-effect {
+  top: 30%;
+}
+
+.battle-attack-effect {
+  width: 118px;
+  height: 46px;
+  border-radius: 999px;
+  background:
+    linear-gradient(115deg, transparent 0 26%, rgba(255, 238, 164, 0.95) 43%, rgba(255, 112, 65, 0.86) 52%, transparent 72%),
+    radial-gradient(circle at 62% 50%, rgba(255, 222, 132, 0.72), transparent 34%);
+  filter: drop-shadow(0 0 14px rgba(255, 160, 72, 0.62));
+  transform: translate(-50%, -50%) rotate(-18deg);
+  animation: battleAttackSlash 0.42s ease-out both;
+}
+
+.battle-attack-effect.is-enemy {
+  background:
+    linear-gradient(65deg, transparent 0 24%, rgba(255, 128, 94, 0.92) 42%, rgba(255, 220, 140, 0.86) 54%, transparent 74%),
+    radial-gradient(circle at 38% 50%, rgba(255, 86, 62, 0.62), transparent 36%);
+  transform: translate(-50%, -50%) rotate(18deg);
+  animation-name: battleEnemyAttackSlash;
+}
+
+.battle-attack-effect::after {
+  position: absolute;
+  inset: 14px 22px;
+  content: "";
+  border-radius: 999px;
+  background: rgba(255, 242, 187, 0.86);
+  filter: blur(7px);
+}
+
+.battle-heal-effect {
+  width: 124px;
+  height: 124px;
+  border: 2px solid rgba(151, 255, 175, 0.76);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 24px rgba(111, 255, 169, 0.28),
+    0 0 26px rgba(111, 255, 169, 0.36);
+  transform: translate(-50%, -50%);
+  animation: battleHealPulse 0.78s ease-out both;
+}
+
+.battle-heal-effect::before,
+.battle-heal-effect::after {
+  position: absolute;
+  content: "";
+  border-radius: inherit;
+  border: 1px solid rgba(201, 255, 207, 0.64);
+}
+
+.battle-heal-effect::before {
+  inset: 16px;
+}
+
+.battle-heal-effect::after {
+  inset: 34px;
+  background: radial-gradient(circle, rgba(157, 255, 178, 0.28), transparent 64%);
+}
+
+.battle-viewer-bottom {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.battle-viewer-log,
+.battle-viewer-loot {
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(151, 111, 59, 0.36);
+  background: rgba(7, 5, 4, 0.72);
+}
+
+.battle-viewer-log div {
+  max-height: 62px;
+  overflow-y: auto;
+}
+
+.battle-viewer-log h4,
+.battle-viewer-loot h4 {
+  margin: 0 0 6px;
+  color: #ffe2a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-viewer-loot {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.battle-viewer-loot div {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.battle-viewer-loot button {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 38px;
+  margin-top: auto;
+}
+
+.battle-viewer-log p.is-latest {
+  color: #ffe2a4;
+  text-shadow: 0 0 10px rgba(247, 201, 103, 0.26);
+}
+
+.battle-viewer-loot.is-finished {
+  border-color: rgba(246, 206, 120, 0.72);
+  background:
+    radial-gradient(circle at 80% 0%, rgba(247, 203, 112, 0.2), transparent 42%),
+    rgba(15, 9, 5, 0.88);
+  box-shadow: 0 0 20px rgba(247, 203, 112, 0.18);
+}
+
+.battle-viewer-shell.has-report {
+  grid-template-rows: minmax(48px, auto) minmax(300px, 0.8fr) minmax(340px, 1.2fr);
+}
+
+.battle-viewer-bottom.has-report {
+  display: block;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.merc-battle-report {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  color: #f5dfba;
+}
+
+.merc-battle-report h3,
+.merc-battle-report h4,
+.merc-battle-report h5,
+.merc-battle-report p {
+  margin: 0;
+}
+
+.merc-battle-report-banner {
+  padding: 12px;
+  border: 1px solid rgba(214, 168, 93, 0.46);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(42, 26, 15, 0.96), rgba(11, 8, 6, 0.96)),
+    rgba(14, 10, 7, 0.92);
+}
+
+.merc-battle-report-banner.victory {
+  border-color: rgba(248, 214, 129, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 180, 0.06), 0 0 22px rgba(230, 178, 73, 0.14);
+}
+
+.merc-battle-report-banner.defeat {
+  border-color: rgba(222, 97, 81, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 196, 176, 0.05), 0 0 22px rgba(190, 53, 42, 0.14);
+}
+
+.merc-battle-report-banner span,
+.merc-battle-report-card span,
+.merc-battle-unit-row span,
+.merc-battle-skill-summary span,
+.merc-battle-status-summary span,
+.merc-battle-reward-list p,
+.merc-battle-log-action span,
+.merc-battle-dev-details dt {
+  color: rgba(235, 210, 170, 0.72);
+  font-size: 12px;
+}
+
+.merc-battle-report-banner h3 {
+  margin-top: 3px;
+  color: #ffe3a8;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 22px;
+}
+
+.merc-battle-report-banner p {
+  margin-top: 4px;
+  color: rgba(245, 223, 186, 0.86);
+}
+
+.merc-battle-report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.merc-battle-report-card,
+.merc-battle-mvp-card,
+.merc-battle-contribution-list,
+.merc-battle-skill-summary,
+.merc-battle-status-summary,
+.merc-battle-reward-list,
+.merc-battle-injury-list,
+.merc-battle-claim-panel,
+.merc-battle-log-details,
+.merc-battle-dev-details {
+  min-width: 0;
+  border: 1px solid rgba(151, 111, 59, 0.34);
+  border-radius: 8px;
+  background: rgba(7, 5, 4, 0.64);
+}
+
+.merc-battle-report-card {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+}
+
+.merc-battle-report-card strong {
+  color: #ffe3a8;
+  font-size: 15px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-claim-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+}
+
+.merc-battle-claim-panel h4 {
+  color: #ffe2a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 16px;
+}
+
+.merc-battle-claim-panel p {
+  margin-top: 4px;
+  color: rgba(245, 223, 186, 0.82);
+}
+
+.merc-battle-claim-panel button {
+  min-width: 116px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 213, 133, 0.5);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(159, 104, 34, 0.92), rgba(99, 56, 19, 0.92));
+  color: #fff3d0;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.merc-battle-claim-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.merc-battle-claim-panel dl,
+.merc-battle-claim-panel ul,
+.merc-battle-claim-panel .merc-growth-summary {
+  grid-column: 1 / -1;
+}
+
+.merc-battle-claim-panel dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.merc-battle-claim-panel dl div {
+  min-width: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(255, 224, 158, 0.08);
+}
+
+.merc-battle-claim-panel dt {
+  color: rgba(245, 223, 186, 0.68);
+  font-size: 12px;
+}
+
+.merc-battle-claim-panel dd {
+  margin: 2px 0 0;
+  color: #ffe2a4;
+  font-weight: 800;
+}
+
+.merc-battle-claim-panel ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.merc-battle-claim-panel li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 0.8fr);
+  gap: 8px;
+  align-items: center;
+  color: rgba(245, 223, 186, 0.84);
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-claim-panel li strong {
+  color: #fff0c9;
+}
+
+.merc-battle-claim-panel li em {
+  color: rgba(245, 223, 186, 0.7);
+  font-style: normal;
+  text-align: right;
+}
+
+.merc-battle-mvp-card {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(93, 55, 21, 0.62), rgba(9, 7, 5, 0.74)),
+    rgba(7, 5, 4, 0.72);
+}
+
+.merc-battle-mvp-card span {
+  color: #ffd884;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.merc-battle-mvp-card h4 {
+  color: #ffe6b5;
+  font-size: 21px;
+}
+
+.merc-battle-mvp-card strong {
+  color: #fff0c9;
+}
+
+.merc-battle-mvp-card em {
+  color: rgba(236, 216, 182, 0.82);
+  font-style: normal;
+}
+
+.merc-battle-report-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.merc-battle-contribution-list,
+.merc-battle-skill-summary,
+.merc-battle-status-summary,
+.merc-battle-reward-list,
+.merc-battle-injury-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+}
+
+.merc-battle-contribution-list h4,
+.merc-battle-skill-summary h4,
+.merc-battle-status-summary h4,
+.merc-battle-reward-list h4,
+.merc-battle-injury-list h4 {
+  color: #ffe2a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.merc-battle-unit-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.05fr) minmax(120px, 0.55fr) minmax(260px, 1.8fr);
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid rgba(151, 111, 59, 0.24);
+  border-radius: 7px;
+  background: rgba(18, 12, 8, 0.62);
+}
+
+.merc-battle-unit-row.is-mvp {
+  border-color: rgba(248, 214, 129, 0.58);
+}
+
+.merc-battle-unit-row.is-knocked-out {
+  opacity: 0.68;
+  background: rgba(22, 15, 13, 0.6);
+}
+
+.merc-battle-unit-row.is-survivor {
+  border-color: rgba(222, 97, 81, 0.46);
+}
+
+.merc-battle-unit-row strong {
+  display: block;
+  color: #fff0c9;
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-unit-row dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 1fr));
+  gap: 5px 8px;
+  margin: 0;
+}
+
+.merc-battle-unit-row dl div {
+  min-width: 0;
+}
+
+.merc-battle-unit-row dt {
+  color: rgba(235, 210, 170, 0.62);
+  font-size: 11px;
+}
+
+.merc-battle-unit-row dd {
+  margin: 0;
+  color: #f7e0b9;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-hpbar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(58, 34, 23, 0.86);
+}
+
+.merc-battle-hpbar span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #9edb82, #f5d070);
+}
+
+.merc-battle-unit-row.is-knocked-out .merc-battle-hpbar span {
+  background: #9b4e42;
+}
+
+.merc-battle-skill-summary article,
+.merc-battle-status-summary article {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 7px;
+  background: rgba(17, 11, 8, 0.7);
+}
+
+.merc-battle-skill-summary strong,
+.merc-battle-status-summary strong {
+  color: #ffe6b5;
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-skill-summary p,
+.merc-battle-status-summary p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: rgba(236, 216, 182, 0.78);
+}
+
+.merc-battle-skill-summary em {
+  padding: 2px 7px;
+  border: 1px solid rgba(151, 111, 59, 0.34);
+  border-radius: 999px;
+  color: #f6dfb8;
+  font-style: normal;
+}
+
+.merc-battle-reward-list ul,
+.merc-battle-injury-list ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.merc-battle-reward-list li,
+.merc-battle-injury-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: rgba(18, 12, 8, 0.62);
+}
+
+.merc-battle-injury-list li em {
+  grid-column: 1 / -1;
+  color: rgba(235, 210, 170, 0.66);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.merc-battle-reward-list strong,
+.merc-battle-injury-list strong {
+  color: #ffe2a4;
+}
+
+.merc-battle-log-details,
+.merc-battle-dev-details {
+  padding: 10px;
+}
+
+.merc-battle-log-details summary,
+.merc-battle-dev-details summary {
+  cursor: pointer;
+  color: #ffe2a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.merc-battle-log-round {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(151, 111, 59, 0.22);
+}
+
+.merc-battle-log-round h5 {
+  color: #f9d58d;
+}
+
+.merc-battle-log-action {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  color: rgba(246, 225, 191, 0.84);
+  overflow-wrap: anywhere;
+}
+
+.merc-battle-dev-details dl {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.merc-battle-dev-details div {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.merc-battle-dev-details dd {
+  margin: 0;
+  color: rgba(246, 225, 191, 0.84);
+  word-break: break-all;
+}
+
+@media (max-width: 980px) {
+  .battle-viewer-shell.has-report {
+    grid-template-rows: minmax(48px, auto) minmax(260px, 0.7fr) minmax(360px, 1.3fr);
+  }
+
+  .merc-battle-report-summary-grid,
+  .merc-battle-report-two-col,
+  .merc-battle-unit-row,
+  .merc-battle-claim-panel,
+  .merc-battle-claim-panel dl,
+  .merc-battle-claim-panel li,
+  .merc-growth-head,
+  .merc-growth-merc-card > div:first-child {
+    grid-template-columns: 1fr;
+  }
+
+  .merc-battle-unit-row dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.battle-result-banner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  padding: 12px 42px;
+  border: 1px solid rgba(255, 232, 162, 0.76);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(82, 45, 14, 0.94), rgba(17, 9, 5, 0.94));
+  color: #ffe8a9;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: clamp(34px, 5vw, 68px);
+  letter-spacing: 0.08em;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.58), 0 0 22px rgba(255, 211, 111, 0.42);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.48), 0 0 34px rgba(247, 203, 112, 0.18);
+  animation: battleResultPop 0.72s ease both;
+}
+
+@keyframes battleUnitAct {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes battleUnitActForeground {
+  0% {
+    transform: translateY(var(--sprite-shift)) scale(1);
+  }
+  50% {
+    transform: translateY(calc(var(--sprite-shift) - 16px)) scale(1.04);
+  }
+  100% {
+    transform: translateY(var(--sprite-shift)) scale(1);
+  }
+}
+
+@keyframes battleUnitHitShake {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(var(--unit-scale));
+  }
+  20% {
+    transform: translate(calc(-50% - 8px), -50%) scale(var(--unit-scale)) rotate(-1deg);
+  }
+  45% {
+    transform: translate(calc(-50% + 7px), -50%) scale(var(--unit-scale)) rotate(1deg);
+  }
+  70% {
+    transform: translate(calc(-50% - 4px), -50%) scale(var(--unit-scale));
+  }
+}
+
+@keyframes battleUnitFlash {
+  0%,
+  100% {
+    filter: none;
+  }
+  35% {
+    filter: brightness(1.85) sepia(0.5) saturate(1.8);
+  }
+}
+
+@keyframes battleFloatingDamage {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.8);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(14px, -58px, 0) scale(1);
+  }
+}
+
+@keyframes battleFloatingHeal {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.8);
+  }
+  18% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-10px, -54px, 0) scale(1);
+  }
+}
+
+@keyframes battleAttackSlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(0.42);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-18deg) scale(1.36);
+  }
+}
+
+@keyframes battleEnemyAttackSlash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(18deg) scale(0.42);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(18deg) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(18deg) scale(1.36);
+  }
+}
+
+@keyframes battleHealPulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.48);
+  }
+  28% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.38);
+  }
+}
+
+@keyframes battleResultPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  62% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.battle-party-select-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.battle-party-select-row label {
+  display: grid;
+  gap: 4px;
+}
+
+.battle-party-select-row span {
+  color: rgba(231, 209, 171, 0.68);
+  font-size: 12px;
+}
+
+.battle-party-select-row select,
+.battle-party-name-field input,
+.battle-party-editor-filters input,
+.battle-party-editor-filters select {
+  min-height: 34px;
+  border: 1px solid rgba(151, 111, 59, 0.42);
+  background: rgba(7, 5, 4, 0.78);
+  color: #f5dfb5;
+  padding: 7px 9px;
+  box-sizing: border-box;
+}
+
+.battle-party-ready-message {
+  margin: 0;
+  color: #ffbc9e;
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.battle-party-ready-message.is-ready {
+  color: #c7ffb4;
+}
+
+.battle-party-editor-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.battle-party-editor-modal[hidden] {
+  display: none;
+}
+
+.battle-party-editor-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+.battle-party-editor {
+  position: relative;
+  width: min(96vw, 1440px);
+  height: min(90vh, 860px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(214, 168, 93, 0.46);
+  background:
+    linear-gradient(180deg, rgba(22, 15, 10, 0.97), rgba(6, 5, 4, 0.98)),
+    rgba(10, 7, 5, 0.95);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+  color: #f4dfb4;
+}
+
+.battle-party-editor-header,
+.battle-party-editor-panel-head,
+.battle-party-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.battle-party-editor-header h2,
+.battle-party-editor-panel-head h3 {
+  margin: 0;
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-party-editor-header p {
+  margin: 4px 0 0;
+  color: rgba(237, 216, 176, 0.78);
+}
+
+.battle-party-editor-header button,
+.battle-party-editor-panel-head button,
+.battle-party-editor-footer button,
+.battle-party-editor-roster-card button,
+.battle-party-slot-remove {
+  min-height: 34px;
+  border: 1px solid rgba(214, 168, 93, 0.4);
+  background: linear-gradient(180deg, rgba(68, 43, 20, 0.9), rgba(23, 15, 9, 0.95));
+  color: #f6d89e;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  cursor: pointer;
+}
+
+.battle-party-editor-roster-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.battle-party-editor-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(440px, 1fr) 360px;
+  gap: 12px;
+}
+
+.battle-party-editor-list-panel,
+.battle-party-editor-board-panel,
+.battle-party-editor-roster-panel {
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  border: 1px solid rgba(151, 111, 59, 0.48);
+  background:
+    linear-gradient(180deg, rgba(20, 13, 8, 0.9), rgba(7, 6, 5, 0.9)),
+    radial-gradient(circle at 50% 0, rgba(114, 73, 35, 0.16), transparent 55%);
+}
+
+.battle-party-editor-list-panel,
+.battle-party-editor-roster-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.battle-party-editor-roster-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.battle-party-editor-list,
+.battle-party-editor-roster {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.battle-party-editor-list-card {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid rgba(155, 112, 62, 0.38);
+  background: rgba(16, 10, 6, 0.82);
+  color: rgba(244, 222, 181, 0.88);
+  text-align: left;
+  cursor: pointer;
+}
+
+.battle-party-editor-list-card.is-selected {
+  border-color: rgba(239, 190, 96, 0.82);
+  box-shadow: 0 0 16px rgba(221, 160, 67, 0.24);
+}
+
+.battle-party-name-field {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.battle-party-editor-board {
+  display: grid;
+  gap: 12px;
+}
+
+.battle-party-editor-row {
+  display: grid;
+  gap: 8px;
+}
+
+.battle-party-editor-row > strong {
+  color: #ffe0a1;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-party-editor-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.battle-party-editor-row-back .battle-party-editor-slots {
+  grid-template-columns: minmax(180px, 0.5fr);
+}
+
+.battle-party-editor-slot {
+  min-height: 120px;
+  border: 1px solid rgba(139, 101, 55, 0.42);
+  background: rgba(12, 8, 5, 0.74);
+}
+
+.battle-party-editor-slot.is-selected {
+  border-color: rgba(239, 190, 96, 0.82);
+  box-shadow: 0 0 16px rgba(221, 160, 67, 0.24);
+}
+
+.battle-party-editor-slot.is-empty {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  color: rgba(238, 219, 185, 0.72);
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.battle-party-slot-pick {
+  width: 100%;
+  min-height: 88px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.battle-party-editor-portrait,
+.battle-party-editor-roster-portrait {
+  width: 64px;
+  height: 78px;
+  overflow: hidden;
+  background: rgba(5, 5, 4, 0.82);
+}
+
+.battle-party-editor-portrait img,
+.battle-party-editor-roster-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.battle-party-slot-remove {
+  margin: 0 10px 10px;
+}
+
+.battle-party-editor-filters {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  gap: 6px;
+}
+
+.battle-party-editor-filters label {
+  grid-column: 1 / -1;
+  color: rgba(237, 216, 176, 0.78);
+  font-size: 12px;
+}
+
+.battle-party-editor-roster-card {
+  min-height: 104px;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: start;
+  padding: 9px;
+  border: 1px solid rgba(139, 101, 55, 0.42);
+  background: rgba(12, 8, 5, 0.74);
+}
+
+.battle-party-editor-roster-card.is-unavailable {
+  opacity: 0.58;
+}
+
+.battle-party-editor-roster-card b,
+.battle-party-editor-slot b {
+  display: block;
+  color: #ffe4a8;
+  overflow-wrap: anywhere;
+}
+
+.battle-party-editor-roster-card span,
+.battle-party-editor-roster-card em,
+.battle-party-editor-slot span,
+.battle-party-editor-slot em {
+  display: block;
+  color: rgba(238, 219, 185, 0.76);
+  font-size: 12px;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
+.battle-party-editor-roster-card small {
+  display: inline-flex;
+  margin-top: 3px;
+  color: #c7ffb4;
+}
+
+.battle-party-editor-footer {
+  padding-top: 10px;
+  border-top: 1px solid rgba(151, 111, 59, 0.32);
+}
+
+.battle-party-editor-footer div {
+  display: grid;
+  gap: 2px;
+  color: rgba(237, 216, 176, 0.78);
+}
+
+.battle-party-editor-footer strong {
+  color: #ffe5aa;
 }
 
 .mercenary-infirmary-view {
@@ -4384,6 +7093,23 @@ body.mission-open {
     grid-template-columns: 1fr;
   }
 
+  .merc-detail-stat-grid,
+  .merc-detail-stat-grid.is-compact,
+  .merc-detail-combat-grid,
+  .merc-detail-skill-grid,
+  .merc-detail-tag-grid,
+  .merc-detail-dev-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .merc-detail-breakdown-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .merc-detail-breakdown-row strong {
+    grid-column: 1 / -1;
+  }
+
   .recruitment-board-screen {
     padding: 8px;
   }
@@ -4532,6 +7258,26 @@ body.mission-open {
 }
 
 @media (max-width: 768px) {
+  .battle-result-modal-summary,
+  .battle-result-modal-summary.is-compact,
+  .battle-result-reward-grid,
+  .battle-result-unit-record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-result-unit-record dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .merc-combat-schema-grid,
+  .merc-combat-tag-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .merc-combat-stat-grid .merc-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .settings-overlay {
     padding: 16px 12px;
   }

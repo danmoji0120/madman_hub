@@ -43,6 +43,7 @@ router.post('/mission-offers/reject', handle((req) => mercenarySystem.rejectMiss
 router.get('/runs', handle((req) => mercenarySystem.listRuns(req.user.id)));
 router.post('/runs/start', handle((req) => mercenarySystem.startMissionRun(req.user.id, req.body)));
 router.post('/runs/claim', handle((req) => mercenarySystem.claimMissionRun(req.user.id, req.body?.runId)));
+router.post('/battles/claim', handle((req) => mercenarySystem.claimBattleResult(req.user.id, req.body)));
 router.get('/infirmary', handle((req) => mercenarySystem.getInfirmaryState(req.user.id)));
 router.post('/infirmary/treat/start', handle((req) => mercenarySystem.startTreatment(req.user.id, req.body?.ownedMercenaryId)));
 router.post('/infirmary/treat/claim', handle((req) => mercenarySystem.claimTreatment(req.user.id, req.body?.treatmentId)));

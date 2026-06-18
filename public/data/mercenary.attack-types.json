@@ -1,0 +1,430 @@
+[
+  {
+    "basicAttackId": "normal_strike",
+    "basic_attack_id": "normal_strike",
+    "attackType": "안정형",
+    "attack_type": "안정형",
+    "displayName": "기본 타격",
+    "display_name": "기본 타격",
+    "damageType": "physical",
+    "formulaHint": "ATK 안정형",
+    "description": "가장 기본적인 안정 피해 공식",
+    "defaultTags": [
+      "common",
+      "front",
+      "default"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "guard_strike",
+    "basic_attack_id": "guard_strike",
+    "attackType": "안정형",
+    "attack_type": "안정형",
+    "displayName": "방패 타격",
+    "display_name": "방패 타격",
+    "damageType": "physical",
+    "formulaHint": "ATK 안정형 + 방어형",
+    "description": "탱커/방패/전열 유닛용 기본 공격",
+    "defaultTags": [
+      "tank",
+      "shield",
+      "front"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "heavy_smash",
+    "basic_attack_id": "heavy_smash",
+    "attackType": "강타형",
+    "attack_type": "강타형",
+    "displayName": "강타",
+    "display_name": "강타",
+    "damageType": "physical",
+    "formulaHint": "ATK × 1.35",
+    "description": "느리지만 공격력 계수가 높은 근접 공격",
+    "defaultTags": [
+      "heavy",
+      "bruiser",
+      "demolition"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "speed_cut",
+    "basic_attack_id": "speed_cut",
+    "attackType": "속공형",
+    "attack_type": "속공형",
+    "displayName": "빠른 베기",
+    "display_name": "빠른 베기",
+    "damageType": "physical",
+    "formulaHint": "ATK × SPD 보정",
+    "description": "속도가 높을수록 피해량이 증가하는 공격",
+    "defaultTags": [
+      "speed",
+      "evasion",
+      "assassin"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "pierce_thrust",
+    "basic_attack_id": "pierce_thrust",
+    "attackType": "관통형",
+    "attack_type": "관통형",
+    "displayName": "관통 찌르기",
+    "display_name": "관통 찌르기",
+    "damageType": "physical",
+    "formulaHint": "ATK × 0.95, DEF 일부 무시",
+    "description": "방어력을 일부 무시하는 창/관통 계열 공격",
+    "defaultTags": [
+      "pierce",
+      "spear",
+      "armor_break"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "ranged_shot",
+    "basic_attack_id": "ranged_shot",
+    "attackType": "원거리형",
+    "attack_type": "원거리형",
+    "displayName": "견제 사격",
+    "display_name": "견제 사격",
+    "damageType": "physical",
+    "formulaHint": "ATK × 1.05, ACC 보정",
+    "description": "명중률 영향을 받는 원거리 공격",
+    "defaultTags": [
+      "ranged",
+      "gun",
+      "bow",
+      "artillery"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "magic_bolt",
+    "basic_attack_id": "magic_bolt",
+    "attackType": "마법형",
+    "attack_type": "마법형",
+    "displayName": "마력탄",
+    "display_name": "마력탄",
+    "damageType": "magic",
+    "formulaHint": "ATK × 1.15 - DEF 일부",
+    "description": "마법/신성/저주/속성 계열 기본 공격",
+    "defaultTags": [
+      "magic",
+      "holy",
+      "curse",
+      "elemental"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "support_staff",
+    "basic_attack_id": "support_staff",
+    "attackType": "지원형",
+    "attack_type": "지원형",
+    "displayName": "보조 타격",
+    "display_name": "보조 타격",
+    "damageType": "support",
+    "formulaHint": "낮은 피해 + 회복/지원 성향",
+    "description": "힐러/서포터가 힐 대상이 없을 때 쓰는 약한 기본 공격",
+    "defaultTags": [
+      "healer",
+      "support",
+      "staff"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "elite_strike",
+    "basic_attack_id": "elite_strike",
+    "attackType": "정예형",
+    "attack_type": "정예형",
+    "displayName": "정예 타격",
+    "display_name": "정예 타격",
+    "damageType": "physical",
+    "formulaHint": "ATK×1.18",
+    "description": "SR 이상 유닛의 기본 고유 공격 틀",
+    "defaultTags": [
+      "elite",
+      "unique",
+      "default"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "shadow_cut",
+    "basic_attack_id": "shadow_cut",
+    "attackType": "암습형",
+    "attack_type": "암습형",
+    "displayName": "그림자 절단",
+    "display_name": "그림자 절단",
+    "damageType": "physical",
+    "formulaHint": "ATK×SPD + 처치 보정",
+    "description": "암살/회피/결투 계열의 빠른 단일 공격",
+    "defaultTags": [
+      "assassin",
+      "shadow",
+      "speed"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "arcane_bolt",
+    "basic_attack_id": "arcane_bolt",
+    "attackType": "술식형",
+    "attack_type": "술식형",
+    "displayName": "집중 술식탄",
+    "display_name": "집중 술식탄",
+    "damageType": "magic",
+    "formulaHint": "ATK×1.25 + TEC 보정",
+    "description": "마법/신성/정화/축복 계열의 정예 공격",
+    "defaultTags": [
+      "magic",
+      "holy",
+      "arcane"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "lightning_lance",
+    "basic_attack_id": "lightning_lance",
+    "attackType": "돌파창형",
+    "attack_type": "돌파창형",
+    "displayName": "섬광 돌파창",
+    "display_name": "섬광 돌파창",
+    "damageType": "physical",
+    "formulaHint": "ATK×SPD 돌파 보정",
+    "description": "창/기동/번개/선공 계열의 돌파 공격",
+    "defaultTags": [
+      "lance",
+      "charge",
+      "lightning"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "precision_shot",
+    "basic_attack_id": "precision_shot",
+    "attackType": "정밀사격형",
+    "attack_type": "정밀사격형",
+    "displayName": "정밀 사격",
+    "display_name": "정밀 사격",
+    "damageType": "physical",
+    "formulaHint": "ATK×1.20 + ACC 보정",
+    "description": "저격/포수/원거리 계열의 명중 기반 공격",
+    "defaultTags": [
+      "ranged",
+      "sniper",
+      "gunner"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "command_strike",
+    "basic_attack_id": "command_strike",
+    "attackType": "지휘타격형",
+    "attack_type": "지휘타격형",
+    "displayName": "지휘 타격",
+    "display_name": "지휘 타격",
+    "damageType": "support",
+    "formulaHint": "SUP 기반 아군 정렬 타격",
+    "description": "지휘/사기/깃발 계열이 아군 정렬과 함께 쓰는 공격",
+    "defaultTags": [
+      "command",
+      "morale",
+      "leader"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "aegis_bash",
+    "basic_attack_id": "aegis_bash",
+    "attackType": "성역방패형",
+    "attack_type": "성역방패형",
+    "displayName": "성역 방패타",
+    "display_name": "성역 방패타",
+    "damageType": "physical",
+    "formulaHint": "DEF+ATK 기반 방패 타격",
+    "description": "방패/보호막/방호 계열의 방어형 공격",
+    "defaultTags": [
+      "shield",
+      "aegis",
+      "tank"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "frost_control",
+    "basic_attack_id": "frost_control",
+    "attackType": "빙결제어형",
+    "attack_type": "빙결제어형",
+    "displayName": "서리 제어",
+    "display_name": "서리 제어",
+    "damageType": "magic",
+    "formulaHint": "SUP/TEC 기반 빙결 제어",
+    "description": "빙결/수면/정신안정 계열의 제어 공격",
+    "defaultTags": [
+      "frost",
+      "sleep",
+      "control"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "venom_thread",
+    "basic_attack_id": "venom_thread",
+    "attackType": "독실형",
+    "attack_type": "독실형",
+    "displayName": "독실 감기",
+    "display_name": "독실 감기",
+    "damageType": "physical",
+    "formulaHint": "ATK×0.95 + 독/속박",
+    "description": "독/산성/거미/라미아 계열의 누적 공격",
+    "defaultTags": [
+      "poison",
+      "thread",
+      "bind"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "curse_weave",
+    "basic_attack_id": "curse_weave",
+    "attackType": "저주술형",
+    "attack_type": "저주술형",
+    "displayName": "저주 엮기",
+    "display_name": "저주 엮기",
+    "damageType": "magic",
+    "formulaHint": "TEC/SUP 기반 저주 약화",
+    "description": "저주/디버프/기만/계약 계열의 약화 공격",
+    "defaultTags": [
+      "curse",
+      "debuff",
+      "contract"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "dragon_flame",
+    "basic_attack_id": "dragon_flame",
+    "attackType": "용염형",
+    "attack_type": "용염형",
+    "displayName": "용혈 화염",
+    "display_name": "용혈 화염",
+    "damageType": "magic",
+    "formulaHint": "ATK×1.30 + 화염 광역",
+    "description": "용혈/화염 계열의 고화력 공격",
+    "defaultTags": [
+      "dragon",
+      "flame",
+      "aoe"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "siege_cannon",
+    "basic_attack_id": "siege_cannon",
+    "attackType": "공성포격형",
+    "attack_type": "공성포격형",
+    "displayName": "공성 포격",
+    "display_name": "공성 포격",
+    "damageType": "physical",
+    "formulaHint": "ATK×1.45, 느린 광역 포격",
+    "description": "포격/폭파/철거 계열의 느린 고화력 공격",
+    "defaultTags": [
+      "siege",
+      "cannon",
+      "demolition"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "moonlight_stage",
+    "basic_attack_id": "moonlight_stage",
+    "attackType": "아이돌기사형",
+    "attack_type": "아이돌기사형",
+    "displayName": "월광 스테이지",
+    "display_name": "월광 스테이지",
+    "damageType": "support",
+    "formulaHint": "SUP/ATK 혼합 버프 타격",
+    "description": "아이돌 기사 전용 공연형 공격",
+    "defaultTags": [
+      "ex",
+      "idol",
+      "moonlight"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "rescue_burst",
+    "basic_attack_id": "rescue_burst",
+    "attackType": "구조화력형",
+    "attack_type": "구조화력형",
+    "displayName": "구조 버스트",
+    "display_name": "구조 버스트",
+    "damageType": "support",
+    "formulaHint": "SUP×1.20 + 보호막 구조탄",
+    "description": "강화복 의무병 전용 구조 공격",
+    "defaultTags": [
+      "ex",
+      "medic",
+      "shield"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "byte_glitch",
+    "basic_attack_id": "byte_glitch",
+    "attackType": "회계오류형",
+    "attack_type": "회계오류형",
+    "displayName": "계산 오류",
+    "display_name": "계산 오류",
+    "damageType": "magic",
+    "formulaHint": "TEC×1.30 + 오류 보정",
+    "description": "버그 먹은 회계요정 전용 오류 공격",
+    "defaultTags": [
+      "ex",
+      "glitch",
+      "accounting"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "cardboard_dragon_bonk",
+    "basic_attack_id": "cardboard_dragon_bonk",
+    "attackType": "가짜용형",
+    "attack_type": "가짜용형",
+    "displayName": "박스칼리버 박치기",
+    "display_name": "박스칼리버 박치기",
+    "damageType": "physical",
+    "formulaHint": "ATK×1.20 + 도발 보정",
+    "description": "골판지 드래곤 전용 가짜 용격",
+    "defaultTags": [
+      "ex",
+      "fake_dragon",
+      "taunt"
+    ],
+    "useInCombat": true
+  },
+  {
+    "basicAttackId": "bb_mooncancer_hack",
+    "basic_attack_id": "bb_mooncancer_hack",
+    "attackType": "BB식 해킹형",
+    "attack_type": "BB식 해킹형",
+    "displayName": "BB 채널 해킹 주사",
+    "display_name": "BB 채널 해킹 주사",
+    "damageType": "moon_cancer",
+    "formulaHint": "ATK×1.60 + TEC/SUP 해킹 보정",
+    "description": "BB쨩 전용 강력한 해킹/교란 공격",
+    "defaultTags": [
+      "ex",
+      "bb",
+      "moon_cancer",
+      "hack"
+    ],
+    "useInCombat": true
+  }
+]

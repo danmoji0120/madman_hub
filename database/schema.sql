@@ -446,6 +446,28 @@ CREATE TABLE IF NOT EXISTS user_mercenary_runs (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS user_mercenary_battle_runs (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  operation_id TEXT NOT NULL,
+  battle_id TEXT NOT NULL,
+  battle_seed TEXT,
+  party_snapshot_json TEXT NOT NULL DEFAULT '{}',
+  enemies_snapshot_json TEXT NOT NULL DEFAULT '{}',
+  battle_result_json TEXT NOT NULL DEFAULT '{}',
+  result_status TEXT NOT NULL DEFAULT 'completed',
+  result TEXT NOT NULL DEFAULT '',
+  started_at TEXT,
+  completed_at TEXT,
+  claimed_at TEXT,
+  rewards_json TEXT NOT NULL DEFAULT '{}',
+  injuries_json TEXT NOT NULL DEFAULT '[]',
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, battle_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS user_mercenary_case_progress (
   id TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
@@ -782,6 +804,9 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user ON user_mercenary_runs(u
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_claimed ON user_mercenary_runs(user_id, claimed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_user_completes ON user_mercenary_runs(user_id, completes_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_runs(mission_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user ON user_mercenary_battle_runs(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_battle ON user_mercenary_battle_runs(user_id, battle_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_claimed ON user_mercenary_battle_runs(user_id, claimed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user ON user_mercenary_case_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_mercenary_case_progress(user_id, case_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id);

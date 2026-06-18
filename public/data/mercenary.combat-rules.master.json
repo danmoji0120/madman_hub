@@ -1,0 +1,46 @@
+[
+  {
+    "id": "rule_basic_mission",
+    "battleRuleId": "rule_basic_mission",
+    "enabled": true,
+    "name": "기본 전투 규칙",
+    "maxRounds": 6,
+    "targetRule": "front_to_back",
+    "speedRule": "spd_weighted",
+    "logStyle": "standard",
+    "formula": "max(1, ATK*rand(0.85~1.15)-DEF*0.45)"
+  },
+  {
+    "id": "rule_swarm",
+    "battleRuleId": "rule_swarm",
+    "enabled": true,
+    "name": "다수 적 전투 규칙",
+    "maxRounds": 7,
+    "targetRule": "front_to_back",
+    "speedRule": "spd_weighted",
+    "logStyle": "swarm",
+    "formula": "max(1, ATK*rand(0.8~1.2)-DEF*0.4)"
+  },
+  {
+    "id": "rule_elite_duel",
+    "battleRuleId": "rule_elite_duel",
+    "enabled": true,
+    "name": "정예 대상 전투 규칙",
+    "maxRounds": 8,
+    "targetRule": "focus_front_then_low_hp",
+    "speedRule": "spd_weighted",
+    "logStyle": "elite",
+    "formula": "max(1, ATK*rand(0.9~1.1)-DEF*0.5)"
+  },
+  {
+    "id": "rule_chase",
+    "battleRuleId": "rule_chase",
+    "enabled": true,
+    "name": "추적전 규칙",
+    "maxRounds": 6,
+    "targetRule": "backline_pressure",
+    "speedRule": "spd_priority",
+    "logStyle": "chase",
+    "formula": "max(1, ATK*rand(0.85~1.25)-DEF*0.35)"
+  }
+]

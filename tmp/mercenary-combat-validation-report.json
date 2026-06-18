@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-06-18T08:58:44.854Z",
+  "combatLogs": {
+    "total": 14,
+    "enabled": 14,
+    "groups": [
+      "combat_abyss",
+      "combat_debt",
+      "combat_default",
+      "combat_injury",
+      "combat_mimic",
+      "combat_red_thread",
+      "combat_slime"
+    ],
+    "logTypes": [
+      "ally_attack",
+      "ally_heal",
+      "critical",
+      "defeat",
+      "enemy_attack",
+      "injury",
+      "miss",
+      "start",
+      "victory"
+    ]
+  },
+  "enemySkills": {
+    "missingActionSkillIds": [],
+    "missingBasicAttackIds": []
+  },
+  "warnings": []
+}

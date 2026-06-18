@@ -1,0 +1,214 @@
+[
+  {
+    "id": "combat_default__start__1",
+    "logId": "combat_default__start__1",
+    "logGroupId": "combat_default",
+    "logType": "start",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "{mission} 전투가 시작되었습니다.",
+    "notes": "",
+    "effectKey": "none",
+    "soundKey": "battle_start",
+    "enabled": true,
+    "sourceRow": 1
+  },
+  {
+    "id": "combat_default__ally_attack__2",
+    "logId": "combat_default__ally_attack__2",
+    "logGroupId": "combat_default",
+    "logType": "ally_attack",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "{ally}가 {enemy}에게 {damage} 피해를 입혔습니다.",
+    "notes": "",
+    "effectKey": "slash",
+    "soundKey": "ally_attack",
+    "enabled": true,
+    "sourceRow": 2
+  },
+  {
+    "id": "combat_default__enemy_attack__3",
+    "logId": "combat_default__enemy_attack__3",
+    "logGroupId": "combat_default",
+    "logType": "enemy_attack",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "{enemy}가 {ally}를 공격해 {damage} 피해를 입혔습니다.",
+    "notes": "",
+    "effectKey": "hit_flash",
+    "soundKey": "enemy_attack",
+    "enabled": true,
+    "sourceRow": 3
+  },
+  {
+    "id": "combat_default__ally_heal__4",
+    "logId": "combat_default__ally_heal__4",
+    "logGroupId": "combat_default",
+    "logType": "ally_heal",
+    "weight": 100,
+    "conditionTags": [
+      "지원"
+    ],
+    "template": "{ally}가 {target}의 전열을 수습해 {heal}만큼 회복시켰습니다.",
+    "notes": "",
+    "effectKey": "heal_circle",
+    "soundKey": "heal",
+    "enabled": true,
+    "sourceRow": 4
+  },
+  {
+    "id": "combat_default__critical__5",
+    "logId": "combat_default__critical__5",
+    "logGroupId": "combat_default",
+    "logType": "critical",
+    "weight": 30,
+    "conditionTags": [
+      "TEC"
+    ],
+    "template": "{actor}의 빈틈 찌르기가 제대로 들어갔습니다.",
+    "notes": "",
+    "effectKey": "critical_burst",
+    "soundKey": "critical",
+    "enabled": true,
+    "sourceRow": 5
+  },
+  {
+    "id": "combat_default__miss__6",
+    "logId": "combat_default__miss__6",
+    "logGroupId": "combat_default",
+    "logType": "miss",
+    "weight": 25,
+    "conditionTags": [
+      "SPD"
+    ],
+    "template": "{actor}의 공격이 빗나갔습니다. 네, 그런 날도 있죠.",
+    "notes": "",
+    "effectKey": "evade_shadow",
+    "soundKey": "miss",
+    "enabled": true,
+    "sourceRow": 6
+  },
+  {
+    "id": "combat_default__victory__7",
+    "logId": "combat_default__victory__7",
+    "logGroupId": "combat_default",
+    "logType": "victory",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "전투가 승리로 끝났습니다.",
+    "notes": "",
+    "effectKey": "victory_glow",
+    "soundKey": "victory",
+    "enabled": true,
+    "sourceRow": 7
+  },
+  {
+    "id": "combat_default__defeat__8",
+    "logId": "combat_default__defeat__8",
+    "logGroupId": "combat_default",
+    "logType": "defeat",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "전투가 실패로 끝났습니다.",
+    "notes": "",
+    "effectKey": "defeat_fade",
+    "soundKey": "defeat",
+    "enabled": true,
+    "sourceRow": 8
+  },
+  {
+    "id": "combat_slime__enemy_attack__9",
+    "logId": "combat_slime__enemy_attack__9",
+    "logGroupId": "combat_slime",
+    "logType": "enemy_attack",
+    "weight": 80,
+    "conditionTags": [
+      "점액"
+    ],
+    "template": "{enemy}의 산성 점액이 {ally}의 장비를 더럽혔습니다. 피해 {damage}.",
+    "notes": "",
+    "effectKey": "acid_splash",
+    "soundKey": "acid_hit",
+    "enabled": true,
+    "sourceRow": 9
+  },
+  {
+    "id": "combat_mimic__enemy_attack__10",
+    "logId": "combat_mimic__enemy_attack__10",
+    "logGroupId": "combat_mimic",
+    "logType": "enemy_attack",
+    "weight": 80,
+    "conditionTags": [
+      "미믹"
+    ],
+    "template": "{enemy}가 뚜껑을 열고 {ally}를 물었습니다. 피해 {damage}.",
+    "notes": "",
+    "effectKey": "bite_flash",
+    "soundKey": "bite",
+    "enabled": true,
+    "sourceRow": 10
+  },
+  {
+    "id": "combat_debt__enemy_attack__11",
+    "logId": "combat_debt__enemy_attack__11",
+    "logGroupId": "combat_debt",
+    "logType": "enemy_attack",
+    "weight": 80,
+    "conditionTags": [
+      "채권"
+    ],
+    "template": "{enemy}가 계약서를 흔들며 {ally}를 후려쳤습니다. 피해 {damage}.",
+    "notes": "",
+    "effectKey": "blunt_hit",
+    "soundKey": "blunt",
+    "enabled": true,
+    "sourceRow": 11
+  },
+  {
+    "id": "combat_abyss__enemy_attack__12",
+    "logId": "combat_abyss__enemy_attack__12",
+    "logGroupId": "combat_abyss",
+    "logType": "enemy_attack",
+    "weight": 80,
+    "conditionTags": [
+      "심해"
+    ],
+    "template": "{enemy}가 심해 표식을 남겼습니다. {ally} 피해 {damage}.",
+    "notes": "",
+    "effectKey": "abyss_mark",
+    "soundKey": "abyss",
+    "enabled": true,
+    "sourceRow": 12
+  },
+  {
+    "id": "combat_red_thread__enemy_attack__13",
+    "logId": "combat_red_thread__enemy_attack__13",
+    "logGroupId": "combat_red_thread",
+    "logType": "enemy_attack",
+    "weight": 80,
+    "conditionTags": [
+      "붉은실"
+    ],
+    "template": "붉은 실이 {ally}의 그림자를 당겼습니다. 피해 {damage}.",
+    "notes": "",
+    "effectKey": "red_thread_cut",
+    "soundKey": "thread",
+    "enabled": true,
+    "sourceRow": 13
+  },
+  {
+    "id": "combat_injury__injury__14",
+    "logId": "combat_injury__injury__14",
+    "logGroupId": "combat_injury",
+    "logType": "injury",
+    "weight": 100,
+    "conditionTags": [],
+    "template": "{ally}가 전투 후 부상 상태가 되었습니다.",
+    "notes": "",
+    "effectKey": "injury_mark",
+    "soundKey": "injury",
+    "enabled": true,
+    "sourceRow": 14
+  }
+]

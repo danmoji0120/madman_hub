@@ -8,6 +8,13 @@ const repo = require('../repositories/mercenarySystem.repo');
 const MASTER_PATH = path.join(__dirname, '../../public/data/mercenaries.master.json');
 const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.missions.master.json');
 const CASE_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.cases.master.json');
+const COMBAT_MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-missions.master.json');
+const COMBAT_REWARD_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-rewards.master.json');
+const REMOVED_LEGACY_BATTLE_OPERATION_IDS = new Set([
+  'mock_sewer_cleanup_01',
+  'mock_back_alley_02',
+  'mock_red_thread_03'
+]);
 const RECRUIT_BOARD_SIZE = 5;
 const RECRUIT_REFRESH_COST = 20000;
 const RECRUIT_DAILY_REFRESH_LIMIT = 10;
@@ -29,7 +36,8 @@ const SQUAD_MEMBER_LIMIT = 3;
 const MAX_OFFICE_LEVEL = 50;
 const BASE_OFFICE_EXP = 150;
 const MISSION_OFFER_REFILL_INTERVAL_SECONDS = 600;
-const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'treating', 'office_assigned']);
+const ALLOWED_OPERATIONAL_STATUSES = new Set(['idle', 'dispatched', 'injured', 'injured_light', 'injured_heavy', 'treatment_required', 'incapacitated', 'treating', 'office_assigned']);
+const TREATABLE_OPERATIONAL_STATUSES = new Set(['injured', 'injured_light', 'injured_heavy', 'treatment_required', 'incapacitated']);
 const OPERATIONAL_STATUS_LABELS = {
   idle: '대기 중',
   dispatched: '파견 중',
@@ -79,12 +87,21 @@ const OFFICE_FACILITIES = [
     effectLabels: ['치료 시간 감소', '치료비 감소', '부상 확률 감소']
   }
 ];
-const GRADE_GROWTH_RATES = {
-  N: 0.45,
-  R: 0.65,
-  SR: 0.9,
-  SSR: 1.2,
-  EX: 1
+const FALLBACK_MAX_LEVEL_BY_GRADE = {
+  N: 40,
+  R: 50,
+  SR: 60,
+  SSR: 70,
+  EX: 70
+};
+// Level bonus is rarity-neutral; rarity differences come from base stats, max level, and skills.
+const LEVEL_STAT_GAIN = {
+  hp: 3,
+  atk: 2,
+  def: 2,
+  spd: 1,
+  tec: 2,
+  sup: 2
 };
 const BASE_EXP_BY_GRADE = {
   N: 100,
@@ -196,6 +213,8 @@ const MERCENARY_INITIAL_GOLD = Number(process.env.MERCENARY_INITIAL_GOLD ?? 5000
 let masterCache = null;
 let missionCache = null;
 let caseCache = null;
+let combatMissionCache = null;
+let combatRewardCache = null;
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { status, code });
@@ -307,6 +326,10 @@ function normalizeOfficeProgress(profile) {
 }
 
 function getOperationalStatusLabel(status) {
+  if (status === 'injured_light') return '경상';
+  if (status === 'injured_heavy') return '중상';
+  if (status === 'treatment_required') return '치료 필요';
+  if (status === 'incapacitated') return '전투불능';
   return OPERATIONAL_STATUS_LABELS[status] || '확인 필요';
 }
 
@@ -330,6 +353,11 @@ function getBaseExpByGrade(grade) {
   return BASE_EXP_BY_GRADE[String(grade || 'N').toUpperCase()] || BASE_EXP_BY_GRADE.N;
 }
 
+function getMaxLevelForMaster(master = {}) {
+  const grade = String(master?.grade || 'N').toUpperCase();
+  return Math.max(1, Number(master?.maxLevel || FALLBACK_MAX_LEVEL_BY_GRADE[grade] || FALLBACK_MAX_LEVEL_BY_GRADE.N) || FALLBACK_MAX_LEVEL_BY_GRADE.N);
+}
+
 function calculateExpToNext(currentLevel, grade, maxLevel) {
   const safeMaxLevel = Math.max(1, Number(maxLevel) || 1);
   const safeLevel = Math.max(1, Math.min(Number(currentLevel) || 1, safeMaxLevel));
@@ -348,7 +376,7 @@ function calculateExpProgress(currentExp, expToNext, isMaxLevel) {
 }
 
 function applyMercenaryExpProgress(owned, gainedExp, master) {
-  const maxLevel = Math.max(1, Number(master?.maxLevel || 1) || 1);
+  const maxLevel = getMaxLevelForMaster(master);
   let currentLevel = Math.max(1, Math.min(Number(owned?.currentLevel ?? owned?.level ?? 1) || 1, maxLevel));
   currentLevel = Math.floor(currentLevel);
   let currentExp = Math.max(0, Number(owned?.currentExp ?? owned?.exp ?? 0) || 0);
@@ -383,21 +411,130 @@ function normalizeOwnedProgress(owned, master) {
   return applyMercenaryExpProgress(owned, 0, master);
 }
 
-function calculateEffectiveStat(baseStat, currentLevel, maxLevel, grade) {
-  const base = Number(baseStat || 0) || 0;
-  const safeMax = Math.max(1, Number(maxLevel || 1) || 1);
-  const safeLevel = Math.min(safeMax, Math.max(1, Number(currentLevel || 1) || 1));
-  const levelRatio = safeMax <= 1 ? 0 : (safeLevel - 1) / (safeMax - 1);
-  const rate = GRADE_GROWTH_RATES[String(grade || 'N').toUpperCase()] ?? GRADE_GROWTH_RATES.N;
-  return Math.floor(base * (1 + rate * levelRatio));
+function getLevelStatGainTable() {
+  return { ...LEVEL_STAT_GAIN };
+}
+
+function calculateUnifiedLevelBonus(currentLevel) {
+  const safeLevel = Math.max(1, Number(currentLevel || 1) || 1);
+  const levelOffset = Math.max(0, Math.floor(safeLevel) - 1);
+  return Object.fromEntries(Object.entries(LEVEL_STAT_GAIN).map(([key, value]) => [key, value * levelOffset]));
+}
+
+function calculateCurrentStatsFromParts(baseStats = {}, levelBonus = {}, trainingBonus = {}, equipmentBonus = {}, permanentBonus = {}) {
+  const normalizedBase = normalizeBaseStats(baseStats);
+  const statKeys = Object.keys(LEVEL_STAT_GAIN);
+  return statKeys.reduce((acc, key) => {
+    acc[key] = Math.max(0, Math.round(
+      Number(normalizedBase[key] || 0)
+      + Number(levelBonus?.[key] || 0)
+      + Number(trainingBonus?.[key] || 0)
+      + Number(equipmentBonus?.[key] || 0)
+      + Number(permanentBonus?.[key] || 0)
+    ));
+    return acc;
+  }, {});
+}
+
+function calculateEffectiveStat(baseStat, currentLevel, maxLevel, grade, statKey = '') {
+  const key = String(statKey || '').trim();
+  const base = Math.max(0, Number(baseStat || 0) || 0);
+  const levelBonus = calculateUnifiedLevelBonus(currentLevel);
+  return Math.floor(base + Number(levelBonus[key] || 0));
 }
 
 function calculateEffectiveStats(masterStats, currentLevel, maxLevel, grade) {
   const baseStats = normalizeBaseStats(masterStats);
-  return Object.fromEntries(Object.entries(baseStats).map(([key, value]) => [
-    key,
-    calculateEffectiveStat(value, currentLevel, maxLevel, grade)
-  ]));
+  return calculateCurrentStatsFromParts(baseStats, calculateUnifiedLevelBonus(currentLevel));
+}
+
+function emptyServerStatBlock() {
+  return { hp: 0, atk: 0, def: 0, spd: 0, tec: 0, sup: 0, combatPower: 0 };
+}
+
+function subtractServerStats(left = {}, right = {}) {
+  return Object.keys(emptyServerStatBlock()).reduce((acc, key) => {
+    acc[key] = Math.round((Number(left?.[key] || 0) || 0) - (Number(right?.[key] || 0) || 0));
+    return acc;
+  }, {});
+}
+
+function buildCurrentStatsFromBase(baseStats, currentLevel, maxLevel, grade) {
+  const effectiveStats = calculateCurrentStatsFromParts(baseStats, calculateUnifiedLevelBonus(currentLevel));
+  return {
+    ...effectiveStats,
+    combatPower: calculateCombatPowerFromStats(effectiveStats)
+  };
+}
+
+function buildStatBreakdownForProgress(master, progress) {
+  const baseStats = normalizeBaseStats(master?.baseStats || master?.stats);
+  const maxLevel = progress?.maxLevel || getMaxLevelForMaster(master);
+  const levelBonus = {
+    ...calculateUnifiedLevelBonus(progress?.currentLevel || 1),
+    combatPower: 0
+  };
+  const currentStats = buildCurrentStatsFromBase(baseStats, progress?.currentLevel || 1, maxLevel, master?.grade);
+  const baseWithPower = {
+    ...baseStats,
+    combatPower: calculateCombatPowerFromStats(baseStats)
+  };
+  levelBonus.combatPower = calculateCombatPowerFromStats(currentStats) - baseWithPower.combatPower;
+  return {
+    baseStats: baseWithPower,
+    levelBonus,
+    trainingBonus: emptyServerStatBlock(),
+    equipmentBonus: emptyServerStatBlock(),
+    permanentBonus: emptyServerStatBlock(),
+    currentStats
+  };
+}
+
+function buildMercenaryGrowthResult(row, master, beforeProgress, afterProgress, gainedExp) {
+  const beforeBreakdown = buildStatBreakdownForProgress(master, beforeProgress);
+  const afterBreakdown = buildStatBreakdownForProgress(master, afterProgress);
+  const statDelta = subtractServerStats(afterBreakdown.currentStats, beforeBreakdown.currentStats);
+  return {
+    userMercenaryId: String(row.id),
+    ownedId: String(row.id),
+    mercenaryId: row.mercenaryId,
+    name: master.name,
+    grade: master.grade,
+    beforeLevel: beforeProgress.currentLevel,
+    afterLevel: afterProgress.currentLevel,
+    beforeExp: beforeProgress.currentExp,
+    afterExp: afterProgress.currentExp,
+    gainedExp: Math.max(0, Number(gainedExp || 0) || 0),
+    requiredExpBefore: beforeProgress.expToNext,
+    requiredExpAfter: afterProgress.expToNext,
+    expToNext: afterProgress.expToNext,
+    expProgress: afterProgress.expProgress,
+    isMaxLevel: afterProgress.isMaxLevel,
+    maxLevel: afterProgress.maxLevel,
+    levelUps: Math.max(0, afterProgress.currentLevel - beforeProgress.currentLevel),
+    statBefore: beforeBreakdown.currentStats,
+    statAfter: afterBreakdown.currentStats,
+    statDelta,
+    currentStats: afterBreakdown.currentStats,
+    statBreakdown: afterBreakdown
+  };
+}
+
+function buildOfficeGrowthResult(beforeProgress, afterProgress, gainedExp) {
+  return {
+    beforeLevel: beforeProgress.officeLevel,
+    afterLevel: afterProgress.officeLevel,
+    beforeExp: beforeProgress.officeExp,
+    afterExp: afterProgress.officeExp,
+    gainedExp: Math.max(0, Number(gainedExp || 0) || 0),
+    requiredExpBefore: beforeProgress.officeExpToNext,
+    requiredExpAfter: afterProgress.officeExpToNext,
+    expToNext: afterProgress.officeExpToNext,
+    expProgress: afterProgress.officeExpProgress,
+    isMaxLevel: afterProgress.isOfficeMaxLevel,
+    maxLevel: MAX_OFFICE_LEVEL,
+    levelUps: Math.max(0, afterProgress.officeLevel - beforeProgress.officeLevel)
+  };
 }
 
 function calculateCombatPowerFromStats(stats = {}) {
@@ -427,12 +564,19 @@ function buildOwnedMercenaryItem(row, master) {
   const statusLabel = getOperationalStatusLabel(operationalStatus);
   const progress = normalizeOwnedProgress(row, master);
   const baseStats = normalizeBaseStats(master.baseStats || master.stats);
-  const effectiveStats = calculateEffectiveStats(baseStats, progress.currentLevel, progress.maxLevel, master.grade);
+  const statBreakdown = buildStatBreakdownForProgress(master, progress);
+  const effectiveStats = normalizeBaseStats(statBreakdown.currentStats);
   const workPower = calculateBaseWorkPowerFromStats(effectiveStats);
-  const combatPower = calculateCombatPowerFromStats(effectiveStats);
+  const combatPower = statBreakdown.currentStats.combatPower;
   const item = {
     ...master,
     baseStats,
+    levelBonus: statBreakdown.levelBonus,
+    trainingBonus: statBreakdown.trainingBonus,
+    equipmentBonus: statBreakdown.equipmentBonus,
+    permanentBonus: statBreakdown.permanentBonus,
+    currentStats: statBreakdown.currentStats,
+    statBreakdown,
     effectiveStats,
     ownedId: row.id,
     level: progress.currentLevel,
@@ -859,6 +1003,50 @@ function readCaseData() {
       .filter((item) => item.enabled && item.steps.length);
   }
   return caseCache;
+}
+
+function readOptionalJsonArray(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    const rows = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    return Array.isArray(rows) ? rows : [];
+  } catch (error) {
+    console.warn('[mercenary] optional JSON load failed:', filePath, error);
+    return [];
+  }
+}
+
+function readCombatMissionData() {
+  if (!combatMissionCache) {
+    combatMissionCache = readOptionalJsonArray(COMBAT_MISSION_MASTER_PATH)
+      .filter((item) => item && (item.missionId || item.operationId || item.id))
+      .map((item) => ({
+        ...item,
+        missionId: String(item.missionId || item.operationId || item.id).trim(),
+        operationId: String(item.operationId || item.missionId || item.id).trim(),
+        rewardGroupId: String(item.rewardGroupId || '').trim(),
+        enabled: item.enabled !== false
+      }));
+  }
+  return combatMissionCache;
+}
+
+function readCombatRewardData() {
+  if (!combatRewardCache) {
+    combatRewardCache = readOptionalJsonArray(COMBAT_REWARD_MASTER_PATH)
+      .filter((item) => item && item.rewardGroupId)
+      .map((item) => ({
+        ...item,
+        rewardGroupId: String(item.rewardGroupId || '').trim(),
+        rewardType: String(item.rewardType || '').trim(),
+        systemRequirement: String(item.systemRequirement || '').trim(),
+        gold: Number(item.gold || 0) || 0,
+        officeExp: Number(item.officeExp || 0) || 0,
+        mercExp: Number(item.mercExp ?? item.mercenaryExp ?? 0) || 0,
+        enabled: item.enabled !== false
+      }));
+  }
+  return combatRewardCache;
 }
 
 function caseById() {
@@ -2453,7 +2641,7 @@ async function getInfirmaryState(userId) {
     .map((item) => [String(item.ownedId), item]));
   const treatmentOwnedIds = new Set(treatments.map((treatment) => String(treatment.ownedMercenaryId)));
   const injured = [...itemByOwnedId.values()]
-    .filter((item) => item.operationalStatus === 'injured' && !treatmentOwnedIds.has(String(item.ownedId)))
+    .filter((item) => TREATABLE_OPERATIONAL_STATUSES.has(item.operationalStatus) && !treatmentOwnedIds.has(String(item.ownedId)))
     .map(attachTreatmentQuote);
   const treating = treatments
     .map((treatment) => serializeTreatment(treatment, itemByOwnedId.get(String(treatment.ownedMercenaryId))))
@@ -2476,9 +2664,10 @@ async function startTreatment(userId, ownedMercenaryId) {
   if (!ownedId) throw httpError(400, '치료할 보유 용병을 선택해 주세요.', 'MERCENARY_NOT_OWNED');
   const owned = await repo.getUserMercenary(userId, ownedId);
   if (!owned) throw httpError(404, '보유하지 않은 용병입니다.', 'MERCENARY_NOT_OWNED');
-  if (owned.operationalStatus !== 'injured') {
+  if (!TREATABLE_OPERATIONAL_STATUSES.has(owned.operationalStatus)) {
     throw httpError(409, '부상 상태인 용병만 치료를 시작할 수 있습니다.', 'MERCENARY_NOT_INJURED');
   }
+  const beforeStatus = owned.operationalStatus;
   const existing = await repo.getActiveTreatmentByOwnedMercenaryId(userId, ownedId);
   if (existing) throw httpError(409, '이미 치료 중인 용병입니다.', 'TREATMENT_ALREADY_ACTIVE');
   const master = masterById().get(owned.mercenaryId);
@@ -2489,6 +2678,10 @@ async function startTreatment(userId, ownedMercenaryId) {
   const baseDurationSeconds = calculateTreatmentDurationSeconds(master.grade, item.level);
   const costGold = Math.max(1, Math.floor(baseCostGold * (1 - Number(officeEffects.treatmentCostReductionPct || 0))));
   const durationSeconds = Math.max(30, Math.floor(baseDurationSeconds * (1 - Number(officeEffects.treatmentTimeReductionPct || 0))));
+  const profileBeforeTreatment = await getOrCreateMercenaryProfile(userId);
+  if (Number(profileBeforeTreatment.gold || 0) < costGold) {
+    throw httpError(400, '용병단 골드가 부족합니다.', 'INSUFFICIENT_MERCENARY_GOLD');
+  }
   const now = new Date();
   const treatmentId = `treat_${randomUUID()}`;
   const completesAt = new Date(now.getTime() + durationSeconds * 1000);
@@ -2499,7 +2692,7 @@ async function startTreatment(userId, ownedMercenaryId) {
       operationalStatus: 'treating',
       currentActivityType: 'treatment',
       currentActivityId: treatmentId,
-      fromStatus: 'injured',
+      fromStatus: beforeStatus,
       requireNoActivity: false,
       errorCode: 'MERCENARY_NOT_INJURED',
       errorMessage: '부상 상태인 용병만 치료를 시작할 수 있습니다.'
@@ -2709,6 +2902,281 @@ function assertRunClaimable(runRow) {
   }
 }
 
+function getBattleOperationRewardConfig(operationId) {
+  const safeOperationId = String(operationId || '').trim();
+  if (REMOVED_LEGACY_BATTLE_OPERATION_IDS.has(safeOperationId)) {
+    throw httpError(410, '구버전 전투 기록은 더 이상 보상 수령 대상이 아닙니다.', 'LEGACY_BATTLE_OPERATION_REMOVED');
+  }
+  const mission = readCombatMissionData().find((item) => item.enabled && (item.operationId === safeOperationId || item.missionId === safeOperationId || item.id === safeOperationId));
+  if (mission?.rewardGroupId) {
+    const rewards = readCombatRewardData().filter((item) => (
+      item.enabled
+      && item.rewardGroupId === mission.rewardGroupId
+      && item.rewardType === 'gold'
+      && (!item.systemRequirement || item.systemRequirement === 'core')
+    ));
+    if (rewards.length) {
+      return rewards.reduce((acc, item) => ({
+        gold: acc.gold + Math.max(0, Number(item.gold || 0)),
+        officeExp: acc.officeExp + Math.max(0, Number(item.officeExp || 0)),
+        mercenaryExp: acc.mercenaryExp + Math.max(0, Number(item.mercExp || item.mercenaryExp || 0)),
+        rewardSource: 'sheet_combat_reward',
+        rewardGroupId: mission.rewardGroupId
+      }), { gold: 0, officeExp: 0, mercenaryExp: 0, rewardSource: 'sheet_combat_reward', rewardGroupId: mission.rewardGroupId });
+    }
+  }
+  throw httpError(400, '전투 의뢰 보상 정보를 찾을 수 없습니다.', 'UNKNOWN_BATTLE_OPERATION');
+}
+
+function extractBattleParticipantIds(payload = {}) {
+  const explicit = Array.isArray(payload.partyUserMercenaryIds) ? payload.partyUserMercenaryIds : [];
+  const fromAllies = Array.isArray(payload.allies)
+    ? payload.allies.map((unit) => unit?.sourceId || unit?.ownedId || unit?.mercenaryId)
+    : [];
+  const fromResult = Array.isArray(payload.battleResult?.allies)
+    ? payload.battleResult.allies.map((unit) => unit?.sourceId || unit?.ownedId || unit?.mercenaryId)
+    : [];
+  return [...explicit, ...fromAllies, ...fromResult]
+    .map((id) => String(id || '').trim())
+    .filter(Boolean)
+    .filter((id, index, list) => list.indexOf(id) === index);
+}
+
+function normalizeBattleResultPayload(payload = {}) {
+  const battleResult = payload.battleResult && typeof payload.battleResult === 'object'
+    ? payload.battleResult
+    : payload;
+  const battleId = String(payload.battleId || battleResult.battleId || '').trim();
+  const operationId = String(payload.operationId || battleResult.operationId || '').trim();
+  const result = String(payload.result || battleResult.result || '').trim();
+  if (!battleId) throw httpError(400, 'battleId is required.', 'BATTLE_ID_REQUIRED');
+  if (!operationId) throw httpError(400, 'operationId is required.', 'OPERATION_ID_REQUIRED');
+  if (!['victory', 'defeat', 'draw', 'party_wipe', 'timeout'].includes(result)) {
+    throw httpError(400, 'Invalid battle result.', 'INVALID_BATTLE_RESULT');
+  }
+  const participantIds = extractBattleParticipantIds({ ...payload, battleResult });
+  if (!participantIds.length) throw httpError(400, 'Battle party is required.', 'BATTLE_PARTY_REQUIRED');
+  return {
+    battleResult,
+    battleId,
+    operationId,
+    result,
+    participantIds,
+    seed: payload.seed ?? battleResult.seed ?? null,
+    startedAt: battleResult.startedAt || null,
+    completedAt: battleResult.endedAt || battleResult.completedAt || new Date().toISOString()
+  };
+}
+
+function calculateBattleRewards(operationId, result) {
+  const config = getBattleOperationRewardConfig(operationId);
+  if (result !== 'victory') {
+    return { gold: 0, officeExp: 0, mercenaryExp: 0, items: [] };
+  }
+  return {
+    gold: Math.max(0, Number(config.gold || 0)),
+    officeExp: Math.max(0, Number(config.officeExp || 0)),
+    mercenaryExp: Math.max(0, Number(config.mercenaryExp || 0)),
+    items: [],
+    rewardSource: config.rewardSource || 'sheet_combat_reward',
+    rewardGroupId: config.rewardGroupId || ''
+  };
+}
+
+function calculateBattleTreatmentCost({ injuryStatus, maxHp, level }) {
+  const hp = Math.max(1, Number(maxHp || 1));
+  const safeLevel = Math.max(1, Number(level || 1));
+  if (injuryStatus === 'incapacitated' || injuryStatus === 'treatment_required') return Math.max(100, Math.floor(hp * 0.8 + safeLevel * 20));
+  if (injuryStatus === 'injured_heavy') return Math.max(50, Math.floor(hp * 0.35 + safeLevel * 10));
+  if (injuryStatus === 'injured_light') return Math.max(20, Math.floor(hp * 0.15 + safeLevel * 5));
+  return 0;
+}
+
+function getBattleAllyFinalState(battleResult, ownedId) {
+  const allies = Array.isArray(battleResult?.allies) ? battleResult.allies : [];
+  return allies.find((unit) => String(unit?.sourceId || unit?.ownedId || unit?.mercenaryId || '') === String(ownedId)) || null;
+}
+
+function calculateBattleInjuryState(row, master, battleResult) {
+  const allyState = getBattleAllyFinalState(battleResult, row.id);
+  const beforeProgress = normalizeOwnedProgress(row, master);
+  const maxHp = Math.max(1, Number(allyState?.maxHp || master?.baseStats?.hp || master?.stats?.HP || 1));
+  const finalHp = Math.max(0, Number(allyState?.finalHp ?? allyState?.hp ?? maxHp) || 0);
+  const ratio = finalHp / maxHp;
+  const injuryStatus = finalHp <= 0
+    ? 'treatment_required'
+    : ratio <= 0.25
+      ? 'injured_heavy'
+      : ratio <= 0.5
+        ? 'injured_light'
+        : 'idle';
+  return {
+    ownedMercenaryId: String(row.id),
+    mercenaryId: row.mercenaryId,
+    name: master?.name || row.mercenaryId,
+    finalHp,
+    maxHp,
+    hpRatio: ratio,
+    injuryStatus,
+    treatmentCost: calculateBattleTreatmentCost({ injuryStatus, maxHp, level: beforeProgress.currentLevel })
+  };
+}
+
+async function claimBattleResult(userId, payload = {}) {
+  const normalized = normalizeBattleResultPayload(payload);
+  const existing = await repo.getBattleRunByBattleId(userId, normalized.battleId);
+  if (existing?.claimedAt) {
+    return {
+      ok: true,
+      claimed: true,
+      alreadyClaimed: true,
+      result: existing.result,
+      rewards: existing.rewards || { gold: 0, officeExp: 0, mercenaryExp: 0, items: [] },
+      injuries: existing.injuries || [],
+      run: existing,
+      message: 'Battle result already claimed.'
+    };
+  }
+
+  const ownedRows = await repo.listUserMercenaries(userId);
+  const ownedById = new Map(ownedRows.map((row) => [String(row.id), row]));
+  const selectedRows = normalized.participantIds.map((id) => ownedById.get(String(id)));
+  if (selectedRows.some((row) => !row)) {
+    throw httpError(403, 'Battle party contains a mercenary not owned by this user.', 'BATTLE_PARTY_OWNERSHIP_INVALID');
+  }
+  const unavailable = selectedRows.find((row) => !['idle'].includes(String(row.operationalStatus || 'idle')));
+  if (unavailable) {
+    throw httpError(409, 'Battle party contains a mercenary that is not currently available.', 'BATTLE_PARTY_NOT_AVAILABLE');
+  }
+
+  const lookup = masterById();
+  const rewards = calculateBattleRewards(normalized.operationId, normalized.result);
+  const injuries = selectedRows.map((row) => {
+    const master = lookup.get(row.mercenaryId);
+    if (!master) throw httpError(404, 'Battle party mercenary master data is missing.', 'BATTLE_MEMBER_NOT_FOUND');
+    return calculateBattleInjuryState(row, master, normalized.battleResult);
+  });
+
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    await repo.createBattleRun({
+      id: `battle_run_${randomUUID()}`,
+      userId,
+      operationId: normalized.operationId,
+      battleId: normalized.battleId,
+      battleSeed: normalized.seed === null || normalized.seed === undefined ? null : String(normalized.seed),
+      partySnapshot: { ownedMercenaryIds: normalized.participantIds },
+      enemiesSnapshot: { enemies: normalized.battleResult?.enemies || [] },
+      battleResult: normalized.battleResult,
+      resultStatus: 'completed',
+      result: normalized.result,
+      startedAt: normalized.startedAt,
+      completedAt: normalized.completedAt
+    });
+    const claimedAt = new Date().toISOString();
+    const claimed = await repo.claimBattleRun(userId, normalized.battleId, {
+      rewards,
+      injuries,
+      battleResult: normalized.battleResult,
+      claimedAt
+    });
+    if (!claimed?.claimedAt) {
+      const latest = await repo.getBattleRunByBattleId(userId, normalized.battleId);
+      if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+      return {
+        ok: true,
+        claimed: true,
+        alreadyClaimed: true,
+        result: latest?.result || normalized.result,
+        rewards: latest?.rewards || { gold: 0, officeExp: 0, mercenaryExp: 0, items: [] },
+        injuries: latest?.injuries || [],
+        run: latest,
+        message: 'Battle result already claimed.'
+      };
+    }
+
+    const profile = await getOrCreateMercenaryProfile(userId);
+    const beforeProfile = publicMercenaryProfile(profile);
+    const officeBefore = normalizeOfficeProgress(profile);
+    const officeAfter = applyOfficeExpProgress(profile, rewards.officeExp);
+    const officeGrowth = buildOfficeGrowthResult(officeBefore, officeAfter, rewards.officeExp);
+    const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
+      gold: Number(profile.gold || 0) + rewards.gold,
+      officeLevel: officeAfter.officeLevel,
+      officeExp: officeAfter.officeExp
+    });
+
+    const mercenaries = [];
+    for (const row of selectedRows) {
+      const master = lookup.get(row.mercenaryId);
+      const injury = injuries.find((item) => item.ownedMercenaryId === String(row.id));
+      const beforeProgress = normalizeOwnedProgress(row, master);
+      const afterProgress = applyMercenaryExpProgress(row, rewards.mercenaryExp, master);
+      const growthResult = buildMercenaryGrowthResult(row, master, beforeProgress, afterProgress, rewards.mercenaryExp);
+      await repo.updateUserMercenaryProgress(userId, row.id, {
+        currentLevel: afterProgress.currentLevel,
+        currentExp: afterProgress.currentExp
+      });
+      const statusRow = await repo.updateUserMercenaryStatus(userId, row.id, {
+        operationalStatus: injury?.injuryStatus || 'idle',
+        currentActivityType: null,
+        currentActivityId: null
+      });
+      const afterItem = buildOwnedMercenaryItem(statusRow, master);
+      mercenaries.push({
+        ...growthResult,
+        status: afterItem.operationalStatus,
+        statusLabel: afterItem.statusLabel,
+        injury,
+        treatmentCost: injury?.treatmentCost || 0
+      });
+    }
+
+    if (rewards.gold > 0) {
+      await repo.createRecruitLog({
+        userId,
+        action: 'battle_reward',
+        mercenaryId: normalized.operationId,
+        goldDelta: rewards.gold
+      });
+    }
+
+    if (provider === 'sqlite') await run('COMMIT');
+    const afterProfile = publicMercenaryProfile(updatedProfile);
+    return {
+      ok: true,
+      claimed: true,
+      alreadyClaimed: false,
+      result: normalized.result,
+      rewards,
+      mercenaries,
+      injuries,
+      office: {
+        ...officeGrowth
+      },
+      growth: {
+        source: 'battle',
+        gold: rewards.gold,
+        office: officeGrowth,
+        mercenaries
+      },
+      profile: {
+        beforeGold: beforeProfile.gold,
+        afterGold: afterProfile.gold,
+        gainedGold: rewards.gold
+      },
+      mercenaryProfile: afterProfile,
+      gold: afterProfile.gold,
+      mercenaryGold: afterProfile.gold,
+      communityPoints: await getCommunityPoints(userId),
+      run: claimed
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+}
+
 async function claimMissionRun(userId, runId) {
   const runRow = await repo.getMercenaryRun(userId, runId);
   assertRunClaimable(runRow);
@@ -2762,7 +3230,9 @@ async function claimMissionRun(userId, runId) {
     }
 
     const profile = await getOrCreateMercenaryProfile(userId);
+    const officeBefore = normalizeOfficeProgress(profile);
     const officeProgress = applyOfficeExpProgress(profile, gainedOfficeExp);
+    const officeGrowth = buildOfficeGrowthResult(officeBefore, officeProgress, gainedOfficeExp);
     const updatedProfile = await repo.updateMercenaryProfileProgress(userId, {
       gold: Number(profile.gold || 0) + gainedGold,
       officeLevel: officeProgress.officeLevel,
@@ -2775,6 +3245,7 @@ async function claimMissionRun(userId, runId) {
       if (!master) throw httpError(404, '파견 용병 마스터 정보를 찾을 수 없습니다.', 'RUN_MEMBER_NOT_FOUND');
       const beforeProgress = normalizeOwnedProgress(row, master);
       const afterProgress = applyMercenaryExpProgress(row, gainedMercenaryExp, master);
+      const growthResult = buildMercenaryGrowthResult(row, master, beforeProgress, afterProgress, gainedMercenaryExp);
       await repo.updateUserMercenaryProgress(userId, row.id, {
         currentLevel: afterProgress.currentLevel,
         currentExp: afterProgress.currentExp
@@ -2792,17 +3263,7 @@ async function claimMissionRun(userId, runId) {
       if (!statusRow) throw httpError(409, '파견 용병 상태가 변경되어 결과를 수령할 수 없습니다.', 'MERCENARY_NOT_AVAILABLE');
       const afterItem = buildOwnedMercenaryItem(statusRow, master);
       memberResults.push({
-        ownedId: row.id,
-        name: master.name,
-        grade: master.grade,
-        beforeLevel: beforeProgress.currentLevel,
-        afterLevel: afterProgress.currentLevel,
-        beforeExp: beforeProgress.currentExp,
-        afterExp: afterProgress.currentExp,
-        expToNext: afterProgress.expToNext,
-        expProgress: afterProgress.expProgress,
-        isMaxLevel: afterProgress.isMaxLevel,
-        levelUps: Math.max(0, afterProgress.currentLevel - beforeProgress.currentLevel),
+        ...growthResult,
         operationalStatus: afterItem.operationalStatus,
         statusLabel: afterItem.statusLabel,
         effectiveStats: afterItem.effectiveStats,
@@ -2837,6 +3298,13 @@ async function claimMissionRun(userId, runId) {
       injury,
       caseProgress,
       officeEffects,
+      office: officeGrowth,
+      growth: {
+        source: 'mission',
+        gold: gainedGold,
+        office: officeGrowth,
+        mercenaries: memberResults
+      },
       run: serializeRun(claimed, memberResults),
       members: memberResults,
       gold: mercenaryProfile.gold,
@@ -2877,6 +3345,9 @@ module.exports = {
   applyOfficeExpProgress,
   normalizeOwnedProgress,
   applyMercenaryExpProgress,
+  getLevelStatGainTable,
+  calculateUnifiedLevelBonus,
+  calculateCurrentStatsFromParts,
   calculateEffectiveStat,
   calculateEffectiveStats,
   calculateCombatPowerFromStats,
@@ -2910,6 +3381,7 @@ module.exports = {
   claimTreatment,
   startMissionRun,
   rejectMissionOffer,
+  claimBattleResult,
   claimMissionRun,
   listCases,
   getCaseDetail,

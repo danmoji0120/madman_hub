@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madmen-hub-static-v247';
+const CACHE_NAME = 'madmen-hub-static-v285';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -13,14 +13,39 @@ const PRECACHE_URLS = [
   '/js/notificationBadge.js',
   '/js/main.js',
   '/js/mercenary-data-loader.js',
+  '/js/mercenary-audio.js',
   '/js/mercenary-lobby.js',
   '/mercenary.html',
   '/data/mercenaries.master.json',
+  '/data/mercenary.attack-types.json',
+  '/data/mercenary.skills.json',
+  '/data/mercenary.status-effects.json',
+  '/data/mercenary.combat-missions.master.json',
+  '/data/mercenary.enemy-templates.master.json',
+  '/data/mercenary.encounters.master.json',
+  '/data/mercenary.encounter-enemies.master.json',
+  '/data/mercenary.combat-rewards.master.json',
+  '/data/mercenary.combat-rules.master.json',
+  '/data/mercenary.combat-logs.master.json',
+  '/assets/mercenary/sfx/ui/button_click.mp3',
+  '/assets/mercenary/sfx/ui/button_hover.mp3',
+  '/assets/mercenary/sfx/battle/attack_normal.mp3',
+  '/assets/mercenary/sfx/battle/attack_critical.mp3',
+  '/assets/mercenary/sfx/battle/attack_magic.mp3',
+  '/assets/mercenary/sfx/battle/attack_ranged.mp3',
+  '/assets/mercenary/sfx/battle/heal.mp3',
+  '/assets/mercenary/sfx/battle/miss.mp3',
+  '/assets/mercenary/sfx/battle/hit_light.mp3',
+  '/assets/mercenary/sfx/battle/hit_heavy.mp3',
+  '/assets/mercenary/sfx/battle/battle_victory.mp3',
+  '/assets/mercenary/sfx/battle/battle_defeat.mp3',
+  '/assets/mercenary/bgm/battle_01.mp3',
+  '/assets/mercenary/bgm/battle_02.mp3',
   '/icons/icon.svg',
   '/icons/maskable-icon.svg'
 ];
 
-const STATIC_ASSET_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|otf|webmanifest)$/i;
+const STATIC_ASSET_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|mp3|woff2?|ttf|otf|webmanifest)$/i;
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;

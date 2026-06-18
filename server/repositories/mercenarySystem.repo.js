@@ -101,6 +101,39 @@ function normalizeRun(row) {
   };
 }
 
+function parseJsonObject(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeBattleRun(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    operationId: row.operation_id,
+    battleId: row.battle_id,
+    battleSeed: row.battle_seed,
+    partySnapshot: parseJsonObject(row.party_snapshot_json, null),
+    enemiesSnapshot: parseJsonObject(row.enemies_snapshot_json, null),
+    battleResult: parseJsonObject(row.battle_result_json, null),
+    resultStatus: row.result_status || 'completed',
+    result: row.result || '',
+    startedAt: row.started_at || null,
+    completedAt: row.completed_at || null,
+    claimedAt: row.claimed_at || null,
+    rewards: parseJsonObject(row.rewards_json, null),
+    injuries: parseJsonObject(row.injuries_json, null),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 function normalizeMissionOffer(row) {
   if (!row) return null;
   return {
@@ -859,6 +892,124 @@ async function claimMercenaryRun(userId, runId, { resultStatus, resultText, clai
   return getMercenaryRun(userId, runId);
 }
 
+async function getBattleRunByBattleId(userId, battleId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_battle_runs')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('battle_id', battleId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeBattleRun(data);
+  }
+
+  return normalizeBattleRun(await get(
+    'SELECT * FROM user_mercenary_battle_runs WHERE user_id = ? AND battle_id = ?',
+    [userId, battleId]
+  ));
+}
+
+async function createBattleRun(payload) {
+  const row = {
+    id: payload.id,
+    user_id: payload.userId,
+    operation_id: payload.operationId,
+    battle_id: payload.battleId,
+    battle_seed: payload.battleSeed || null,
+    party_snapshot_json: payload.partySnapshot || null,
+    enemies_snapshot_json: payload.enemiesSnapshot || null,
+    battle_result_json: payload.battleResult || null,
+    result_status: payload.resultStatus || 'completed',
+    result: payload.result || '',
+    started_at: payload.startedAt || null,
+    completed_at: payload.completedAt || null
+  };
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_battle_runs')
+      .insert({
+        ...row,
+        party_snapshot_json: row.party_snapshot_json || {},
+        enemies_snapshot_json: row.enemies_snapshot_json || {},
+        battle_result_json: row.battle_result_json || {}
+      })
+      .select()
+      .single();
+    if (error) {
+      if (error.code === '23505') return getBattleRunByBattleId(payload.userId, payload.battleId);
+      throw error;
+    }
+    return normalizeBattleRun(data);
+  }
+
+  await run(
+    `INSERT OR IGNORE INTO user_mercenary_battle_runs
+     (id, user_id, operation_id, battle_id, battle_seed, party_snapshot_json, enemies_snapshot_json,
+      battle_result_json, result_status, result, started_at, completed_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      row.id,
+      row.user_id,
+      row.operation_id,
+      row.battle_id,
+      row.battle_seed,
+      JSON.stringify(row.party_snapshot_json || {}),
+      JSON.stringify(row.enemies_snapshot_json || {}),
+      JSON.stringify(row.battle_result_json || {}),
+      row.result_status,
+      row.result,
+      row.started_at,
+      row.completed_at
+    ]
+  );
+  return getBattleRunByBattleId(payload.userId, payload.battleId);
+}
+
+async function claimBattleRun(userId, battleId, { rewards, injuries, battleResult, claimedAt }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_battle_runs')
+      .update({
+        claimed_at: claimedAt,
+        rewards_json: rewards || {},
+        injuries_json: injuries || [],
+        battle_result_json: battleResult || {},
+        result_status: 'claimed',
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('battle_id', battleId)
+      .is('claimed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeBattleRun(data);
+  }
+
+  const result = await run(
+    `UPDATE user_mercenary_battle_runs
+     SET claimed_at = ?,
+         rewards_json = ?,
+         injuries_json = ?,
+         battle_result_json = ?,
+         result_status = 'claimed',
+         updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND battle_id = ? AND claimed_at IS NULL`,
+    [
+      claimedAt,
+      JSON.stringify(rewards || {}),
+      JSON.stringify(injuries || []),
+      JSON.stringify(battleResult || {}),
+      userId,
+      battleId
+    ]
+  );
+  if (!result.changes) return null;
+  return getBattleRunByBattleId(userId, battleId);
+}
+
 async function listActiveMissionOffers(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -1510,6 +1661,9 @@ module.exports = {
   listOpenMercenaryRuns,
   getMercenaryRun,
   claimMercenaryRun,
+  getBattleRunByBattleId,
+  createBattleRun,
+  claimBattleRun,
   listActiveMissionOffers,
   getMissionOffer,
   createMissionOffer,

@@ -1,0 +1,402 @@
+[
+  {
+    "id": "enemy_slime_grunt",
+    "enemyId": "enemy_slime_grunt",
+    "enabled": true,
+    "name": "하수도 점액괴물",
+    "grade": "N",
+    "role": "탱커",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "slime",
+    "tags": [
+      "점액",
+      "오염",
+      "하수도"
+    ],
+    "baseStats": {
+      "hp": 90,
+      "atk": 28,
+      "def": 16,
+      "spd": 12,
+      "tec": 8,
+      "sup": 4
+    },
+    "skillId": "skill_corrosive_splash",
+    "actionSkillId": "skill_corrosive_splash",
+    "basicAttackId": "guard_strike",
+    "aiType": "tank",
+    "description": "초급 점액형 적. 전열에서 시간을 끈다.",
+    "imageKey": "enemy_slime_grunt",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_slime_grunt.png",
+    "battleScale": 0.92,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.92
+    },
+    "shadowType": "blob",
+    "hitEffect": "acid_splash",
+    "deathEffect": "dissolve",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_big_slime",
+    "enemyId": "enemy_big_slime",
+    "enabled": true,
+    "name": "비대한 점액괴물",
+    "grade": "R",
+    "role": "탱커",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "slime",
+    "tags": [
+      "점액",
+      "오염",
+      "하수도"
+    ],
+    "baseStats": {
+      "hp": 160,
+      "atk": 38,
+      "def": 34,
+      "spd": 8,
+      "tec": 10,
+      "sup": 6
+    },
+    "skillId": "skill_acid_body",
+    "actionSkillId": "skill_acid_body",
+    "basicAttackId": "guard_strike",
+    "aiType": "tank",
+    "description": "체력이 높고 방어가 있는 점액괴물.",
+    "imageKey": "enemy_big_slime",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_big_slime.png",
+    "battleScale": 1.08,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "blob",
+    "hitEffect": "acid_splash",
+    "deathEffect": "dissolve",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_mimic_box",
+    "enemyId": "enemy_mimic_box",
+    "enabled": true,
+    "name": "낡은 미믹 상자",
+    "grade": "R",
+    "role": "탱커",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "mimic",
+    "tags": [
+      "미믹",
+      "던전",
+      "장비"
+    ],
+    "baseStats": {
+      "hp": 145,
+      "atk": 46,
+      "def": 44,
+      "spd": 9,
+      "tec": 18,
+      "sup": 0
+    },
+    "skillId": "skill_bite_trap",
+    "actionSkillId": "skill_bite_trap",
+    "basicAttackId": "guard_strike",
+    "aiType": "tank",
+    "description": "상자처럼 보이지만 먼저 문다.",
+    "imageKey": "enemy_mimic_box",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_mimic_box.png",
+    "battleScale": 1.02,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.9
+    },
+    "shadowType": "oval",
+    "hitEffect": "bite_flash",
+    "deathEffect": "collapse",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_rat_thief",
+    "enemyId": "enemy_rat_thief",
+    "enabled": true,
+    "name": "쥐도적",
+    "grade": "N",
+    "role": "딜러",
+    "position": "중열",
+    "positionKey": "middle",
+    "typeKey": "beast",
+    "tags": [
+      "도적",
+      "던전",
+      "기동"
+    ],
+    "baseStats": {
+      "hp": 70,
+      "atk": 32,
+      "def": 10,
+      "spd": 38,
+      "tec": 22,
+      "sup": 2
+    },
+    "skillId": "skill_quick_stab",
+    "actionSkillId": "skill_quick_stab",
+    "basicAttackId": "normal_strike",
+    "aiType": "aggressive",
+    "description": "빠르지만 약한 보조 적.",
+    "imageKey": "enemy_rat_thief",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_rat_thief.png",
+    "battleScale": 0.82,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "oval",
+    "hitEffect": "slash",
+    "deathEffect": "fade",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_debtbreaker_grunt",
+    "enemyId": "enemy_debtbreaker_grunt",
+    "enabled": true,
+    "name": "채권추심단 행동대원",
+    "grade": "R",
+    "role": "딜러",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "human",
+    "tags": [
+      "채권",
+      "대인",
+      "용병"
+    ],
+    "baseStats": {
+      "hp": 120,
+      "atk": 50,
+      "def": 28,
+      "spd": 24,
+      "tec": 18,
+      "sup": 4
+    },
+    "skillId": "skill_baton_smash",
+    "actionSkillId": "skill_baton_smash",
+    "basicAttackId": "normal_strike",
+    "aiType": "aggressive",
+    "description": "계약보다 몽둥이를 믿는 행동대원.",
+    "imageKey": "enemy_debtbreaker_grunt",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_debtbreaker_grunt.png",
+    "battleScale": 0.95,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "oval",
+    "hitEffect": "blunt_hit",
+    "deathEffect": "fade",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_debtbreaker_captain",
+    "enemyId": "enemy_debtbreaker_captain",
+    "enabled": true,
+    "name": "채권추심단장",
+    "grade": "SR",
+    "role": "지휘",
+    "position": "중열",
+    "positionKey": "middle",
+    "typeKey": "human",
+    "tags": [
+      "채권",
+      "지휘",
+      "대인"
+    ],
+    "baseStats": {
+      "hp": 180,
+      "atk": 62,
+      "def": 42,
+      "spd": 30,
+      "tec": 36,
+      "sup": 18
+    },
+    "skillId": "skill_collectors_order",
+    "actionSkillId": "skill_collectors_order",
+    "basicAttackId": "command_strike",
+    "aiType": "commander",
+    "description": "행동대원을 강화하는 지휘형 적.",
+    "imageKey": "enemy_debtbreaker_captain",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_debtbreaker_captain.png",
+    "battleScale": 1.05,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "oval",
+    "hitEffect": "command_flash",
+    "deathEffect": "fade",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_waste_summon",
+    "enemyId": "enemy_waste_summon",
+    "enabled": true,
+    "name": "폐기 소환체",
+    "grade": "R",
+    "role": "딜러",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "summon",
+    "tags": [
+      "마탑",
+      "소환체",
+      "오염"
+    ],
+    "baseStats": {
+      "hp": 130,
+      "atk": 58,
+      "def": 22,
+      "spd": 22,
+      "tec": 32,
+      "sup": 0
+    },
+    "skillId": "skill_unstable_burst",
+    "actionSkillId": "skill_unstable_burst",
+    "basicAttackId": "normal_strike",
+    "aiType": "aggressive",
+    "description": "마탑 폐기장에서 튀어나온 불안정한 소환체.",
+    "imageKey": "enemy_waste_summon",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_waste_summon.png",
+    "battleScale": 1,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "magic",
+    "hitEffect": "arcane_burst",
+    "deathEffect": "disperse",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_abyss_servant",
+    "enemyId": "enemy_abyss_servant",
+    "enabled": true,
+    "name": "심해계약 하수인",
+    "grade": "R",
+    "role": "서브딜러",
+    "position": "중열",
+    "positionKey": "middle",
+    "typeKey": "abyss",
+    "tags": [
+      "심해",
+      "계약",
+      "부두"
+    ],
+    "baseStats": {
+      "hp": 135,
+      "atk": 56,
+      "def": 30,
+      "spd": 28,
+      "tec": 34,
+      "sup": 10
+    },
+    "skillId": "skill_deep_mark",
+    "actionSkillId": "skill_deep_mark",
+    "basicAttackId": "magic_bolt",
+    "aiType": "caster",
+    "description": "계약 표식을 남기는 심해계 적.",
+    "imageKey": "enemy_abyss_servant",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_abyss_servant.png",
+    "battleScale": 0.98,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "water",
+    "hitEffect": "abyss_mark",
+    "deathEffect": "sink",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_red_thread_chaser",
+    "enemyId": "enemy_red_thread_chaser",
+    "enabled": true,
+    "name": "붉은실 추적자",
+    "grade": "SR",
+    "role": "암살",
+    "position": "후열",
+    "positionKey": "back",
+    "typeKey": "red_thread",
+    "tags": [
+      "붉은실",
+      "추적",
+      "암살"
+    ],
+    "baseStats": {
+      "hp": 120,
+      "atk": 70,
+      "def": 18,
+      "spd": 58,
+      "tec": 62,
+      "sup": 8
+    },
+    "skillId": "skill_thread_snipe",
+    "actionSkillId": "skill_thread_snipe",
+    "basicAttackId": "speed_cut",
+    "aiType": "assassin",
+    "description": "후열을 노리는 고속 추적자.",
+    "imageKey": "enemy_red_thread_chaser",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_red_thread_chaser.png",
+    "battleScale": 0.9,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "thin",
+    "hitEffect": "red_thread_cut",
+    "deathEffect": "fade",
+    "exportStatus": "primary_sheet_ready"
+  },
+  {
+    "id": "enemy_clockwork_guard",
+    "enemyId": "enemy_clockwork_guard",
+    "enabled": true,
+    "name": "태엽 파수꾼",
+    "grade": "R",
+    "role": "탱커",
+    "position": "전열",
+    "positionKey": "front",
+    "typeKey": "construct",
+    "tags": [
+      "태엽",
+      "기계",
+      "성당"
+    ],
+    "baseStats": {
+      "hp": 170,
+      "atk": 44,
+      "def": 58,
+      "spd": 14,
+      "tec": 28,
+      "sup": 0
+    },
+    "skillId": "skill_gear_guard",
+    "actionSkillId": "skill_gear_guard",
+    "basicAttackId": "guard_strike",
+    "aiType": "tank",
+    "description": "느리지만 단단한 태엽형 경비체.",
+    "imageKey": "enemy_clockwork_guard",
+    "imagePath": "/assets/mercenary/battle/enemies/enemy_clockwork_guard.png",
+    "battleScale": 1.08,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.94
+    },
+    "shadowType": "mechanic",
+    "hitEffect": "gear_spark",
+    "deathEffect": "break",
+    "exportStatus": "primary_sheet_ready"
+  }
+]
