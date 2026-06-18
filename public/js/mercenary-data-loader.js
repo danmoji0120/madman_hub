@@ -20,7 +20,7 @@
   }
 
   async function loadMercenaryMasterData() {
-    const data = await loadJson('/data/mercenaries.master.json?v=285');
+    const data = await loadJson('/data/mercenaries.master.json?v=290');
     return Array.isArray(data) ? data : [];
   }
 
@@ -37,16 +37,16 @@
       combatRules,
       combatLogs
     ] = await Promise.all([
-      loadJsonArray('/data/mercenary.attack-types.json?v=285'),
-      loadJsonArray('/data/mercenary.skills.json?v=285'),
-      loadJsonArray('/data/mercenary.status-effects.json?v=285'),
-      loadJsonArray('/data/mercenary.combat-missions.master.json?v=285'),
-      loadJsonArray('/data/mercenary.enemy-templates.master.json?v=285'),
-      loadJsonArray('/data/mercenary.encounters.master.json?v=285'),
-      loadJsonArray('/data/mercenary.encounter-enemies.master.json?v=285'),
-      loadJsonArray('/data/mercenary.combat-rewards.master.json?v=285'),
-      loadJsonArray('/data/mercenary.combat-rules.master.json?v=285'),
-      loadJsonArray('/data/mercenary.combat-logs.master.json?v=285')
+      loadJsonArray('/data/mercenary.attack-types.json?v=290'),
+      loadJsonArray('/data/mercenary.skills.json?v=290'),
+      loadJsonArray('/data/mercenary.status-effects.json?v=290'),
+      loadJsonArray('/data/mercenary.combat-missions.master.json?v=290'),
+      loadJsonArray('/data/mercenary.enemy-templates.master.json?v=290'),
+      loadJsonArray('/data/mercenary.encounters.master.json?v=290'),
+      loadJsonArray('/data/mercenary.encounter-enemies.master.json?v=290'),
+      loadJsonArray('/data/mercenary.combat-rewards.master.json?v=290'),
+      loadJsonArray('/data/mercenary.combat-rules.master.json?v=290'),
+      loadJsonArray('/data/mercenary.combat-logs.master.json?v=290')
     ]);
     return {
       attackTypes,
@@ -62,8 +62,62 @@
     };
   }
 
+  function indexBy(items, keyName) {
+    return Object.fromEntries((Array.isArray(items) ? items : [])
+      .map((item) => [String(item?.[keyName] || '').trim(), item])
+      .filter(([key]) => key));
+  }
+
+  function groupEquipmentBySlot(equipment = []) {
+    const grouped = {
+      weapon: [],
+      armor: [],
+      accessory: [],
+      tool: []
+    };
+    (Array.isArray(equipment) ? equipment : []).forEach((item) => {
+      const slot = String(item?.slot || '').trim();
+      if (!grouped[slot]) grouped[slot] = [];
+      grouped[slot].push(item);
+    });
+    return grouped;
+  }
+
+  async function loadMercenaryItemsMasterData() {
+    return loadJsonArray('/data/mercenary.items.master.json?v=290');
+  }
+
+  async function loadMercenaryEquipmentMasterData() {
+    return loadJsonArray('/data/mercenary.equipment.master.json?v=290');
+  }
+
+  async function loadMercenaryEquipmentImagePromptsMasterData() {
+    return loadJsonArray('/data/mercenary.equipment-image-prompts.master.json?v=290');
+  }
+
+  async function loadMercenaryEquipmentBundle() {
+    const [items, equipment, equipmentImagePrompts] = await Promise.all([
+      loadMercenaryItemsMasterData(),
+      loadMercenaryEquipmentMasterData(),
+      loadMercenaryEquipmentImagePromptsMasterData()
+    ]);
+    return {
+      items,
+      equipment,
+      equipmentImagePrompts,
+      byItemId: indexBy(items, 'itemId'),
+      equipmentById: indexBy(equipment, 'equipmentId'),
+      imagePromptByKey: indexBy(equipmentImagePrompts, 'imageKey'),
+      equipmentBySlot: groupEquipmentBySlot(equipment)
+    };
+  }
+
   window.MercenaryDataLoader = {
     loadMercenaryMasterData,
-    loadMercenaryCombatRuleData
+    loadMercenaryCombatRuleData,
+    loadMercenaryItemsMasterData,
+    loadMercenaryEquipmentMasterData,
+    loadMercenaryEquipmentImagePromptsMasterData,
+    loadMercenaryEquipmentBundle
   };
 }());

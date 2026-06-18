@@ -10,6 +10,9 @@ const MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.mi
 const CASE_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.cases.master.json');
 const COMBAT_MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-missions.master.json');
 const COMBAT_REWARD_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-rewards.master.json');
+const ITEM_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.items.master.json');
+const EQUIPMENT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment.master.json');
+const EQUIPMENT_IMAGE_PROMPT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment-image-prompts.master.json');
 const REMOVED_LEGACY_BATTLE_OPERATION_IDS = new Set([
   'mock_sewer_cleanup_01',
   'mock_back_alley_02',
@@ -215,6 +218,9 @@ let missionCache = null;
 let caseCache = null;
 let combatMissionCache = null;
 let combatRewardCache = null;
+let itemMasterCache = null;
+let equipmentMasterCache = null;
+let equipmentImagePromptCache = null;
 
 function httpError(status, message, code) {
   return Object.assign(new Error(message), { status, code });
@@ -1049,6 +1055,34 @@ function readCombatRewardData() {
   return combatRewardCache;
 }
 
+
+
+function readItemMasterData() {
+  if (!itemMasterCache) {
+    itemMasterCache = readOptionalJsonArray(ITEM_MASTER_PATH)
+      .filter((item) => item && item.itemId)
+      .map((item) => ({ ...item, itemId: String(item.itemId || '').trim() }));
+  }
+  return itemMasterCache;
+}
+
+function readEquipmentMasterData() {
+  if (!equipmentMasterCache) {
+    equipmentMasterCache = readOptionalJsonArray(EQUIPMENT_MASTER_PATH)
+      .filter((item) => item && item.equipmentId)
+      .map((item) => ({ ...item, equipmentId: String(item.equipmentId || '').trim(), itemId: String(item.itemId || '').trim() }));
+  }
+  return equipmentMasterCache;
+}
+
+function readEquipmentImagePromptData() {
+  if (!equipmentImagePromptCache) {
+    equipmentImagePromptCache = readOptionalJsonArray(EQUIPMENT_IMAGE_PROMPT_MASTER_PATH)
+      .filter((item) => item && item.imageKey)
+      .map((item) => ({ ...item, imageKey: String(item.imageKey || '').trim(), itemId: String(item.itemId || '').trim() }));
+  }
+  return equipmentImagePromptCache;
+}
 function caseById() {
   return new Map(readCaseData().map((item) => [item.caseId, item]));
 }
@@ -3022,6 +3056,138 @@ function calculateBattleInjuryState(row, master, battleResult) {
   };
 }
 
+
+function getInventoryMasterBundle() {
+  const items = readItemMasterData();
+  const equipment = readEquipmentMasterData();
+  const imagePrompts = readEquipmentImagePromptData();
+  return {
+    items,
+    equipment,
+    imagePrompts,
+    byItemId: new Map(items.map((item) => [item.itemId, item])),
+    equipmentByItemId: new Map(equipment.map((item) => [item.itemId, item])),
+    imagePromptByKey: new Map(imagePrompts.map((item) => [item.imageKey, item]))
+  };
+}
+
+function enrichInventoryEntry(entry, bundle = getInventoryMasterBundle()) {
+  const item = bundle.byItemId.get(entry.itemId) || null;
+  const equipment = bundle.equipmentByItemId.get(entry.itemId) || null;
+  const imagePrompt = equipment?.imageKey ? (bundle.imagePromptByKey.get(equipment.imageKey) || null) : null;
+  return {
+    ...entry,
+    master: item,
+    equipment,
+    imagePrompt,
+    slot: equipment?.slot || null,
+    grade: equipment?.grade || item?.grade || null,
+    name: equipment?.name || item?.name || entry.itemId,
+    description: item?.description || equipment?.summary || '',
+    effectSummary: item?.effectSummary || equipment?.summary || ''
+  };
+}
+
+function matchesInventoryQuery(entry, filters = {}) {
+  const itemType = String(filters.itemType || '').trim();
+  const slot = String(filters.slot || '').trim();
+  const grade = String(filters.grade || '').trim().toUpperCase();
+  const q = String(filters.q || '').trim().toLowerCase();
+  if (itemType && itemType !== 'all' && entry.itemType !== itemType) return false;
+  if (slot && slot !== 'all' && entry.slot !== slot) return false;
+  if (grade && grade !== 'ALL' && String(entry.grade || '').toUpperCase() !== grade) return false;
+  if (q) {
+    const haystack = [
+      entry.itemId,
+      entry.name,
+      entry.description,
+      entry.effectSummary,
+      entry.equipment?.category,
+      ...(entry.equipment?.tags || [])
+    ].join(' ').toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+  return true;
+}
+
+function buildInventorySummary(entries = []) {
+  const summary = {
+    totalEntries: entries.length,
+    totalQuantity: 0,
+    byItemType: {},
+    bySlot: { weapon: 0, armor: 0, accessory: 0, tool: 0 },
+    byGrade: { N: 0, R: 0, SR: 0, SSR: 0, EX: 0 },
+    lockedCount: 0
+  };
+  for (const entry of entries) {
+    const quantity = Math.max(0, Number(entry.quantity || 0) || 0);
+    summary.totalQuantity += quantity;
+    summary.byItemType[entry.itemType] = (summary.byItemType[entry.itemType] || 0) + quantity;
+    if (entry.slot) summary.bySlot[entry.slot] = (summary.bySlot[entry.slot] || 0) + quantity;
+    if (entry.grade) summary.byGrade[entry.grade] = (summary.byGrade[entry.grade] || 0) + quantity;
+    if (entry.locked) summary.lockedCount += 1;
+  }
+  return summary;
+}
+
+async function getUserInventory(userId, filters = {}) {
+  const bundle = getInventoryMasterBundle();
+  const entries = (await repo.listUserInventoryItems(userId))
+    .map((entry) => enrichInventoryEntry(entry, bundle))
+    .filter((entry) => matchesInventoryQuery(entry, filters));
+  return {
+    items: entries,
+    summary: buildInventorySummary(entries)
+  };
+}
+
+async function getUserInventorySummary(userId) {
+  const bundle = getInventoryMasterBundle();
+  const entries = (await repo.listUserInventoryItems(userId)).map((entry) => enrichInventoryEntry(entry, bundle));
+  return {
+    summary: buildInventorySummary(entries)
+  };
+}
+
+function normalizeInventoryPayload(payload = {}) {
+  return {
+    itemId: String(payload.itemId || payload.item_id || '').trim(),
+    itemType: String(payload.itemType || payload.item_type || 'misc').trim() || 'misc',
+    quantity: Math.max(1, Number(payload.quantity || 1) || 1),
+    locked: Boolean(payload.locked),
+    acquiredSourceType: payload.acquiredSourceType || payload.acquired_source_type || null,
+    acquiredSourceId: payload.acquiredSourceId || payload.acquired_source_id || null,
+    acquiredRunId: payload.acquiredRunId || payload.acquired_run_id || null
+  };
+}
+
+async function addInventoryItem(userId, payload = {}) {
+  const normalized = normalizeInventoryPayload(payload);
+  if (!normalized.itemId) throw httpError(400, 'itemId is required.', 'ITEM_ID_REQUIRED');
+  const item = getInventoryMasterBundle().byItemId.get(normalized.itemId);
+  const stackable = Boolean(item?.stackable);
+  return repo.addInventoryItem({
+    id: `inv_${randomUUID()}`,
+    userId,
+    itemId: normalized.itemId,
+    itemType: item?.itemType || normalized.itemType,
+    quantity: normalized.quantity,
+    locked: normalized.locked,
+    acquiredSourceType: normalized.acquiredSourceType,
+    acquiredSourceId: normalized.acquiredSourceId,
+    acquiredRunId: normalized.acquiredRunId,
+    stackable
+  });
+}
+
+async function addInventoryItems(userId, items = [], sourceInfo = {}) {
+  const results = [];
+  for (const item of Array.isArray(items) ? items : []) {
+    results.push(await addInventoryItem(userId, { ...sourceInfo, ...item }));
+  }
+  return results;
+}
+
 async function claimBattleResult(userId, payload = {}) {
   const normalized = normalizeBattleResultPayload(payload);
   const existing = await repo.getBattleRunByBattleId(userId, normalized.battleId);
@@ -3382,6 +3548,10 @@ module.exports = {
   startMissionRun,
   rejectMissionOffer,
   claimBattleResult,
+  getUserInventory,
+  getUserInventorySummary,
+  addInventoryItem,
+  addInventoryItems,
   claimMissionRun,
   listCases,
   getCaseDetail,

@@ -187,3 +187,57 @@ SFX mapping:
 - miss: `/assets/mercenary/sfx/battle/miss.mp3`
 - heavy hit/finisher: `/assets/mercenary/sfx/battle/hit_heavy.mp3`
 - light hit: `/assets/mercenary/sfx/battle/hit_light.mp3`
+
+## Combat request contract
+
+The battle board now enters combat through a shared client contract instead of calling the viewer directly with only a battle operation object.
+
+Files:
+
+- `public/js/mercenary-combat-contract.js`
+- `public/js/mercenary-combat-adapters.js`
+
+`CombatRequest` fields:
+
+- `requestId`
+- `sourceType`
+- `sourceId`
+- `missionId`
+- `partyMemberIds`
+- `partySnapshot`
+- `difficulty`
+- `seed`
+- `options.autoClaim`
+- `options.viewerMode`
+- `metadata.callerLabel`
+- `metadata.originTitle`
+
+`CombatResult` fields:
+
+- `requestId`
+- `sourceType`
+- `sourceId`
+- `missionId`
+- `runId`
+- `outcome`
+- `rounds`
+- `mvp`
+- `stats`
+- `rewards`
+- `injuries`
+- `logs`
+- `claim`
+- `visual`
+
+Supported source types:
+
+- `combat_mission`: executable now.
+- `rumor`: contract skeleton only.
+- `case`: contract skeleton only.
+- `exploration`: contract skeleton only.
+- `tower`: contract skeleton only.
+- `raid`: contract skeleton only.
+
+Unsupported or not-yet-executable source types must fail before opening the viewer.
+The current sheet combat missions use `sourceType: "combat_mission"` and keep their sheet mission id as `sourceId`.
+The existing battle result modal, automatic claim, BGM/SFX handoff, rewards, EXP, and infirmary refresh keep using the normalized battle result shape.

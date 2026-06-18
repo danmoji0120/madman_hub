@@ -134,6 +134,24 @@ function normalizeBattleRun(row) {
   };
 }
 
+
+function normalizeInventoryEntry(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    itemId: row.item_id,
+    itemType: row.item_type || 'misc',
+    quantity: Math.max(0, Number(row.quantity || 0) || 0),
+    locked: Boolean(row.locked),
+    acquiredSourceType: row.acquired_source_type || null,
+    acquiredSourceId: row.acquired_source_id || null,
+    acquiredRunId: row.acquired_run_id || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 function normalizeMissionOffer(row) {
   if (!row) return null;
   return {
@@ -1010,6 +1028,109 @@ async function claimBattleRun(userId, battleId, { rewards, injuries, battleResul
   return getBattleRunByBattleId(userId, battleId);
 }
 
+
+async function listUserInventoryItems(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(normalizeInventoryEntry);
+  }
+
+  const rows = await all(
+    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? ORDER BY created_at DESC, id DESC',
+    [userId]
+  );
+  return rows.map(normalizeInventoryEntry);
+}
+
+async function addInventoryItem({ id, userId, itemId, itemType = 'misc', quantity = 1, locked = false, acquiredSourceType = null, acquiredSourceId = null, acquiredRunId = null, stackable = false }) {
+  const safeQuantity = Math.max(1, Number(quantity || 1) || 1);
+  if (stackable) {
+    if (provider === 'supabase') {
+      const existing = await getSupabaseAdminClient()
+        .from('user_mercenary_inventory_items')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('item_id', itemId)
+        .limit(1);
+      if (existing.error) throw existing.error;
+      if (existing.data?.[0]) {
+        const row = existing.data[0];
+        const { data, error } = await getSupabaseAdminClient()
+          .from('user_mercenary_inventory_items')
+          .update({
+            quantity: Number(row.quantity || 0) + safeQuantity,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', row.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return normalizeInventoryEntry(data);
+      }
+    } else {
+      const existing = await get(
+        'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND item_id = ? LIMIT 1',
+        [userId, itemId]
+      );
+      if (existing) {
+        await run(
+          'UPDATE user_mercenary_inventory_items SET quantity = quantity + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+          [safeQuantity, existing.id]
+        );
+        return normalizeInventoryEntry(await get('SELECT * FROM user_mercenary_inventory_items WHERE id = ?', [existing.id]));
+      }
+    }
+  }
+
+  const row = {
+    id,
+    user_id: userId,
+    item_id: itemId,
+    item_type: itemType || 'misc',
+    quantity: stackable ? safeQuantity : 1,
+    locked: locked ? 1 : 0,
+    acquired_source_type: acquiredSourceType,
+    acquired_source_id: acquiredSourceId,
+    acquired_run_id: acquiredRunId
+  };
+
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .insert({
+        ...row,
+        locked: Boolean(locked)
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeInventoryEntry(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_inventory_items
+     (id, user_id, item_id, item_type, quantity, locked, acquired_source_type, acquired_source_id, acquired_run_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      row.id,
+      row.user_id,
+      row.item_id,
+      row.item_type,
+      row.quantity,
+      row.locked,
+      row.acquired_source_type,
+      row.acquired_source_id,
+      row.acquired_run_id
+    ]
+  );
+  return normalizeInventoryEntry(await get('SELECT * FROM user_mercenary_inventory_items WHERE id = ?', [id]));
+}
+
 async function listActiveMissionOffers(userId) {
   if (provider === 'supabase') {
     const { data, error } = await getSupabaseAdminClient()
@@ -1664,6 +1785,8 @@ module.exports = {
   getBattleRunByBattleId,
   createBattleRun,
   claimBattleRun,
+  listUserInventoryItems,
+  addInventoryItem,
   listActiveMissionOffers,
   getMissionOffer,
   createMissionOffer,

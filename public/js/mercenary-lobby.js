@@ -17,7 +17,8 @@ const mercenaryIcons = {
   bell: '15_bell.png',
   calendar: '16_calendar.png',
   settings: '17_setting.png',
-  point: '18_point.png'
+  point: '18_point.png',
+  inventory: '13_contract_scroll.png'
 };
 
 const MERCENARY_BGM_TRACKS = [
@@ -155,6 +156,7 @@ const mercenaryLobbyState = {
     { label: '의무실', icon: 'medicalCross', action: 'infirmary' },
     { label: '사무실', icon: 'settings', action: 'office' },
     { label: '사건 파일', icon: 'report', action: 'cases' },
+    { label: '보관함', icon: 'inventory', action: 'inventory' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
 };
@@ -593,6 +595,22 @@ const caseState = {
   errorMessage: ''
 };
 let caseTimer = null;
+
+
+const inventoryState = {
+  entries: [],
+  summary: null,
+  equipmentBundle: null,
+  selectedEntryId: '',
+  filters: {
+    itemType: 'all',
+    slot: 'all',
+    grade: 'all',
+    q: ''
+  },
+  loading: false,
+  errorMessage: ''
+};
 
 const battleOperationState = {
   operations: [],
@@ -2806,15 +2824,18 @@ function renderMissionDetail() {
     </div>
     ${locked ? `
       <div class="mission-detail-actions is-locked">
+        <button class="mission-start-button" id="mission-start-button" type="button" disabled>의뢰 시작</button>
         <button class="mission-reject-button" type="button" disabled>해금 필요</button>
         <span>잠긴 의뢰는 게시판 재고가 아니므로 시작하거나 거부할 수 없습니다.</span>
       </div>
     ` : `<div class="mission-detail-actions">
+      <button class="mission-start-button" id="mission-start-button" type="button" disabled>의뢰 시작</button>
       <button class="mission-reject-button" type="button" data-mission-reject="${escapeHtml(mission.offerId)}">의뢰 거부</button>
       <span>거부한 의뢰는 즉시 보충되지 않습니다.</span>
     </div>`}
   `;
   root.querySelector('[data-mission-reject]')?.addEventListener('click', (event) => rejectSelectedMissionOffer(event.currentTarget));
+  root.querySelector('#mission-start-button')?.addEventListener('click', (event) => startSelectedMission(event.currentTarget));
   renderMissionStartState();
 }
 
@@ -4181,6 +4202,289 @@ function bindMercenarySettingsModal() {
       if (event.key === 'Escape') closeMercenarySettingsModal();
     });
   }
+}
+
+
+const INVENTORY_TYPE_TABS = [
+  { value: 'all', label: '전체' },
+  { value: 'equipment', label: '장비' },
+  { value: 'material', label: '재료' },
+  { value: 'consumable', label: '소모품' },
+  { value: 'clue', label: '단서' },
+  { value: 'misc', label: '기타' }
+];
+
+const INVENTORY_SLOT_OPTIONS = [
+  { value: 'all', label: '전체 장비' },
+  { value: 'weapon', label: '무기' },
+  { value: 'armor', label: '방어구' },
+  { value: 'accessory', label: '장신구' },
+  { value: 'tool', label: '보조 도구' }
+];
+
+const INVENTORY_GRADE_OPTIONS = ['all', 'N', 'R', 'SR', 'SSR', 'EX'];
+
+function getInventoryEquipmentForEntry(entry) {
+  return entry?.equipment || inventoryState.equipmentBundle?.equipmentById?.[entry?.itemId] || null;
+}
+
+function getInventoryItemMasterForEntry(entry) {
+  return entry?.master || inventoryState.equipmentBundle?.byItemId?.[entry?.itemId] || null;
+}
+
+function getInventoryImagePromptForEntry(entry) {
+  const equipment = getInventoryEquipmentForEntry(entry);
+  return entry?.imagePrompt || (equipment?.imageKey ? inventoryState.equipmentBundle?.imagePromptByKey?.[equipment.imageKey] : null) || null;
+}
+
+function normalizeInventoryEntryForUi(entry = {}) {
+  const item = getInventoryItemMasterForEntry(entry);
+  const equipment = getInventoryEquipmentForEntry(entry);
+  const imagePrompt = getInventoryImagePromptForEntry(entry);
+  return {
+    ...entry,
+    item,
+    equipment,
+    imagePrompt,
+    itemId: entry.itemId || item?.itemId || '',
+    itemType: entry.itemType || item?.itemType || 'misc',
+    name: entry.name || equipment?.name || item?.name || entry.itemId || '알 수 없는 아이템',
+    grade: entry.grade || equipment?.grade || item?.grade || '',
+    description: entry.description || item?.description || equipment?.summary || '',
+    effectSummary: entry.effectSummary || item?.effectSummary || equipment?.summary || '',
+    slot: entry.slot || equipment?.slot || '',
+    category: equipment?.category || '',
+    quantity: Math.max(0, Number(entry.quantity || 0) || 0)
+  };
+}
+
+function filterInventoryEntries(entries = inventoryState.entries) {
+  const filters = inventoryState.filters;
+  const q = String(filters.q || '').trim().toLowerCase();
+  return entries.map(normalizeInventoryEntryForUi).filter((entry) => {
+    if (filters.itemType !== 'all' && entry.itemType !== filters.itemType) return false;
+    if (filters.slot !== 'all' && entry.slot !== filters.slot) return false;
+    if (filters.grade !== 'all' && String(entry.grade || '').toUpperCase() !== filters.grade) return false;
+    if (q) {
+      const haystack = [
+        entry.itemId,
+        entry.name,
+        entry.description,
+        entry.effectSummary,
+        entry.category,
+        ...(entry.equipment?.tags || [])
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+async function ensureInventoryEquipmentBundle() {
+  if (inventoryState.equipmentBundle) return inventoryState.equipmentBundle;
+  const loader = window.MercenaryDataLoader;
+  if (!loader?.loadMercenaryEquipmentBundle) {
+    inventoryState.equipmentBundle = {
+      items: [],
+      equipment: [],
+      equipmentImagePrompts: [],
+      byItemId: {},
+      equipmentById: {},
+      imagePromptByKey: {},
+      equipmentBySlot: { weapon: [], armor: [], accessory: [], tool: [] }
+    };
+    return inventoryState.equipmentBundle;
+  }
+  inventoryState.equipmentBundle = await loader.loadMercenaryEquipmentBundle();
+  return inventoryState.equipmentBundle;
+}
+
+async function loadInventoryData() {
+  inventoryState.loading = true;
+  inventoryState.errorMessage = '';
+  renderInventoryView();
+  try {
+    await ensureInventoryEquipmentBundle();
+    const payload = await apiRequest('/api/mercenary/inventory', { perfScope: 'mercenary-inventory' });
+    inventoryState.entries = Array.isArray(payload?.items) ? payload.items : [];
+    inventoryState.summary = payload?.summary || null;
+    inventoryState.selectedEntryId = inventoryState.entries[0]?.id || '';
+  } catch (error) {
+    console.warn('[mercenary/inventory] load failed', error);
+    if (error.status === 401 || error.data?.code === 'AUTH_REQUIRED') showMercenaryLoginRequiredModal();
+    inventoryState.entries = [];
+    inventoryState.summary = null;
+    inventoryState.errorMessage = error.data?.message || error.message || '보관함을 불러오지 못했습니다.';
+  } finally {
+    inventoryState.loading = false;
+    renderInventoryView();
+  }
+}
+
+function openInventoryView() {
+  document.querySelector('#mercenary-inventory-view')?.removeAttribute('hidden');
+  document.body.classList.add('inventory-open');
+  loadInventoryData();
+}
+
+function closeInventoryView() {
+  document.querySelector('#mercenary-inventory-view')?.setAttribute('hidden', '');
+  document.body.classList.remove('inventory-open');
+}
+
+function renderInventoryTabs() {
+  const root = document.querySelector('#inventory-type-tabs');
+  if (!root) return;
+  root.innerHTML = INVENTORY_TYPE_TABS.map((tab) => `
+    <button type="button" class="${inventoryState.filters.itemType === tab.value ? 'is-active' : ''}" data-inventory-type="${escapeHtml(tab.value)}">${escapeHtml(tab.label)}</button>
+  `).join('');
+  root.querySelectorAll('[data-inventory-type]').forEach((button) => {
+    button.addEventListener('click', () => {
+      inventoryState.filters.itemType = button.dataset.inventoryType || 'all';
+      renderInventoryView();
+    });
+  });
+}
+
+function renderInventoryFilters() {
+  const slot = document.querySelector('#inventory-slot-filter');
+  const grade = document.querySelector('#inventory-grade-filter');
+  const search = document.querySelector('#inventory-search-input');
+  if (slot) {
+    slot.innerHTML = INVENTORY_SLOT_OPTIONS.map((item) => `<option value="${escapeHtml(item.value)}" ${inventoryState.filters.slot === item.value ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('');
+    slot.onchange = (event) => {
+      inventoryState.filters.slot = event.target.value || 'all';
+      renderInventoryView();
+    };
+  }
+  if (grade) {
+    grade.innerHTML = INVENTORY_GRADE_OPTIONS.map((item) => `<option value="${escapeHtml(item)}" ${inventoryState.filters.grade === item ? 'selected' : ''}>${item === 'all' ? '전체' : escapeHtml(item)}</option>`).join('');
+    grade.onchange = (event) => {
+      inventoryState.filters.grade = event.target.value || 'all';
+      renderInventoryView();
+    };
+  }
+  if (search) {
+    search.value = inventoryState.filters.q;
+    search.oninput = (event) => {
+      inventoryState.filters.q = event.target.value || '';
+      renderInventoryView();
+    };
+  }
+}
+
+function renderInventoryCard(entry) {
+  const equipment = entry.equipment || {};
+  const prompt = entry.imagePrompt || {};
+  const fileName = prompt.fileName || (equipment.imageKey ? `${equipment.imageKey}.png` : '');
+  const img = fileName ? `/assets/mercenary/equipment/${fileName}` : '';
+  return `
+    <button type="button" class="inventory-item-card ${inventoryState.selectedEntryId === entry.id ? 'is-selected' : ''}" data-inventory-entry="${escapeHtml(entry.id)}">
+      <span class="inventory-item-art">
+        ${img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.hidden=true" />` : ''}
+        <b>${escapeHtml(entry.grade || '?')}</b>
+      </span>
+      <span class="inventory-item-copy">
+        <strong>${escapeHtml(entry.name)}</strong>
+        <em>${escapeHtml(entry.itemType)}${entry.slot ? ` · ${escapeHtml(entry.slot)}` : ''} · x${formatNumber(entry.quantity)}</em>
+        <small>${escapeHtml(entry.effectSummary || entry.description || '효과 정보 없음')}</small>
+      </span>
+      ${entry.locked ? '<i>잠금</i>' : ''}
+    </button>
+  `;
+}
+
+function renderInventoryDetail(entry) {
+  const root = document.querySelector('#inventory-detail-panel');
+  if (!root) return;
+  if (!entry) {
+    root.innerHTML = `
+      <div class="inventory-empty-detail">
+        <h3>보관함이 텅 비었습니다.</h3>
+        <p>전투 보상이나 의뢰 보상으로 장비를 얻으면 여기에 쌓입니다.</p>
+        <em>마렌: 창고 열쇠는 있는데, 아직 넣을 물건이 없네요.</em>
+      </div>
+    `;
+    return;
+  }
+  const stats = entry.equipment?.stats || {};
+  const modifiers = entry.equipment?.modifiers || {};
+  const statRows = Object.entries({ ...stats, ...modifiers }).filter(([, value]) => Number(value || 0) !== 0);
+  root.innerHTML = `
+    <article class="inventory-detail-card">
+      <span class="inventory-grade-badge ${getGradeClass(entry.grade)}">${escapeHtml(entry.grade || '?')}</span>
+      <h3>${escapeHtml(entry.name)}</h3>
+      <p>${escapeHtml(entry.description || '설명 없음')}</p>
+      ${entry.equipment?.flavorText ? `<blockquote>${escapeHtml(entry.equipment.flavorText)}</blockquote>` : ''}
+      <dl>
+        <div><dt>itemId</dt><dd>${escapeHtml(entry.itemId)}</dd></div>
+        <div><dt>종류</dt><dd>${escapeHtml(entry.itemType)}</dd></div>
+        <div><dt>슬롯</dt><dd>${escapeHtml(entry.slot || '해당 없음')}</dd></div>
+        <div><dt>분류</dt><dd>${escapeHtml(entry.category || '없음')}</dd></div>
+        <div><dt>수량</dt><dd>${formatNumber(entry.quantity)}</dd></div>
+        <div><dt>획득 출처</dt><dd>${escapeHtml(entry.acquiredSourceType || '기록 없음')}</dd></div>
+        <div><dt>생성일</dt><dd>${escapeHtml(entry.createdAt || '-')}</dd></div>
+      </dl>
+      <section class="inventory-stat-list">
+        <h4>능력치</h4>
+        ${statRows.length ? statRows.map(([key, value]) => `<span>${escapeHtml(key.toUpperCase())} ${Number(value) > 0 ? '+' : ''}${formatNumber(value)}</span>`).join('') : '<p>능력치 보정 없음</p>'}
+      </section>
+      <section class="inventory-tag-list">
+        ${(entry.equipment?.recommendedPositions || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
+        ${(entry.equipment?.recommendedRoles || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
+        ${(entry.equipment?.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
+      </section>
+      <div class="inventory-disabled-actions">
+        <button type="button" disabled>장착 · 다음 업데이트</button>
+        <button type="button" disabled>사용 · 다음 업데이트</button>
+        <button type="button" disabled>판매 · 다음 업데이트</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderInventoryView() {
+  const summaryLine = document.querySelector('#inventory-summary-line');
+  const list = document.querySelector('#inventory-item-list');
+  if (!list) return;
+  renderInventoryTabs();
+  renderInventoryFilters();
+  if (summaryLine) {
+    const summary = inventoryState.summary || {};
+    summaryLine.textContent = `총 ${formatNumber(summary.totalEntries || inventoryState.entries.length)}칸 · 수량 ${formatNumber(summary.totalQuantity || 0)}개`;
+  }
+  if (inventoryState.loading) {
+    list.innerHTML = '<p class="inventory-empty">보관함 장부를 펼치는 중입니다.</p>';
+    renderInventoryDetail(null);
+    return;
+  }
+  if (inventoryState.errorMessage) {
+    list.innerHTML = `<p class="inventory-empty">${escapeHtml(inventoryState.errorMessage)}</p>`;
+    renderInventoryDetail(null);
+    return;
+  }
+  const entries = filterInventoryEntries();
+  if (!entries.length) {
+    list.innerHTML = '<p class="inventory-empty">보관함이 텅 비었습니다.<br />전투 보상이나 의뢰 보상으로 장비를 얻으면 여기에 쌓입니다.</p>';
+    renderInventoryDetail(null);
+    return;
+  }
+  if (!entries.some((entry) => entry.id === inventoryState.selectedEntryId)) inventoryState.selectedEntryId = entries[0].id;
+  list.innerHTML = entries.map(renderInventoryCard).join('');
+  list.querySelectorAll('[data-inventory-entry]').forEach((button) => {
+    button.addEventListener('click', () => {
+      inventoryState.selectedEntryId = button.dataset.inventoryEntry || '';
+      renderInventoryView();
+    });
+  });
+  renderInventoryDetail(entries.find((entry) => entry.id === inventoryState.selectedEntryId) || entries[0]);
+}
+
+function bindInventoryView() {
+  document.querySelector('#inventory-close-button')?.addEventListener('click', closeInventoryView);
+  document.querySelector('#mercenary-inventory-view')?.addEventListener('click', (event) => {
+    if (event.target?.id === 'mercenary-inventory-view') closeInventoryView();
+  });
 }
 
 function renderTopActions(state) {
@@ -6989,6 +7293,42 @@ function createBattleResultFromOperation(operation, battleParty) {
   });
 }
 
+function createCombatRequestFromBattleOperation(operation, party = selectedBattleParty(), options = {}) {
+  const adapter = window.MercenaryCombatAdapters;
+  if (!adapter?.createCombatMissionRequest) throw new Error('?꾪닾 ?몄텧 ?대뙌?곕? 遺덈윭?ㅼ? 紐삵뻽?듬땲??');
+  const partyMemberIds = Array.isArray(options.partyMemberIds) && options.partyMemberIds.length
+    ? options.partyMemberIds
+    : battlePartyMemberIds(party);
+  const partySnapshot = {
+    ...(party || {}),
+    partyMemberIds,
+    members: Array.isArray(options.partySnapshot)
+      ? options.partySnapshot.map((member) => ({ ...member }))
+      : selectedBattlePartyMembers(party).map((member) => ({ ...member }))
+  };
+  return adapter.createCombatMissionRequest(operation, partySnapshot, {
+    autoClaim: true,
+    viewerMode: 'auto_battle',
+    partyMemberIds
+  });
+}
+
+function createBattleResultFromCombatRequest(combatRequest) {
+  const adapter = window.MercenaryCombatAdapters;
+  const request = adapter?.assertCanExecuteRequest
+    ? adapter.assertCanExecuteRequest(combatRequest)
+    : combatRequest;
+  if (request.sourceType !== 'combat_mission') {
+    throw new Error(`아직 지원하지 않는 전투 호출입니다: ${request.sourceType || 'unknown'}`);
+  }
+  const operation = request.metadata?.operation;
+  if (!operation) throw new Error('전투 작전 정보를 찾을 수 없습니다.');
+  const battleResult = createBattleResultFromOperation(operation, request.partySnapshot);
+  return adapter?.attachRequestToBattleResult
+    ? adapter.attachRequestToBattleResult(battleResult, request)
+    : battleResult;
+}
+
 function flattenBattleResultActions(battleResult) {
   return (battleResult?.rounds || []).flatMap((round) => (round.actions || []).map((action) => ({ ...action, round: round.round })));
 }
@@ -8214,13 +8554,33 @@ function buildMockBattleEvents(allies, enemies) {
 }
 
 function openBattleViewer(operation, party = selectedBattleParty()) {
-  const battleResult = createBattleResultFromOperation(operation, party);
+  const validation = getBattlePartyValidation(party, operation);
+  if (!validation.ok) {
+    showReadyNotice(validation.reason || String.fromCharCode(0xC804, 0xD22C, 0x20, 0xD30C, 0xD2F0, 0xB97C, 0x20, 0xC120, 0xD0DD, 0xD574, 0xC8FC, 0xC138, 0xC694, 0x2E));
+    renderBattleOperationBoard();
+    return;
+  }
+  const partyMemberIds = battlePartyMemberIds(party);
+  const partySnapshot = selectedBattlePartyMembers(party);
+  let combatRequest;
+  let battleResult;
+  try {
+    combatRequest = createCombatRequestFromBattleOperation(operation, party, { partyMemberIds, partySnapshot });
+    battleResult = createBattleResultFromCombatRequest(combatRequest);
+  } catch (error) {
+    console.warn('[mercenary/combat] failed to create combat request:', error);
+    showReadyNotice(error?.message || String.fromCharCode(0xC804, 0xD22C, 0xB97C, 0x20, 0xC2DC, 0xC791, 0xD560, 0x20, 0xC218, 0x20, 0xC5C6, 0xC2B5, 0xB2C8, 0xB2E4, 0x2E));
+    return;
+  }
+  const combatResult = window.MercenaryCombatAdapters?.normalizeBattleResultToCombatResult?.(battleResult, combatRequest) || null;
   const allies = (battleResult.allies || []).map(cloneBattleUnitForState);
   const enemies = (battleResult.enemies || []).map(cloneBattleUnitForState);
   const viewer = battleOperationState.viewer;
   stopBattleViewerPlayback();
   document.querySelector('#battle-result-modal')?.setAttribute('hidden', '');
   viewer.operation = operation;
+  viewer.combatRequest = combatRequest;
+  viewer.combatResult = combatResult;
   viewer.battleResult = battleResult;
   viewer.allies = allies;
   viewer.enemies = enemies;
@@ -8228,13 +8588,13 @@ function openBattleViewer(operation, party = selectedBattleParty()) {
   viewer.events = flattenBattleResultActions(battleResult);
   viewer.currentRound = 1;
   viewer.currentEventIndex = -1;
-  viewer.status = '교전 중';
+  viewer.status = String.fromCharCode(0xAD50, 0xC804, 0x20, 0xC911);
   viewer.paused = false;
   viewer.finished = false;
   viewer.floating = null;
   viewer.resultBanner = '';
   viewer.resultSfxPlayed = false;
-  viewer.claimState = { status: 'idle', battleId: battleResult.battleId };
+  viewer.claimState = { status: 'idle', battleId: battleResult.battleId, requestId: combatRequest.requestId };
   if (MERCENARY_BATTLE_DEBUG) console.debug('[mercenary/battle] battleResult', battleResult);
   document.querySelector('#battle-viewer-layer')?.removeAttribute('hidden');
   pauseMercenaryBgmForBattle();
@@ -8263,6 +8623,10 @@ function buildBattleClaimPayload(battleResult) {
   const allies = Array.isArray(battleResult?.allies) ? battleResult.allies : [];
   return {
     battleId: battleResult?.battleId || '',
+    requestId: battleResult?.requestId || '',
+    sourceType: battleResult?.sourceType || 'combat_mission',
+    sourceId: battleResult?.sourceId || battleResult?.operationId || '',
+    missionId: battleResult?.missionId || battleResult?.operationId || '',
     operationId: battleResult?.operationId || '',
     result: battleResult?.result || '',
     seed: battleResult?.seed ?? null,
@@ -8605,6 +8969,10 @@ function renderQuickNav(items) {
       }
       if (button.dataset.quickAction === 'cases') {
         openCaseView();
+        return;
+      }
+      if (button.dataset.quickAction === 'inventory') {
+        openInventoryView();
         return;
       }
       showReadyNotice();
@@ -10038,6 +10406,7 @@ async function initializeMercenaryLobby() {
   bindMercenaryAuthOverlay();
   bindOfficeGrowthPopover();
   bindMercenarySettingsModal();
+  bindInventoryView();
   bindOfficeControls();
   bindCaseControls();
   document.querySelector('#battle-board-close')?.addEventListener('click', closeBattleOperationView);

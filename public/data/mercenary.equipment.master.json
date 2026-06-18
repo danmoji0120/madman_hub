@@ -1,0 +1,7138 @@
+[
+  {
+    "equipmentId": "eq_n_chipped_short_sword_001",
+    "itemId": "eq_n_chipped_short_sword_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "이 빠진 단검",
+    "slot": "weapon",
+    "category": "sword",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 7,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 7
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +7",
+    "flavorText": "낡은 짧은 검. 신입 용병이 장비라고 우기는 물건.",
+    "imageKey": "eq_n_chipped_short_sword_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_bent_spear_001",
+    "itemId": "eq_n_bent_spear_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "휘어진 창",
+    "slot": "weapon",
+    "category": "spear",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 6,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 7
+    },
+    "tags": [
+      "weapon",
+      "spear",
+      "combat_low",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +6, ACC +1",
+    "flavorText": "끝이 살짝 휘었지만 거리 유지는 되는 싸구려 창.",
+    "imageKey": "eq_n_bent_spear_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_cracked_wooden_bow_001",
+    "itemId": "eq_n_cracked_wooden_bow_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "금 간 목궁",
+    "slot": "weapon",
+    "category": "bow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 5,
+      "def": 0,
+      "spd": 0,
+      "tec": 2,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "weapon",
+      "bow",
+      "combat_low",
+      "forest"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +5, TEC +2",
+    "flavorText": "잡아당길 때마다 불안한 소리가 나는 목궁.",
+    "imageKey": "eq_n_cracked_wooden_bow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_rusty_hand_axe_001",
+    "itemId": "eq_n_rusty_hand_axe_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "녹슨 손도끼",
+    "slot": "weapon",
+    "category": "axe",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 9,
+      "def": 0,
+      "spd": -1,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "weapon",
+      "axe",
+      "combat_low",
+      "labor"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +9, SPD -1",
+    "flavorText": "나무도 베고 적도 벤다는 광고는 과장이다.",
+    "imageKey": "eq_n_rusty_hand_axe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_old_apprentice_staff_001",
+    "itemId": "eq_n_old_apprentice_staff_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "견습 마도 지팡이",
+    "slot": "weapon",
+    "category": "staff",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 4,
+      "def": 0,
+      "spd": 0,
+      "tec": 4,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +4, TEC +4",
+    "flavorText": "마력보다 먼지가 많이 묻은 견습용 지팡이.",
+    "imageKey": "eq_n_old_apprentice_staff_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_sewer_knife_001",
+    "itemId": "eq_n_sewer_knife_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "하수도 단도",
+    "slot": "weapon",
+    "category": "dagger",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 5,
+      "def": 0,
+      "spd": 2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "weapon",
+      "dagger",
+      "combat_low",
+      "sewer"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +5, SPD +2",
+    "flavorText": "하수도 의뢰 뒤에 남은 불쾌한 단도.",
+    "imageKey": "eq_n_sewer_knife_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_training_mace_001",
+    "itemId": "eq_n_training_mace_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "훈련용 철퇴",
+    "slot": "weapon",
+    "category": "mace",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 8,
+      "def": 1,
+      "spd": -1,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "weapon",
+      "mace",
+      "starter",
+      "training"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +8, DEF +1, SPD -1",
+    "flavorText": "훈련용이라기엔 꽤 아픈 둔기.",
+    "imageKey": "eq_n_training_mace_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_splintered_crossbow_001",
+    "itemId": "eq_n_splintered_crossbow_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "가시 박힌 쇠뇌",
+    "slot": "weapon",
+    "category": "crossbow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 6,
+      "def": 0,
+      "spd": 0,
+      "tec": 2,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "weapon",
+      "crossbow",
+      "combat_low",
+      "ranged"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +6, TEC +2",
+    "flavorText": "조준보다 고장이 먼저 걱정되는 낡은 쇠뇌.",
+    "imageKey": "eq_n_splintered_crossbow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mercenary_broadsword_001",
+    "itemId": "eq_r_mercenary_broadsword_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "용병식 넓은검",
+    "slot": "weapon",
+    "category": "sword",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 18,
+      "def": 2,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 22
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "combat_medium",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +18, DEF +2",
+    "flavorText": "싸구려는 벗어났지만 품격은 아직 먼 넓은검.",
+    "imageKey": "eq_r_mercenary_broadsword_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_hooked_halberd_001",
+    "itemId": "eq_r_hooked_halberd_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "갈고리 미늘창",
+    "slot": "weapon",
+    "category": "halberd",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 17,
+      "def": 0,
+      "spd": 0,
+      "tec": 3,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 23
+    },
+    "tags": [
+      "weapon",
+      "halberd",
+      "combat_medium",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +17, TEC +3",
+    "flavorText": "끌어당기고 찌르기 좋은 거리 제압용 무기.",
+    "imageKey": "eq_r_hooked_halberd_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_black_oak_bow_001",
+    "itemId": "eq_r_black_oak_bow_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "흑참나무 활",
+    "slot": "weapon",
+    "category": "bow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 14,
+      "def": 0,
+      "spd": 0,
+      "tec": 5,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 25
+    },
+    "tags": [
+      "weapon",
+      "bow",
+      "combat_medium",
+      "forest"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +14, TEC +5, ACC +2",
+    "flavorText": "밀렵꾼들이 선호하는 단단한 활.",
+    "imageKey": "eq_r_black_oak_bow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_debt_collector_baton_001",
+    "itemId": "eq_r_debt_collector_baton_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "추심단 진압봉",
+    "slot": "weapon",
+    "category": "mace",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 16,
+      "def": 4,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 24
+    },
+    "tags": [
+      "weapon",
+      "mace",
+      "combat_medium",
+      "debtbreaker"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +16, DEF +4",
+    "flavorText": "돈을 받아내는 데 특화된 묵직한 진압봉.",
+    "imageKey": "eq_r_debt_collector_baton_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_ironfang_dagger_001",
+    "itemId": "eq_r_ironfang_dagger_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "철니 단검",
+    "slot": "weapon",
+    "category": "dagger",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 13,
+      "def": 0,
+      "spd": 5,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 2,
+      "healing": 0,
+      "combatPower": 25
+    },
+    "tags": [
+      "weapon",
+      "dagger",
+      "combat_medium",
+      "assassin"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +13, SPD +5, CRIT +2",
+    "flavorText": "날 끝이 이빨처럼 갈라진 비열한 단검.",
+    "imageKey": "eq_r_ironfang_dagger_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_soot_mage_rod_001",
+    "itemId": "eq_r_soot_mage_rod_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "그을음 마도봉",
+    "slot": "weapon",
+    "category": "staff",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 10,
+      "def": 0,
+      "spd": 0,
+      "tec": 9,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 24
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "combat_medium",
+      "mage_tower"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +10, TEC +9",
+    "flavorText": "불완전한 화염 술식을 안정시키는 마도봉.",
+    "imageKey": "eq_r_soot_mage_rod_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_guard_captain_saber_001",
+    "itemId": "eq_r_guard_captain_saber_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "경비대장 사브르",
+    "slot": "weapon",
+    "category": "saber",
+    "recommendedPositions": [
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 15,
+      "def": 0,
+      "spd": 3,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 25
+    },
+    "tags": [
+      "weapon",
+      "saber",
+      "combat_medium",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +15, SPD +3, ACC +2",
+    "flavorText": "골목 경비대장이 쓰던 균형 잡힌 곡도.",
+    "imageKey": "eq_r_guard_captain_saber_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_repeater_crossbow_001",
+    "itemId": "eq_r_repeater_crossbow_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "반복 장전 쇠뇌",
+    "slot": "weapon",
+    "category": "crossbow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 17,
+      "def": 0,
+      "spd": -1,
+      "tec": 4,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 25
+    },
+    "tags": [
+      "weapon",
+      "crossbow",
+      "combat_medium",
+      "ranged"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +17, TEC +4, SPD -1",
+    "flavorText": "두 발째부터는 손이 떨리는 반복 장전 쇠뇌.",
+    "imageKey": "eq_r_repeater_crossbow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_red_thread_stiletto_001",
+    "itemId": "eq_sr_red_thread_stiletto_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "붉은실 송곳검",
+    "slot": "weapon",
+    "category": "dagger",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 30,
+      "def": 0,
+      "spd": 8,
+      "tec": 5,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 4,
+      "healing": 0,
+      "combatPower": 52
+    },
+    "tags": [
+      "weapon",
+      "dagger",
+      "combat_danger",
+      "red_thread"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +30, SPD +8, TEC +5, CRIT +4",
+    "flavorText": "상처보다 추적 표식이 먼저 남는 가느다란 검.",
+    "imageKey": "eq_sr_red_thread_stiletto_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_tower_waste_catalyst_001",
+    "itemId": "eq_sr_tower_waste_catalyst_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "마탑 폐기 촉매봉",
+    "slot": "weapon",
+    "category": "staff",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 24,
+      "def": 0,
+      "spd": 0,
+      "tec": 18,
+      "sup": 4
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 56
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "combat_high",
+      "arcane"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +24, TEC +18, SUP +4",
+    "flavorText": "폐기된 마력 코어를 억지로 묶어둔 위험한 촉매봉.",
+    "imageKey": "eq_sr_tower_waste_catalyst_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_abyssal_coral_spear_001",
+    "itemId": "eq_sr_abyssal_coral_spear_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "심해 산호창",
+    "slot": "weapon",
+    "category": "spear",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 32,
+      "def": 4,
+      "spd": 0,
+      "tec": 6,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 52
+    },
+    "tags": [
+      "weapon",
+      "spear",
+      "combat_high",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +32, DEF +4, TEC +6",
+    "flavorText": "심해 계약자들이 쓰던 습기 찬 산호창.",
+    "imageKey": "eq_sr_abyssal_coral_spear_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_mimic_tooth_greatsword_001",
+    "itemId": "eq_sr_mimic_tooth_greatsword_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "미믹 이빨 대검",
+    "slot": "weapon",
+    "category": "greatsword",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 38,
+      "def": 0,
+      "spd": -3,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 5,
+      "healing": 0,
+      "combatPower": 54
+    },
+    "tags": [
+      "weapon",
+      "greatsword",
+      "combat_high",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +38, SPD -3, CRIT +5",
+    "flavorText": "미믹 이빨을 엮어 만든 불길한 대검.",
+    "imageKey": "eq_sr_mimic_tooth_greatsword_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_foxfire_spellbow_001",
+    "itemId": "eq_sr_foxfire_spellbow_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "여우불 주문활",
+    "slot": "weapon",
+    "category": "bow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 26,
+      "def": 0,
+      "spd": 0,
+      "tec": 13,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 4,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 54
+    },
+    "tags": [
+      "weapon",
+      "bow",
+      "combat_high",
+      "spirit"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +26, TEC +13, ACC +4",
+    "flavorText": "화살 끝에 작은 술식을 얹는 주문활.",
+    "imageKey": "eq_sr_foxfire_spellbow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_blood_rent_battleaxe_001",
+    "itemId": "eq_sr_blood_rent_battleaxe_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "혈세 징수 전투도끼",
+    "slot": "weapon",
+    "category": "axe",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 36,
+      "def": 3,
+      "spd": -2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 51
+    },
+    "tags": [
+      "weapon",
+      "axe",
+      "combat_high",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +36, DEF +3, SPD -2",
+    "flavorText": "세금도 피도 똑같이 받아낸다는 끔찍한 도끼.",
+    "imageKey": "eq_sr_blood_rent_battleaxe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_clockwork_rapier_001",
+    "itemId": "eq_sr_clockwork_rapier_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "태엽식 레이피어",
+    "slot": "weapon",
+    "category": "rapier",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 28,
+      "def": 0,
+      "spd": 9,
+      "tec": 7,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 55
+    },
+    "tags": [
+      "weapon",
+      "rapier",
+      "combat_high",
+      "clockwork"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +28, SPD +9, TEC +7",
+    "flavorText": "찌르는 순간 톱니가 회전하는 정밀 레이피어.",
+    "imageKey": "eq_sr_clockwork_rapier_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_sanctified_war_mace_001",
+    "itemId": "eq_sr_sanctified_war_mace_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "성철 전투철퇴",
+    "slot": "weapon",
+    "category": "mace",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 29,
+      "def": 6,
+      "spd": 0,
+      "tec": 0,
+      "sup": 6
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 56
+    },
+    "tags": [
+      "weapon",
+      "mace",
+      "combat_high",
+      "holy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +29, DEF +6, SUP +6",
+    "flavorText": "축복이 살짝 새는 전투용 성철퇴.",
+    "imageKey": "eq_sr_sanctified_war_mace_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_fortress_breaker_cannonblade_001",
+    "itemId": "eq_ssr_fortress_breaker_cannonblade_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "요새파괴 포검",
+    "slot": "weapon",
+    "category": "cannonblade",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 62,
+      "def": 8,
+      "spd": -4,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 6,
+      "healing": 0,
+      "combatPower": 92
+    },
+    "tags": [
+      "weapon",
+      "cannonblade",
+      "combat_legend",
+      "fortress"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +62, DEF +8, SPD -4, CRIT +6",
+    "flavorText": "검이라기보다 소형 공성포에 가까운 괴물 무기.",
+    "imageKey": "eq_ssr_fortress_breaker_cannonblade_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_catastrophe_hex_staff_001",
+    "itemId": "eq_ssr_catastrophe_hex_staff_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "재앙각인 저주지팡이",
+    "slot": "weapon",
+    "category": "staff",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 42,
+      "def": 0,
+      "spd": 0,
+      "tec": 35,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 100
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "combat_legend",
+      "curse"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +42, TEC +35, SUP +10",
+    "flavorText": "잡는 순간 장부에 불길한 손실이 기록되는 저주지팡이.",
+    "imageKey": "eq_ssr_catastrophe_hex_staff_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_sanctuary_command_spear_001",
+    "itemId": "eq_ssr_sanctuary_command_spear_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "성역 지휘창",
+    "slot": "weapon",
+    "category": "spear",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 48,
+      "def": 18,
+      "spd": 0,
+      "tec": 0,
+      "sup": 14
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 98
+    },
+    "tags": [
+      "weapon",
+      "spear",
+      "combat_legend",
+      "holy",
+      "commander"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +48, DEF +18, SUP +14",
+    "flavorText": "전열을 세우고 후열을 살리는 성역 지휘창.",
+    "imageKey": "eq_ssr_sanctuary_command_spear_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_void_janitor_broomblade_001",
+    "itemId": "eq_ssr_void_janitor_broomblade_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "공허청소 빗자루검",
+    "slot": "weapon",
+    "category": "blade",
+    "recommendedPositions": [
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 55,
+      "def": 0,
+      "spd": 6,
+      "tec": 22,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 96
+    },
+    "tags": [
+      "weapon",
+      "blade",
+      "combat_legend",
+      "void"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +55, TEC +22, SPD +6",
+    "flavorText": "베는 것보다 존재를 쓸어내는 데 특화된 이상한 검.",
+    "imageKey": "eq_ssr_void_janitor_broomblade_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_abyss_admiral_trident_001",
+    "itemId": "eq_ssr_abyss_admiral_trident_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "심해제독 삼지창",
+    "slot": "weapon",
+    "category": "trident",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "commander"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 58,
+      "def": 0,
+      "spd": 0,
+      "tec": 18,
+      "sup": 12
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 96
+    },
+    "tags": [
+      "weapon",
+      "trident",
+      "combat_legend",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +58, TEC +18, SUP +12",
+    "flavorText": "파도 대신 빚 독촉장을 몰고 오는 심해의 삼지창.",
+    "imageKey": "eq_ssr_abyss_admiral_trident_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_dragonblood_greatbow_001",
+    "itemId": "eq_ssr_dragonblood_greatbow_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "용혈 대궁",
+    "slot": "weapon",
+    "category": "bow",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 60,
+      "def": 0,
+      "spd": 0,
+      "tec": 16,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 96
+    },
+    "tags": [
+      "weapon",
+      "bow",
+      "combat_legend",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +60, TEC +16, ACC +8",
+    "flavorText": "당기는 순간 팔과 자존심이 같이 부러질 듯한 대궁.",
+    "imageKey": "eq_ssr_dragonblood_greatbow_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_executioner_contract_axe_001",
+    "itemId": "eq_ssr_executioner_contract_axe_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "계약집행 도끼",
+    "slot": "weapon",
+    "category": "axe",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 68,
+      "def": 6,
+      "spd": -3,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 90
+    },
+    "tags": [
+      "weapon",
+      "axe",
+      "combat_legend",
+      "contract"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +68, DEF +6, SPD -3",
+    "flavorText": "계약 위반자를 장부째로 갈라버리는 집행 도끼.",
+    "imageKey": "eq_ssr_executioner_contract_axe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_archsage_star_rod_001",
+    "itemId": "eq_ssr_archsage_star_rod_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "추방현자의 별봉",
+    "slot": "weapon",
+    "category": "staff",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 40,
+      "def": 0,
+      "spd": 0,
+      "tec": 40,
+      "sup": 8
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 104
+    },
+    "tags": [
+      "weapon",
+      "staff",
+      "combat_legend",
+      "arcane",
+      "star"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +40, TEC +40, SUP +8",
+    "flavorText": "추방된 별자리의 잔광을 붙잡은 대현자의 봉.",
+    "imageKey": "eq_ssr_archsage_star_rod_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_cardboard_dragon_sword_001",
+    "itemId": "eq_ex_cardboard_dragon_sword_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "골판지 드래곤검",
+    "slot": "weapon",
+    "category": "sword",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 72,
+      "def": 12,
+      "spd": 0,
+      "tec": 12,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 8,
+      "healing": 0,
+      "combatPower": 124
+    },
+    "tags": [
+      "weapon",
+      "sword",
+      "ex",
+      "joke",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +72, DEF +12, TEC +12, CRIT +8",
+    "flavorText": "골판지인데 용살 효과가 있다는 말도 안 되는 검.",
+    "imageKey": "eq_ex_cardboard_dragon_sword_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_green_helm_medic_syringe_lance_001",
+    "itemId": "eq_ex_green_helm_medic_syringe_lance_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "그린헬름 주사창",
+    "slot": "weapon",
+    "category": "lance",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 52,
+      "def": 0,
+      "spd": 0,
+      "tec": 18,
+      "sup": 42
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 8,
+      "combatPower": 138
+    },
+    "tags": [
+      "weapon",
+      "lance",
+      "ex",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +52, SUP +42, TEC +18",
+    "flavorText": "찌르면 치료인지 공격인지 본인도 모르는 의료창.",
+    "imageKey": "eq_ex_green_helm_medic_syringe_lance_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bugged_accounting_abacus_flail_001",
+    "itemId": "eq_ex_bugged_accounting_abacus_flail_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "버그 먹은 회계주판철퇴",
+    "slot": "weapon",
+    "category": "flail",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 58,
+      "def": 0,
+      "spd": 0,
+      "tec": 30,
+      "sup": 28
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 132
+    },
+    "tags": [
+      "weapon",
+      "flail",
+      "ex",
+      "office_tool",
+      "accounting"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +58, TEC +30, SUP +28",
+    "flavorText": "계산이 틀릴수록 더 아프게 맞는 기묘한 주판철퇴.",
+    "imageKey": "eq_ex_bugged_accounting_abacus_flail_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_moonlit_idol_mic_saber_001",
+    "itemId": "eq_ex_moonlit_idol_mic_saber_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "월광 아이돌 마이크세이버",
+    "slot": "weapon",
+    "category": "saber",
+    "recommendedPositions": [
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 64,
+      "def": 0,
+      "spd": 18,
+      "tec": 0,
+      "sup": 22
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 130
+    },
+    "tags": [
+      "weapon",
+      "saber",
+      "ex",
+      "idol",
+      "moonlight"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +64, SPD +18, SUP +22",
+    "flavorText": "노래와 참격이 동시에 나가는 무대용 결전 무기.",
+    "imageKey": "eq_ex_moonlit_idol_mic_saber_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bb_channel_hacker_wand_001",
+    "itemId": "eq_ex_bb_channel_hacker_wand_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "BB채널 해킹완드",
+    "slot": "weapon",
+    "category": "wand",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 50,
+      "def": 0,
+      "spd": 0,
+      "tec": 48,
+      "sup": 24
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 142
+    },
+    "tags": [
+      "weapon",
+      "wand",
+      "ex",
+      "hack",
+      "bb_channel"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +50, TEC +48, SUP +24",
+    "flavorText": "전투보다 선배의 흑역사 송출에 더 최적화된 완드.",
+    "imageKey": "eq_ex_bb_channel_hacker_wand_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_reality_leak_boxcutter_001",
+    "itemId": "eq_ex_reality_leak_boxcutter_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "현실누수 커터칼",
+    "slot": "weapon",
+    "category": "dagger",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 76,
+      "def": 0,
+      "spd": 14,
+      "tec": 30,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 136
+    },
+    "tags": [
+      "weapon",
+      "dagger",
+      "ex",
+      "reality_leak"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +76, TEC +30, SPD +14",
+    "flavorText": "세계의 가장자리를 잘라내는 사무용 커터칼.",
+    "imageKey": "eq_ex_reality_leak_boxcutter_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_unpaid_overtime_hammer_001",
+    "itemId": "eq_ex_unpaid_overtime_hammer_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "미지급 야근망치",
+    "slot": "weapon",
+    "category": "hammer",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 82,
+      "def": 18,
+      "spd": -5,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 128
+    },
+    "tags": [
+      "weapon",
+      "hammer",
+      "ex",
+      "office",
+      "heavy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +82, DEF +18, SPD -5",
+    "flavorText": "때릴수록 근로기준법이 흐려지는 끔찍한 망치.",
+    "imageKey": "eq_ex_unpaid_overtime_hammer_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_dimensional_receipt_blade_001",
+    "itemId": "eq_ex_dimensional_receipt_blade_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "차원영수증 검",
+    "slot": "weapon",
+    "category": "blade",
+    "recommendedPositions": [
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 70,
+      "def": 0,
+      "spd": 0,
+      "tec": 34,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 134
+    },
+    "tags": [
+      "weapon",
+      "blade",
+      "ex",
+      "dimension",
+      "receipt"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +70, TEC +34, ACC +8",
+    "flavorText": "베인 자리에서 영수증이 출력되는 차원계 검.",
+    "imageKey": "eq_ex_dimensional_receipt_blade_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "무기 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_patched_leather_vest_001",
+    "itemId": "eq_n_patched_leather_vest_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "누더기 가죽조끼",
+    "slot": "armor",
+    "category": "light_armor",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "scout"
+    ],
+    "stats": {
+      "hp": 20,
+      "atk": 0,
+      "def": 4,
+      "spd": 1,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 1,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 10
+    },
+    "tags": [
+      "armor",
+      "light_armor",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +20, DEF +4, SPD +1, EVA +1",
+    "flavorText": "꿰맨 자국이 방어력보다 더 많은 초보자용 조끼.",
+    "imageKey": "eq_n_patched_leather_vest_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_rusted_chain_shirt_001",
+    "itemId": "eq_n_rusted_chain_shirt_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "녹슨 사슬셔츠",
+    "slot": "armor",
+    "category": "medium_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 28,
+      "atk": 0,
+      "def": 6,
+      "spd": -1,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 11
+    },
+    "tags": [
+      "armor",
+      "medium_armor",
+      "combat_low",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +28, DEF +6, SPD -1",
+    "flavorText": "녹이 피부를 긁지만 칼날도 조금은 막아준다.",
+    "imageKey": "eq_n_rusted_chain_shirt_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_moth_eaten_robe_001",
+    "itemId": "eq_n_moth_eaten_robe_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "좀먹은 견습 로브",
+    "slot": "armor",
+    "category": "robe",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 14,
+      "atk": 0,
+      "def": 2,
+      "spd": 0,
+      "tec": 3,
+      "sup": 2
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 10
+    },
+    "tags": [
+      "armor",
+      "robe",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +14, DEF +2, TEC +3, SUP +2",
+    "flavorText": "구멍 사이로 마력이 새는 견습 마도사의 로브.",
+    "imageKey": "eq_n_moth_eaten_robe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_dented_iron_helmet_001",
+    "itemId": "eq_n_dented_iron_helmet_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "찌그러진 철투구",
+    "slot": "armor",
+    "category": "helmet",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank"
+    ],
+    "stats": {
+      "hp": 22,
+      "atk": 0,
+      "def": 5,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "armor",
+      "helmet",
+      "combat_low",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +22, DEF +5",
+    "flavorText": "한 번 맞고 찌그러진 투구. 두 번은 장담 못 한다.",
+    "imageKey": "eq_n_dented_iron_helmet_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_sewer_waders_001",
+    "itemId": "eq_n_sewer_waders_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "하수도 방수복",
+    "slot": "armor",
+    "category": "light_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 18,
+      "atk": 0,
+      "def": 3,
+      "spd": 2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 1,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 10
+    },
+    "tags": [
+      "armor",
+      "light_armor",
+      "combat_low",
+      "sewer"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +18, DEF +3, SPD +2, EVA +1",
+    "flavorText": "냄새는 못 막지만 산성 물웅덩이는 조금 막는다.",
+    "imageKey": "eq_n_sewer_waders_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_cracked_breastplate_001",
+    "itemId": "eq_n_cracked_breastplate_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "금 간 흉갑",
+    "slot": "armor",
+    "category": "heavy_armor",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank"
+    ],
+    "stats": {
+      "hp": 34,
+      "atk": 0,
+      "def": 8,
+      "spd": -2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 12
+    },
+    "tags": [
+      "armor",
+      "heavy_armor",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +34, DEF +8, SPD -2",
+    "flavorText": "가운데 금이 가 있지만 없는 것보다는 낫다.",
+    "imageKey": "eq_n_cracked_breastplate_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_training_padded_coat_001",
+    "itemId": "eq_n_training_padded_coat_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "훈련용 누비코트",
+    "slot": "armor",
+    "category": "padded_armor",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 24,
+      "atk": 0,
+      "def": 4,
+      "spd": 0,
+      "tec": 0,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "armor",
+      "padded_armor",
+      "starter",
+      "training"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +24, DEF +4, SUP +1",
+    "flavorText": "훈련장 구석에 처박혀 있던 두꺼운 누비코트.",
+    "imageKey": "eq_n_training_padded_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_apprentice_barrier_cloak_001",
+    "itemId": "eq_n_apprentice_barrier_cloak_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "견습 방벽망토",
+    "slot": "armor",
+    "category": "cloak",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 16,
+      "atk": 0,
+      "def": 2,
+      "spd": 0,
+      "tec": 0,
+      "sup": 4
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 10
+    },
+    "tags": [
+      "armor",
+      "cloak",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +16, DEF +2, SUP +4",
+    "flavorText": "마력 방벽 흉내를 내는 낡은 망토.",
+    "imageKey": "eq_n_apprentice_barrier_cloak_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mercenary_breastplate_001",
+    "itemId": "eq_r_mercenary_breastplate_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "용병식 흉갑",
+    "slot": "armor",
+    "category": "medium_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 55,
+      "atk": 0,
+      "def": 16,
+      "spd": -2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 28
+    },
+    "tags": [
+      "armor",
+      "medium_armor",
+      "combat_medium",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +55, DEF +16, SPD -2",
+    "flavorText": "흠집이 많지만 실전에서 살아남은 흉갑.",
+    "imageKey": "eq_r_mercenary_breastplate_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_black_alley_leather_coat_001",
+    "itemId": "eq_r_black_alley_leather_coat_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "뒷골목 가죽코트",
+    "slot": "armor",
+    "category": "light_armor",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 36,
+      "atk": 0,
+      "def": 9,
+      "spd": 4,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 2,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 30
+    },
+    "tags": [
+      "armor",
+      "light_armor",
+      "combat_medium",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +36, DEF +9, SPD +4, EVA +2",
+    "flavorText": "도망치기 좋고 칼도 조금 막아주는 가죽코트.",
+    "imageKey": "eq_r_black_alley_leather_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_debt_collector_half_plate_001",
+    "itemId": "eq_r_debt_collector_half_plate_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "추심단 반신갑",
+    "slot": "armor",
+    "category": "heavy_armor",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank"
+    ],
+    "stats": {
+      "hp": 60,
+      "atk": 0,
+      "def": 18,
+      "spd": -3,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 30
+    },
+    "tags": [
+      "armor",
+      "heavy_armor",
+      "combat_medium",
+      "debtbreaker"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +60, DEF +18, SPD -3",
+    "flavorText": "채무자보다 동료를 더 겁주는 반신갑.",
+    "imageKey": "eq_r_debt_collector_half_plate_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_sootproof_mage_robe_001",
+    "itemId": "eq_r_sootproof_mage_robe_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "그을음 방지 로브",
+    "slot": "armor",
+    "category": "robe",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 30,
+      "atk": 0,
+      "def": 7,
+      "spd": 0,
+      "tec": 8,
+      "sup": 6
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 32
+    },
+    "tags": [
+      "armor",
+      "robe",
+      "combat_medium",
+      "mage_tower"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +30, DEF +7, TEC +8, SUP +6",
+    "flavorText": "실험 실패를 몇 번은 버티게 해주는 마도 로브.",
+    "imageKey": "eq_r_sootproof_mage_robe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_guard_captain_scale_mail_001",
+    "itemId": "eq_r_guard_captain_scale_mail_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "경비대장 비늘갑",
+    "slot": "armor",
+    "category": "scale_mail",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 50,
+      "atk": 0,
+      "def": 13,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 28
+    },
+    "tags": [
+      "armor",
+      "scale_mail",
+      "combat_medium",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +50, DEF +13",
+    "flavorText": "성실한 경비대장의 땀 냄새가 밴 비늘갑.",
+    "imageKey": "eq_r_guard_captain_scale_mail_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_hunter_wind_cloak_001",
+    "itemId": "eq_r_hunter_wind_cloak_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "사냥꾼 바람망토",
+    "slot": "armor",
+    "category": "cloak",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "ranged",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 34,
+      "atk": 0,
+      "def": 6,
+      "spd": 6,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 4,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 31
+    },
+    "tags": [
+      "armor",
+      "cloak",
+      "combat_medium",
+      "forest"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +34, DEF +6, SPD +6, EVA +4",
+    "flavorText": "발소리를 조금 지워주는 가벼운 망토.",
+    "imageKey": "eq_r_hunter_wind_cloak_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_clinic_reinforced_apron_001",
+    "itemId": "eq_r_clinic_reinforced_apron_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "의무실 보강 앞치마",
+    "slot": "armor",
+    "category": "medical_armor",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 44,
+      "atk": 0,
+      "def": 10,
+      "spd": 0,
+      "tec": 0,
+      "sup": 8
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 2,
+      "combatPower": 32
+    },
+    "tags": [
+      "armor",
+      "medical_armor",
+      "combat_medium",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +44, DEF +10, SUP +8, HEAL +2",
+    "flavorText": "피와 산성액을 함께 막는 실전형 앞치마.",
+    "imageKey": "eq_r_clinic_reinforced_apron_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mimic_bite_cuirass_001",
+    "itemId": "eq_r_mimic_bite_cuirass_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "미믹 이빨 흉갑",
+    "slot": "armor",
+    "category": "medium_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 52,
+      "atk": 0,
+      "def": 15,
+      "spd": 0,
+      "tec": 3,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 29
+    },
+    "tags": [
+      "armor",
+      "medium_armor",
+      "combat_medium",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +52, DEF +15, TEC +3",
+    "flavorText": "물린 자국을 장식처럼 남긴 흉갑.",
+    "imageKey": "eq_r_mimic_bite_cuirass_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_red_thread_duelist_coat_001",
+    "itemId": "eq_sr_red_thread_duelist_coat_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "붉은실 결투코트",
+    "slot": "armor",
+    "category": "light_armor",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 58,
+      "atk": 0,
+      "def": 14,
+      "spd": 12,
+      "tec": 8,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 5,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 64
+    },
+    "tags": [
+      "armor",
+      "light_armor",
+      "combat_danger",
+      "red_thread"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +58, DEF +14, SPD +12, TEC +8, EVA +5",
+    "flavorText": "붉은 실이 움직임을 먼저 읽어주는 결투 코트.",
+    "imageKey": "eq_sr_red_thread_duelist_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_tower_waste_barrier_robe_001",
+    "itemId": "eq_sr_tower_waste_barrier_robe_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "마탑 폐기 방벽로브",
+    "slot": "armor",
+    "category": "robe",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 48,
+      "atk": 0,
+      "def": 11,
+      "spd": 0,
+      "tec": 18,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 68
+    },
+    "tags": [
+      "armor",
+      "robe",
+      "combat_high",
+      "arcane"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +48, DEF +11, TEC +18, SUP +10",
+    "flavorText": "폐기된 보호 술식을 억지로 꿰맨 로브.",
+    "imageKey": "eq_sr_tower_waste_barrier_robe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_abyss_coral_mail_001",
+    "itemId": "eq_sr_abyss_coral_mail_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "심해 산호갑",
+    "slot": "armor",
+    "category": "scale_mail",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 70,
+      "atk": 0,
+      "def": 24,
+      "spd": 0,
+      "tec": 6,
+      "sup": 6
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 66
+    },
+    "tags": [
+      "armor",
+      "scale_mail",
+      "combat_high",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +70, DEF +24, TEC +6, SUP +6",
+    "flavorText": "젖어 있는데도 이상하게 단단한 산호 갑옷.",
+    "imageKey": "eq_sr_abyss_coral_mail_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_mimic_tooth_plated_coat_001",
+    "itemId": "eq_sr_mimic_tooth_plated_coat_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "미믹 이빨 판갑코트",
+    "slot": "armor",
+    "category": "heavy_armor",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 78,
+      "atk": 0,
+      "def": 27,
+      "spd": -4,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 2,
+      "healing": 0,
+      "combatPower": 62
+    },
+    "tags": [
+      "armor",
+      "heavy_armor",
+      "combat_high",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +78, DEF +27, SPD -4, CRIT +2",
+    "flavorText": "닫히지 않는 미믹 입처럼 불길한 판갑코트.",
+    "imageKey": "eq_sr_mimic_tooth_plated_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_foxfire_ward_cloak_001",
+    "itemId": "eq_sr_foxfire_ward_cloak_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "여우불 수호망토",
+    "slot": "armor",
+    "category": "cloak",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 52,
+      "atk": 0,
+      "def": 10,
+      "spd": 8,
+      "tec": 15,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 66
+    },
+    "tags": [
+      "armor",
+      "cloak",
+      "combat_high",
+      "spirit"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +52, DEF +10, SPD +8, TEC +15",
+    "flavorText": "작은 여우불이 착용자의 빈틈을 비춘다.",
+    "imageKey": "eq_sr_foxfire_ward_cloak_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_blood_rent_officer_armor_001",
+    "itemId": "eq_sr_blood_rent_officer_armor_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "혈세 징수관 갑옷",
+    "slot": "armor",
+    "category": "medium_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 82,
+      "atk": 5,
+      "def": 22,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 64
+    },
+    "tags": [
+      "armor",
+      "medium_armor",
+      "combat_high",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +82, ATK +5, DEF +22",
+    "flavorText": "보상보다 치료비를 먼저 떠올리게 하는 붉은 갑옷.",
+    "imageKey": "eq_sr_blood_rent_officer_armor_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_clockwork_auto_guard_harness_001",
+    "itemId": "eq_sr_clockwork_auto_guard_harness_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "태엽 자동방호 장구",
+    "slot": "armor",
+    "category": "mechanical_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "scout"
+    ],
+    "stats": {
+      "hp": 64,
+      "atk": 0,
+      "def": 18,
+      "spd": 6,
+      "tec": 10,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 66
+    },
+    "tags": [
+      "armor",
+      "mechanical_armor",
+      "combat_high",
+      "clockwork"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +64, DEF +18, SPD +6, TEC +10",
+    "flavorText": "톱니가 먼저 반응하는 자동 방호 장구.",
+    "imageKey": "eq_sr_clockwork_auto_guard_harness_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_sanctified_medic_vestment_001",
+    "itemId": "eq_sr_sanctified_medic_vestment_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "성철 의무관 예복",
+    "slot": "armor",
+    "category": "holy_robe",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 60,
+      "atk": 0,
+      "def": 14,
+      "spd": 0,
+      "tec": 0,
+      "sup": 18
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 4,
+      "combatPower": 70
+    },
+    "tags": [
+      "armor",
+      "holy_robe",
+      "combat_high",
+      "holy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +60, DEF +14, SUP +18, HEAL +4",
+    "flavorText": "기도보다 응급처치가 빠른 의무관 예복.",
+    "imageKey": "eq_sr_sanctified_medic_vestment_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_sanctuary_aegis_plate_001",
+    "itemId": "eq_ssr_sanctuary_aegis_plate_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "성역 방패장 판갑",
+    "slot": "armor",
+    "category": "heavy_armor",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "commander"
+    ],
+    "stats": {
+      "hp": 140,
+      "atk": 0,
+      "def": 45,
+      "spd": 0,
+      "tec": 0,
+      "sup": 22
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 120
+    },
+    "tags": [
+      "armor",
+      "heavy_armor",
+      "combat_legend",
+      "holy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +140, DEF +45, SUP +22",
+    "flavorText": "사무소 하나쯤은 통째로 지킬 듯한 판갑.",
+    "imageKey": "eq_ssr_sanctuary_aegis_plate_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_catastrophe_hex_robe_001",
+    "itemId": "eq_ssr_catastrophe_hex_robe_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "재앙각인 저주로브",
+    "slot": "armor",
+    "category": "robe",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 90,
+      "atk": 0,
+      "def": 20,
+      "spd": 0,
+      "tec": 48,
+      "sup": 15
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 125
+    },
+    "tags": [
+      "armor",
+      "robe",
+      "combat_legend",
+      "curse"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +90, DEF +20, TEC +48, SUP +15",
+    "flavorText": "입는 순간 보험사가 도망치는 저주 로브.",
+    "imageKey": "eq_ssr_catastrophe_hex_robe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_fortress_bulwark_armor_001",
+    "itemId": "eq_ssr_fortress_bulwark_armor_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "요새방벽 중장갑",
+    "slot": "armor",
+    "category": "heavy_armor",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 170,
+      "atk": 0,
+      "def": 55,
+      "spd": -8,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 118
+    },
+    "tags": [
+      "armor",
+      "heavy_armor",
+      "combat_legend",
+      "fortress"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +170, DEF +55, SPD -8",
+    "flavorText": "사람이 입는지 성벽이 걷는지 모를 중장갑.",
+    "imageKey": "eq_ssr_fortress_bulwark_armor_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_void_janitor_hazard_suit_001",
+    "itemId": "eq_ssr_void_janitor_hazard_suit_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "공허청소 방호복",
+    "slot": "armor",
+    "category": "hazard_suit",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 120,
+      "atk": 0,
+      "def": 35,
+      "spd": 0,
+      "tec": 28,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 6,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 122
+    },
+    "tags": [
+      "armor",
+      "hazard_suit",
+      "combat_legend",
+      "void"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +120, DEF +35, TEC +28, EVA +6",
+    "flavorText": "존재하지 않는 오염까지 청소한다는 방호복.",
+    "imageKey": "eq_ssr_void_janitor_hazard_suit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_abyss_admiral_coat_001",
+    "itemId": "eq_ssr_abyss_admiral_coat_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "심해제독 외투",
+    "slot": "armor",
+    "category": "coat",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "support"
+    ],
+    "stats": {
+      "hp": 135,
+      "atk": 0,
+      "def": 38,
+      "spd": 0,
+      "tec": 20,
+      "sup": 20
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 124
+    },
+    "tags": [
+      "armor",
+      "coat",
+      "combat_legend",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +135, DEF +38, TEC +20, SUP +20",
+    "flavorText": "젖지 않지만 보는 사람은 숨이 막히는 외투.",
+    "imageKey": "eq_ssr_abyss_admiral_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_dragonblood_scale_armor_001",
+    "itemId": "eq_ssr_dragonblood_scale_armor_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "용혈 비늘갑",
+    "slot": "armor",
+    "category": "scale_mail",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 155,
+      "atk": 8,
+      "def": 42,
+      "spd": 0,
+      "tec": 6,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 126
+    },
+    "tags": [
+      "armor",
+      "scale_mail",
+      "combat_legend",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +155, ATK +8, DEF +42, TEC +6",
+    "flavorText": "용혈의 열기가 아직 식지 않은 비늘 갑옷.",
+    "imageKey": "eq_ssr_dragonblood_scale_armor_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_executioner_contract_mail_001",
+    "itemId": "eq_ssr_executioner_contract_mail_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "계약집행 사슬갑",
+    "slot": "armor",
+    "category": "chain_mail",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 130,
+      "atk": 15,
+      "def": 40,
+      "spd": -3,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 118
+    },
+    "tags": [
+      "armor",
+      "chain_mail",
+      "combat_legend",
+      "contract"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +130, ATK +15, DEF +40, SPD -3",
+    "flavorText": "계약 위반자의 비명을 엮어 만든 듯한 사슬갑.",
+    "imageKey": "eq_ssr_executioner_contract_mail_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_archival_director_coat_001",
+    "itemId": "eq_ssr_archival_director_coat_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "기록국장 전장코트",
+    "slot": "armor",
+    "category": "coat",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "commander"
+    ],
+    "stats": {
+      "hp": 105,
+      "atk": 0,
+      "def": 25,
+      "spd": 0,
+      "tec": 42,
+      "sup": 24
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 128
+    },
+    "tags": [
+      "armor",
+      "coat",
+      "combat_legend",
+      "archive"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +105, DEF +25, TEC +42, SUP +24",
+    "flavorText": "전장의 모든 실수를 장부에 남기는 고급 코트.",
+    "imageKey": "eq_ssr_archival_director_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_cardboard_dragon_armor_001",
+    "itemId": "eq_ex_cardboard_dragon_armor_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "골판지 드래곤 갑옷",
+    "slot": "armor",
+    "category": "cardboard_armor",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 180,
+      "atk": 0,
+      "def": 55,
+      "spd": 5,
+      "tec": 12,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 162
+    },
+    "tags": [
+      "armor",
+      "cardboard_armor",
+      "ex",
+      "joke",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +180, DEF +55, SPD +5, TEC +12",
+    "flavorText": "골판지인데 용의 위압감이 난다는 사기 같은 갑옷.",
+    "imageKey": "eq_ex_cardboard_dragon_armor_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_green_helm_miracle_coat_001",
+    "itemId": "eq_ex_green_helm_miracle_coat_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "그린헬름 기적코트",
+    "slot": "armor",
+    "category": "medical_armor",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 150,
+      "atk": 0,
+      "def": 35,
+      "spd": 0,
+      "tec": 0,
+      "sup": 55
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 10,
+      "combatPower": 180
+    },
+    "tags": [
+      "armor",
+      "medical_armor",
+      "ex",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +150, DEF +35, SUP +55, HEAL +10",
+    "flavorText": "치료비 청구서와 기적이 동시에 날아오는 의료 코트.",
+    "imageKey": "eq_ex_green_helm_miracle_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bugged_accounting_suit_001",
+    "itemId": "eq_ex_bugged_accounting_suit_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "버그 먹은 회계정장",
+    "slot": "armor",
+    "category": "office_suit",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 130,
+      "atk": 0,
+      "def": 30,
+      "spd": 0,
+      "tec": 50,
+      "sup": 45
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 176
+    },
+    "tags": [
+      "armor",
+      "office_suit",
+      "ex",
+      "office_tool",
+      "accounting"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +130, DEF +30, TEC +50, SUP +45",
+    "flavorText": "계산이 틀릴수록 방어 결산이 이상하게 유리해지는 정장.",
+    "imageKey": "eq_ex_bugged_accounting_suit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_moonlit_idol_battle_dress_001",
+    "itemId": "eq_ex_moonlit_idol_battle_dress_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "월광 아이돌 전투복",
+    "slot": "armor",
+    "category": "battle_dress",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 125,
+      "atk": 0,
+      "def": 28,
+      "spd": 35,
+      "tec": 0,
+      "sup": 42
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 174
+    },
+    "tags": [
+      "armor",
+      "battle_dress",
+      "ex",
+      "idol",
+      "moonlight"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +125, DEF +28, SPD +35, SUP +42",
+    "flavorText": "공연 의상처럼 보이지만 관객과 적을 동시에 제압한다.",
+    "imageKey": "eq_ex_moonlit_idol_battle_dress_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bb_channel_firewall_coat_001",
+    "itemId": "eq_ex_bb_channel_firewall_coat_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "BB채널 방화벽코트",
+    "slot": "armor",
+    "category": "firewall_coat",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 120,
+      "atk": 0,
+      "def": 32,
+      "spd": 0,
+      "tec": 65,
+      "sup": 35
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 8,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 182
+    },
+    "tags": [
+      "armor",
+      "firewall_coat",
+      "ex",
+      "hack",
+      "bb_channel"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +120, DEF +32, TEC +65, SUP +35, EVA +8",
+    "flavorText": "선배의 흑역사를 방어막으로 전개하는 악질 코트.",
+    "imageKey": "eq_ex_bb_channel_firewall_coat_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_reality_leak_containment_suit_001",
+    "itemId": "eq_ex_reality_leak_containment_suit_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "현실누수 격리복",
+    "slot": "armor",
+    "category": "hazard_suit",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "caster"
+    ],
+    "stats": {
+      "hp": 160,
+      "atk": 0,
+      "def": 45,
+      "spd": 10,
+      "tec": 45,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 178
+    },
+    "tags": [
+      "armor",
+      "hazard_suit",
+      "ex",
+      "reality_leak"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +160, DEF +45, SPD +10, TEC +45",
+    "flavorText": "세계의 틈새에서 새는 오류를 봉합하는 격리복.",
+    "imageKey": "eq_ex_reality_leak_containment_suit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_unpaid_overtime_exosuit_001",
+    "itemId": "eq_ex_unpaid_overtime_exosuit_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "미지급 야근 외골격",
+    "slot": "armor",
+    "category": "exosuit",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 210,
+      "atk": 10,
+      "def": 65,
+      "spd": -10,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 168
+    },
+    "tags": [
+      "armor",
+      "exosuit",
+      "ex",
+      "office",
+      "heavy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +210, ATK +10, DEF +65, SPD -10",
+    "flavorText": "야근 수당 대신 방어력을 지급하는 악덕 외골격.",
+    "imageKey": "eq_ex_unpaid_overtime_exosuit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_dimensional_receipt_mantle_001",
+    "itemId": "eq_ex_dimensional_receipt_mantle_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "차원영수증 망토",
+    "slot": "armor",
+    "category": "mantle",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "caster"
+    ],
+    "stats": {
+      "hp": 145,
+      "atk": 0,
+      "def": 35,
+      "spd": 0,
+      "tec": 55,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 10,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 172
+    },
+    "tags": [
+      "armor",
+      "mantle",
+      "ex",
+      "dimension",
+      "receipt"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +145, DEF +35, TEC +55, ACC +10",
+    "flavorText": "피격 기록을 다른 차원으로 비용 처리하는 망토.",
+    "imageKey": "eq_ex_dimensional_receipt_mantle_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "방어구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_tarnished_luck_coin_001",
+    "itemId": "eq_n_tarnished_luck_coin_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "녹슨 행운동전",
+    "slot": "accessory",
+    "category": "coin",
+    "recommendedPositions": [
+      "any"
+    ],
+    "recommendedRoles": [
+      "support",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 1,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 1,
+      "healing": 0,
+      "combatPower": 6
+    },
+    "tags": [
+      "accessory",
+      "coin",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +1, SUP +1, CRIT +1",
+    "flavorText": "행운보다 손때가 더 많이 묻은 싸구려 부적 동전.",
+    "imageKey": "eq_n_tarnished_luck_coin_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_frayed_red_string_bracelet_001",
+    "itemId": "eq_n_frayed_red_string_bracelet_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "해진 붉은실 팔찌",
+    "slot": "accessory",
+    "category": "bracelet",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 1,
+      "tec": 0,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 2,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 7
+    },
+    "tags": [
+      "accessory",
+      "bracelet",
+      "combat_low",
+      "red_thread"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +1, SUP +1, EVA +2",
+    "flavorText": "붉은 실이지만 운명이라기엔 너무 낡았다.",
+    "imageKey": "eq_n_frayed_red_string_bracelet_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_bent_copper_ring_001",
+    "itemId": "eq_n_bent_copper_ring_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "휘어진 구리반지",
+    "slot": "accessory",
+    "category": "ring",
+    "recommendedPositions": [
+      "any"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 8,
+      "atk": 0,
+      "def": 1,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 6
+    },
+    "tags": [
+      "accessory",
+      "ring",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +8, DEF +1, ACC +1",
+    "flavorText": "주먹질 한 번에 모양이 틀어진 구리반지.",
+    "imageKey": "eq_n_bent_copper_ring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_cracked_glass_charm_001",
+    "itemId": "eq_n_cracked_glass_charm_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "금 간 유리부적",
+    "slot": "accessory",
+    "category": "charm",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 2,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 6
+    },
+    "tags": [
+      "accessory",
+      "charm",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +2, ACC +1",
+    "flavorText": "깨진 유리조각이 묘하게 집중력을 돕는다.",
+    "imageKey": "eq_n_cracked_glass_charm_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_sewer_pebble_talisman_001",
+    "itemId": "eq_n_sewer_pebble_talisman_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "하수도 조약돌 부적",
+    "slot": "accessory",
+    "category": "talisman",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank"
+    ],
+    "stats": {
+      "hp": 10,
+      "atk": 0,
+      "def": 1,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 6
+    },
+    "tags": [
+      "accessory",
+      "talisman",
+      "combat_low",
+      "sewer"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +10, DEF +1",
+    "flavorText": "하수도에서 주운 돌인데 부적이라고 우기는 물건.",
+    "imageKey": "eq_n_sewer_pebble_talisman_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_apprentice_focus_bead_001",
+    "itemId": "eq_n_apprentice_focus_bead_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "견습 집중구슬",
+    "slot": "accessory",
+    "category": "bead",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 3,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 7
+    },
+    "tags": [
+      "accessory",
+      "bead",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +3, SUP +1",
+    "flavorText": "굴러다니던 유리구슬에 마력 잔향이 조금 남았다.",
+    "imageKey": "eq_n_apprentice_focus_bead_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_training_whistle_001",
+    "itemId": "eq_n_training_whistle_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "훈련장 호루라기",
+    "slot": "accessory",
+    "category": "whistle",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "commander"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 3
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 7
+    },
+    "tags": [
+      "accessory",
+      "whistle",
+      "starter",
+      "training"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SUP +3, ACC +1",
+    "flavorText": "불면 아군보다 접수원이 먼저 짜증낸다.",
+    "imageKey": "eq_n_training_whistle_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_dented_office_badge_001",
+    "itemId": "eq_n_dented_office_badge_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "찌그러진 사무소 배지",
+    "slot": "accessory",
+    "category": "badge",
+    "recommendedPositions": [
+      "any"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 12,
+      "atk": 0,
+      "def": 2,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "accessory",
+      "badge",
+      "starter",
+      "office"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +12, DEF +2",
+    "flavorText": "소속감보다 부끄러움이 더 큰 낡은 배지.",
+    "imageKey": "eq_n_dented_office_badge_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mercenary_oath_ring_001",
+    "itemId": "eq_r_mercenary_oath_ring_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "용병 맹세반지",
+    "slot": "accessory",
+    "category": "ring",
+    "recommendedPositions": [
+      "any"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 25,
+      "atk": 0,
+      "def": 4,
+      "spd": 0,
+      "tec": 0,
+      "sup": 4
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 21
+    },
+    "tags": [
+      "accessory",
+      "ring",
+      "combat_medium",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +25, DEF +4, SUP +4",
+    "flavorText": "계약서는 못 믿어도 반지는 조금 믿을 만하다.",
+    "imageKey": "eq_r_mercenary_oath_ring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_black_alley_smoke_earring_001",
+    "itemId": "eq_r_black_alley_smoke_earring_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "뒷골목 연막귀걸이",
+    "slot": "accessory",
+    "category": "earring",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 5,
+      "tec": 3,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 4,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 23
+    },
+    "tags": [
+      "accessory",
+      "earring",
+      "combat_medium",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +5, TEC +3, EVA +4",
+    "flavorText": "도망칠 때만큼은 제값을 하는 회색 귀걸이.",
+    "imageKey": "eq_r_black_alley_smoke_earring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_debt_ledger_seal_001",
+    "itemId": "eq_r_debt_ledger_seal_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "채무장부 인장",
+    "slot": "accessory",
+    "category": "seal",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 6,
+      "sup": 8
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 24
+    },
+    "tags": [
+      "accessory",
+      "seal",
+      "combat_medium",
+      "debtbreaker"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +6, SUP +8, ACC +2",
+    "flavorText": "찍히면 이상하게 몸이 먼저 굳는 장부 인장.",
+    "imageKey": "eq_r_debt_ledger_seal_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_soot_mage_lens_001",
+    "itemId": "eq_r_soot_mage_lens_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "그을음 마도렌즈",
+    "slot": "accessory",
+    "category": "lens",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 10,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 4,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 23
+    },
+    "tags": [
+      "accessory",
+      "lens",
+      "combat_medium",
+      "mage_tower"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +10, ACC +4",
+    "flavorText": "불길 속에서도 약점을 조금 더 잘 보이게 한다.",
+    "imageKey": "eq_r_soot_mage_lens_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_hunter_compass_charm_001",
+    "itemId": "eq_r_hunter_compass_charm_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "사냥꾼 나침부적",
+    "slot": "accessory",
+    "category": "charm",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "ranged",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 4,
+      "tec": 5,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 3,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 22
+    },
+    "tags": [
+      "accessory",
+      "charm",
+      "combat_medium",
+      "forest"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +4, TEC +5, ACC +3",
+    "flavorText": "적보다 보상 위치를 먼저 가리키는 수상한 나침반.",
+    "imageKey": "eq_r_hunter_compass_charm_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_clinic_triage_brooch_001",
+    "itemId": "eq_r_clinic_triage_brooch_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "의무실 분류브로치",
+    "slot": "accessory",
+    "category": "brooch",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 12
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 3,
+      "combatPower": 24
+    },
+    "tags": [
+      "accessory",
+      "brooch",
+      "combat_medium",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SUP +12, HEAL +3",
+    "flavorText": "누가 먼저 죽을 것 같은지 알려주는 잔인한 브로치.",
+    "imageKey": "eq_r_clinic_triage_brooch_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mimic_tooth_pendant_001",
+    "itemId": "eq_r_mimic_tooth_pendant_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "미믹 이빨 목걸이",
+    "slot": "accessory",
+    "category": "pendant",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 5,
+      "def": 4,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 3,
+      "healing": 0,
+      "combatPower": 22
+    },
+    "tags": [
+      "accessory",
+      "pendant",
+      "combat_medium",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +5, DEF +4, CRIT +3",
+    "flavorText": "이빨이 가끔 저절로 딱딱거린다.",
+    "imageKey": "eq_r_mimic_tooth_pendant_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_guard_captain_medal_001",
+    "itemId": "eq_r_guard_captain_medal_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "경비대장 훈장",
+    "slot": "accessory",
+    "category": "medal",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "commander"
+    ],
+    "stats": {
+      "hp": 20,
+      "atk": 0,
+      "def": 5,
+      "spd": 0,
+      "tec": 0,
+      "sup": 5
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 22
+    },
+    "tags": [
+      "accessory",
+      "medal",
+      "combat_medium",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +20, DEF +5, SUP +5",
+    "flavorText": "작은 지휘권과 큰 허세를 함께 준다.",
+    "imageKey": "eq_r_guard_captain_medal_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_red_thread_knot_ring_001",
+    "itemId": "eq_sr_red_thread_knot_ring_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "붉은실 매듭반지",
+    "slot": "accessory",
+    "category": "ring",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 12,
+      "tec": 12,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 4,
+      "critical": 5,
+      "healing": 0,
+      "combatPower": 50
+    },
+    "tags": [
+      "accessory",
+      "ring",
+      "combat_danger",
+      "red_thread"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +12, TEC +12, CRIT +5, EVA +4",
+    "flavorText": "적의 움직임과 착용자의 손끝을 억지로 묶는 반지.",
+    "imageKey": "eq_sr_red_thread_knot_ring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_tower_waste_crystal_locket_001",
+    "itemId": "eq_sr_tower_waste_crystal_locket_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "마탑 폐기 수정로켓",
+    "slot": "accessory",
+    "category": "locket",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 24,
+      "sup": 8
+    },
+    "modifiers": {
+      "accuracy": 3,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 52
+    },
+    "tags": [
+      "accessory",
+      "locket",
+      "combat_high",
+      "arcane"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +24, SUP +8, ACC +3",
+    "flavorText": "폐기된 수정이 아직 주문을 중얼거리는 로켓.",
+    "imageKey": "eq_sr_tower_waste_crystal_locket_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_abyss_pearl_earring_001",
+    "itemId": "eq_sr_abyss_pearl_earring_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "심해 진주귀걸이",
+    "slot": "accessory",
+    "category": "earring",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 35,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 14,
+      "sup": 12
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 48
+    },
+    "tags": [
+      "accessory",
+      "earring",
+      "combat_high",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +35, TEC +14, SUP +12",
+    "flavorText": "깊은 물속에서 들리는 계약서를 귓가에 속삭인다.",
+    "imageKey": "eq_sr_abyss_pearl_earring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_mimic_vault_key_charm_001",
+    "itemId": "eq_sr_mimic_vault_key_charm_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "미믹 금고열쇠 장식",
+    "slot": "accessory",
+    "category": "charm",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 10,
+      "def": 0,
+      "spd": 0,
+      "tec": 12,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 7,
+      "healing": 0,
+      "combatPower": 47
+    },
+    "tags": [
+      "accessory",
+      "charm",
+      "combat_high",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +10, TEC +12, CRIT +7",
+    "flavorText": "열쇠처럼 보이지만 가끔 물려고 한다.",
+    "imageKey": "eq_sr_mimic_vault_key_charm_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_foxfire_prayer_bell_001",
+    "itemId": "eq_sr_foxfire_prayer_bell_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "여우불 기도방울",
+    "slot": "accessory",
+    "category": "bell",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 6,
+      "tec": 0,
+      "sup": 22
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 4,
+      "combatPower": 50
+    },
+    "tags": [
+      "accessory",
+      "bell",
+      "combat_high",
+      "spirit"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SUP +22, SPD +6, HEAL +4",
+    "flavorText": "흔들면 작은 여우불이 아군을 따라다닌다.",
+    "imageKey": "eq_sr_foxfire_prayer_bell_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_blood_rent_signet_001",
+    "itemId": "eq_sr_blood_rent_signet_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "혈세 징수 인장반지",
+    "slot": "accessory",
+    "category": "signet",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 12,
+      "def": 10,
+      "spd": 0,
+      "tec": 8,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 46
+    },
+    "tags": [
+      "accessory",
+      "signet",
+      "combat_high",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +12, DEF +10, TEC +8",
+    "flavorText": "피와 세금을 같은 색으로 보는 징수관의 반지.",
+    "imageKey": "eq_sr_blood_rent_signet_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_clockwork_halo_gear_001",
+    "itemId": "eq_sr_clockwork_halo_gear_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "태엽 후광 톱니",
+    "slot": "accessory",
+    "category": "gear",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "caster"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 10,
+      "tec": 16,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 4,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 51
+    },
+    "tags": [
+      "accessory",
+      "gear",
+      "combat_high",
+      "clockwork"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +10, TEC +16, ACC +4",
+    "flavorText": "머리 위가 아니라 장부 위에서 도는 작은 톱니.",
+    "imageKey": "eq_sr_clockwork_halo_gear_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_sanctified_pulse_rosary_001",
+    "itemId": "eq_sr_sanctified_pulse_rosary_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "성철 맥박묵주",
+    "slot": "accessory",
+    "category": "rosary",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 28,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 20
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 5,
+      "combatPower": 51
+    },
+    "tags": [
+      "accessory",
+      "rosary",
+      "combat_high",
+      "holy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +28, SUP +20, HEAL +5",
+    "flavorText": "기도보다 맥박을 먼저 세는 실전형 묵주.",
+    "imageKey": "eq_sr_sanctified_pulse_rosary_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_sanctuary_command_halo_001",
+    "itemId": "eq_ssr_sanctuary_command_halo_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "성역 지휘후광",
+    "slot": "accessory",
+    "category": "halo",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "support"
+    ],
+    "stats": {
+      "hp": 65,
+      "atk": 0,
+      "def": 18,
+      "spd": 0,
+      "tec": 0,
+      "sup": 35
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 6,
+      "combatPower": 92
+    },
+    "tags": [
+      "accessory",
+      "halo",
+      "combat_legend",
+      "holy",
+      "commander"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +65, DEF +18, SUP +35, HEAL +6",
+    "flavorText": "전열이 무너지기 전에 명령이 먼저 울리는 후광.",
+    "imageKey": "eq_ssr_sanctuary_command_halo_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_catastrophe_omen_crownlet_001",
+    "itemId": "eq_ssr_catastrophe_omen_crownlet_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "재앙예고 관장식",
+    "slot": "accessory",
+    "category": "crownlet",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 50,
+      "sup": 15
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 8,
+      "healing": 0,
+      "combatPower": 94
+    },
+    "tags": [
+      "accessory",
+      "crownlet",
+      "combat_legend",
+      "curse"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +50, SUP +15, CRIT +8",
+    "flavorText": "쓰는 순간 다음 사고가 보이지만 피할 수는 없다.",
+    "imageKey": "eq_ssr_catastrophe_omen_crownlet_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_fortress_core_badge_001",
+    "itemId": "eq_ssr_fortress_core_badge_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "요새핵 배지",
+    "slot": "accessory",
+    "category": "badge",
+    "recommendedPositions": [
+      "front"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 90,
+      "atk": 0,
+      "def": 30,
+      "spd": -2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 86
+    },
+    "tags": [
+      "accessory",
+      "badge",
+      "combat_legend",
+      "fortress"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +90, DEF +30, SPD -2",
+    "flavorText": "작은 배지인데 무게감은 성벽 한 칸이다.",
+    "imageKey": "eq_ssr_fortress_core_badge_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_void_janitor_nameplate_001",
+    "itemId": "eq_ssr_void_janitor_nameplate_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "공허청소 명찰",
+    "slot": "accessory",
+    "category": "nameplate",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "caster"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 35,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 10,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 88
+    },
+    "tags": [
+      "accessory",
+      "nameplate",
+      "combat_legend",
+      "void"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +35, EVA +10, ACC +8",
+    "flavorText": "이름이 적히지 않은 명찰. 그래서 더 불길하다.",
+    "imageKey": "eq_ssr_void_janitor_nameplate_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_abyss_admiral_pearl_crown_001",
+    "itemId": "eq_ssr_abyss_admiral_pearl_crown_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "심해제독 진주관",
+    "slot": "accessory",
+    "category": "crown",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "support"
+    ],
+    "stats": {
+      "hp": 70,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 25,
+      "sup": 28
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 92
+    },
+    "tags": [
+      "accessory",
+      "crown",
+      "combat_legend",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +70, TEC +25, SUP +28",
+    "flavorText": "명령을 내리면 파도보다 먼저 계약서가 밀려온다.",
+    "imageKey": "eq_ssr_abyss_admiral_pearl_crown_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_dragonblood_scale_pendant_001",
+    "itemId": "eq_ssr_dragonblood_scale_pendant_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "용혈 비늘목걸이",
+    "slot": "accessory",
+    "category": "pendant",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 22,
+      "def": 18,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 10,
+      "healing": 0,
+      "combatPower": 90
+    },
+    "tags": [
+      "accessory",
+      "pendant",
+      "combat_legend",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +22, DEF +18, CRIT +10",
+    "flavorText": "심장 가까이 걸면 피가 살짝 뜨거워진다.",
+    "imageKey": "eq_ssr_dragonblood_scale_pendant_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_executioner_contract_seal_001",
+    "itemId": "eq_ssr_executioner_contract_seal_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "계약집행 봉인장",
+    "slot": "accessory",
+    "category": "seal",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 25,
+      "def": 0,
+      "spd": 0,
+      "tec": 24,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 92
+    },
+    "tags": [
+      "accessory",
+      "seal",
+      "combat_legend",
+      "contract"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +25, TEC +24, ACC +8",
+    "flavorText": "서명보다 빠르게 처벌을 확정하는 봉인장.",
+    "imageKey": "eq_ssr_executioner_contract_seal_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_archival_director_index_lens_001",
+    "itemId": "eq_ssr_archival_director_index_lens_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "기록국장 색인렌즈",
+    "slot": "accessory",
+    "category": "lens",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "commander"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 45,
+      "sup": 22
+    },
+    "modifiers": {
+      "accuracy": 6,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 96
+    },
+    "tags": [
+      "accessory",
+      "lens",
+      "combat_legend",
+      "archive"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +45, SUP +22, ACC +6",
+    "flavorText": "전장의 실수와 약점을 자동으로 색인화한다.",
+    "imageKey": "eq_ssr_archival_director_index_lens_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_cardboard_dragon_crown_001",
+    "itemId": "eq_ex_cardboard_dragon_crown_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "골판지 드래곤 왕관",
+    "slot": "accessory",
+    "category": "crown",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 80,
+      "atk": 25,
+      "def": 25,
+      "spd": 0,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 12,
+      "healing": 0,
+      "combatPower": 124
+    },
+    "tags": [
+      "accessory",
+      "crown",
+      "ex",
+      "joke",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +80, ATK +25, DEF +25, CRIT +12",
+    "flavorText": "골판지인데 왕관이다. 선배의 권위와 비슷한 재질이다.",
+    "imageKey": "eq_ex_cardboard_dragon_crown_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_green_helm_syringe_charm_001",
+    "itemId": "eq_ex_green_helm_syringe_charm_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "그린헬름 주사기 부적",
+    "slot": "accessory",
+    "category": "charm",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 65,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 65
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 14,
+      "combatPower": 138
+    },
+    "tags": [
+      "accessory",
+      "charm",
+      "ex",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +65, SUP +65, HEAL +14",
+    "flavorText": "찔리기 전에 이미 치료비가 청구되는 의료 부적.",
+    "imageKey": "eq_ex_green_helm_syringe_charm_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bugged_calculator_ring_001",
+    "itemId": "eq_ex_bugged_calculator_ring_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "버그 계산기 반지",
+    "slot": "accessory",
+    "category": "ring",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 60,
+      "sup": 45
+    },
+    "modifiers": {
+      "accuracy": 10,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 136
+    },
+    "tags": [
+      "accessory",
+      "ring",
+      "ex",
+      "office_tool",
+      "accounting"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +60, SUP +45, ACC +10",
+    "flavorText": "계산이 틀릴 때마다 이상하게 이득을 보는 반지.",
+    "imageKey": "eq_ex_bugged_calculator_ring_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_moonlit_idol_stage_earpiece_001",
+    "itemId": "eq_ex_moonlit_idol_stage_earpiece_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "월광 아이돌 무대이어피스",
+    "slot": "accessory",
+    "category": "earpiece",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 35,
+      "tec": 0,
+      "sup": 45
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 10,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 132
+    },
+    "tags": [
+      "accessory",
+      "earpiece",
+      "ex",
+      "idol",
+      "moonlight"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +35, SUP +45, EVA +10",
+    "flavorText": "환호와 명령을 구분하지 않는 위험한 이어피스.",
+    "imageKey": "eq_ex_moonlit_idol_stage_earpiece_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bb_channel_blackbox_charm_001",
+    "itemId": "eq_ex_bb_channel_blackbox_charm_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "BB채널 블랙박스 부적",
+    "slot": "accessory",
+    "category": "charm",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 70,
+      "sup": 30
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 12,
+      "healing": 0,
+      "combatPower": 140
+    },
+    "tags": [
+      "accessory",
+      "charm",
+      "ex",
+      "hack",
+      "bb_channel"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +70, SUP +30, CRIT +12",
+    "flavorText": "선배의 실수를 자동 녹화하고 전투 보정으로 바꾼다.",
+    "imageKey": "eq_ex_bb_channel_blackbox_charm_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_reality_leak_bookmark_001",
+    "itemId": "eq_ex_reality_leak_bookmark_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "현실누수 책갈피",
+    "slot": "accessory",
+    "category": "bookmark",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 20,
+      "tec": 55,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 15,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 134
+    },
+    "tags": [
+      "accessory",
+      "bookmark",
+      "ex",
+      "reality_leak"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +55, SPD +20, EVA +15",
+    "flavorText": "찢어진 세계 페이지를 임시로 고정하는 책갈피.",
+    "imageKey": "eq_ex_reality_leak_bookmark_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_unpaid_overtime_timecard_badge_001",
+    "itemId": "eq_ex_unpaid_overtime_timecard_badge_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "미지급 야근 타임카드 배지",
+    "slot": "accessory",
+    "category": "badge",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 110,
+      "atk": 0,
+      "def": 45,
+      "spd": 0,
+      "tec": 0,
+      "sup": 18
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 128
+    },
+    "tags": [
+      "accessory",
+      "badge",
+      "ex",
+      "office",
+      "heavy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +110, DEF +45, SUP +18",
+    "flavorText": "찍을수록 퇴근은 멀어지고 방어력은 오른다.",
+    "imageKey": "eq_ex_unpaid_overtime_timecard_badge_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_dimensional_receipt_locket_001",
+    "itemId": "eq_ex_dimensional_receipt_locket_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "차원영수증 로켓",
+    "slot": "accessory",
+    "category": "locket",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 70,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 45,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 14,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 130
+    },
+    "tags": [
+      "accessory",
+      "locket",
+      "ex",
+      "dimension",
+      "receipt"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +70, TEC +45, ACC +14",
+    "flavorText": "피해 내역을 다른 차원으로 비용 처리하는 로켓.",
+    "imageKey": "eq_ex_dimensional_receipt_locket_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "장신구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_cracked_lantern_001",
+    "itemId": "eq_n_cracked_lantern_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "금 간 수색랜턴",
+    "slot": "tool",
+    "category": "cracked_lantern",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 2,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "tool",
+      "cracked_lantern",
+      "combat_low",
+      "starter"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +2, SUP +1, ACC +2",
+    "flavorText": "어두운 골목에서 적을 조금 더 빨리 찾게 해주는 금 간 랜턴.",
+    "imageKey": "eq_n_cracked_lantern_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_rusty_medic_kit_001",
+    "itemId": "eq_n_rusty_medic_kit_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "녹슨 응급상자",
+    "slot": "tool",
+    "category": "rusty_medic_kit",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 8,
+      "atk": 0,
+      "def": 1,
+      "spd": 0,
+      "tec": 0,
+      "sup": 3
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 2,
+      "combatPower": 10
+    },
+    "tags": [
+      "tool",
+      "rusty_medic_kit",
+      "combat_low",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +8, DEF +1, SUP +3, HEAL +2",
+    "flavorText": "붕대보다 녹이 먼저 보이는 낡은 응급상자.",
+    "imageKey": "eq_n_rusty_medic_kit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_chipped_spyglass_001",
+    "itemId": "eq_n_chipped_spyglass_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "흠집 난 망원경",
+    "slot": "tool",
+    "category": "chipped_spyglass",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "ranged",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 2,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 3,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "tool",
+      "chipped_spyglass",
+      "combat_low",
+      "ranged"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +2, ACC +3",
+    "flavorText": "렌즈가 긁혀 있지만 멀리 있는 적은 대충 보인다.",
+    "imageKey": "eq_n_chipped_spyglass_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_training_dummy_tag_001",
+    "itemId": "eq_n_training_dummy_tag_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "훈련용 더미표식",
+    "slot": "tool",
+    "category": "training_dummy_tag",
+    "recommendedPositions": [
+      "any"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "training"
+    ],
+    "stats": {
+      "hp": 6,
+      "atk": 1,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 1
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "tool",
+      "training_dummy_tag",
+      "starter",
+      "training"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +6, ATK +1, SUP +1, ACC +1",
+    "flavorText": "표식을 붙이면 때릴 곳이 조금은 명확해진다.",
+    "imageKey": "eq_n_training_dummy_tag_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_cheap_mana_chalk_001",
+    "itemId": "eq_n_cheap_mana_chalk_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "싸구려 마나분필",
+    "slot": "tool",
+    "category": "cheap_mana_chalk",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 4,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "tool",
+      "cheap_mana_chalk",
+      "combat_low",
+      "mage"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +4",
+    "flavorText": "바닥에 그으면 아주 작은 술식 원이 만들어지는 분필.",
+    "imageKey": "eq_n_cheap_mana_chalk_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_old_rope_hook_001",
+    "itemId": "eq_n_old_rope_hook_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "낡은 로프갈고리",
+    "slot": "tool",
+    "category": "old_rope_hook",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 4,
+      "atk": 0,
+      "def": 0,
+      "spd": 2,
+      "tec": 0,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 2,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "tool",
+      "old_rope_hook",
+      "combat_low",
+      "exploration"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +4, SPD +2, EVA +2",
+    "flavorText": "도망치거나 매달릴 때 쓸 수 있는 낡은 갈고리.",
+    "imageKey": "eq_n_old_rope_hook_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_bent_lockpick_set_001",
+    "itemId": "eq_n_bent_lockpick_set_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "휘어진 자물쇠따개",
+    "slot": "tool",
+    "category": "bent_lockpick_set",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 1,
+      "tec": 3,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 1,
+      "evasion": 0,
+      "critical": 1,
+      "healing": 0,
+      "combatPower": 9
+    },
+    "tags": [
+      "tool",
+      "bent_lockpick_set",
+      "combat_low",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +1, TEC +3, ACC +1, CRIT +1",
+    "flavorText": "펴면 부러질 것 같은 자물쇠따개 세트.",
+    "imageKey": "eq_n_bent_lockpick_set_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_n_office_ink_stamp_001",
+    "itemId": "eq_n_office_ink_stamp_001",
+    "enabled": true,
+    "grade": "N",
+    "name": "사무소 잉크도장",
+    "slot": "tool",
+    "category": "office_ink_stamp",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "admin",
+      "support"
+    ],
+    "stats": {
+      "hp": 10,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 0,
+      "sup": 3
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 8
+    },
+    "tags": [
+      "tool",
+      "office_ink_stamp",
+      "starter",
+      "office"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +10, SUP +3",
+    "flavorText": "찍으면 괜히 공식 문서처럼 보이는 잉크도장.",
+    "imageKey": "eq_n_office_ink_stamp_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_field_medic_bag_001",
+    "itemId": "eq_r_field_medic_bag_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "야전 의무가방",
+    "slot": "tool",
+    "category": "field_medic_bag",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 20,
+      "atk": 0,
+      "def": 4,
+      "spd": 0,
+      "tec": 0,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 3,
+      "combatPower": 27
+    },
+    "tags": [
+      "tool",
+      "field_medic_bag",
+      "combat_medium",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +20, DEF +4, SUP +10, HEAL +3",
+    "flavorText": "응급처치 도구가 제법 들어 있는 야전 가방.",
+    "imageKey": "eq_r_field_medic_bag_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_smoke_signal_tube_001",
+    "itemId": "eq_r_smoke_signal_tube_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "연막 신호통",
+    "slot": "tool",
+    "category": "smoke_signal_tube",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 5,
+      "tec": 4,
+      "sup": 2
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 5,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 26
+    },
+    "tags": [
+      "tool",
+      "smoke_signal_tube",
+      "combat_medium",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +5, TEC +4, SUP +2, EVA +5",
+    "flavorText": "연막과 신호탄을 같이 쏘는 작은 통.",
+    "imageKey": "eq_r_smoke_signal_tube_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_debt_ledger_calculator_001",
+    "itemId": "eq_r_debt_ledger_calculator_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "채무장부 계산기",
+    "slot": "tool",
+    "category": "debt_ledger_calculator",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "admin",
+      "support"
+    ],
+    "stats": {
+      "hp": 12,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 8,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 28
+    },
+    "tags": [
+      "tool",
+      "debt_ledger_calculator",
+      "combat_medium",
+      "debtbreaker"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +12, TEC +8, SUP +10, ACC +2",
+    "flavorText": "빚을 계산하면 적의 약점까지 대충 산출되는 계산기.",
+    "imageKey": "eq_r_debt_ledger_calculator_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_sootproof_focus_chalk_001",
+    "itemId": "eq_r_sootproof_focus_chalk_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "그을음 방지 술식분필",
+    "slot": "tool",
+    "category": "sootproof_focus_chalk",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 14,
+      "sup": 4
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 27
+    },
+    "tags": [
+      "tool",
+      "sootproof_focus_chalk",
+      "combat_medium",
+      "mage_tower"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +14, SUP +4, ACC +2",
+    "flavorText": "폭발 뒤에도 선이 남는 고급 술식분필.",
+    "imageKey": "eq_r_sootproof_focus_chalk_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_hunter_trap_kit_001",
+    "itemId": "eq_r_hunter_trap_kit_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "사냥꾼 덫가방",
+    "slot": "tool",
+    "category": "hunter_trap_kit",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 8,
+      "atk": 4,
+      "def": 0,
+      "spd": 4,
+      "tec": 6,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 2,
+      "healing": 0,
+      "combatPower": 27
+    },
+    "tags": [
+      "tool",
+      "hunter_trap_kit",
+      "combat_medium",
+      "forest"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +8, ATK +4, SPD +4, TEC +6, ACC +2, CRIT +2",
+    "flavorText": "작은 덫과 미끼가 들어 있는 사냥꾼 가방.",
+    "imageKey": "eq_r_hunter_trap_kit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_mimic_bait_box_001",
+    "itemId": "eq_r_mimic_bait_box_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "미믹 미끼상자",
+    "slot": "tool",
+    "category": "mimic_bait_box",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 25,
+      "atk": 0,
+      "def": 8,
+      "spd": 0,
+      "tec": 4,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 26
+    },
+    "tags": [
+      "tool",
+      "mimic_bait_box",
+      "combat_medium",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +25, DEF +8, TEC +4",
+    "flavorText": "미믹이 먼저 물고, 착용자는 조금 덜 물린다.",
+    "imageKey": "eq_r_mimic_bait_box_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_guard_command_horn_001",
+    "itemId": "eq_r_guard_command_horn_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "경비 지휘나팔",
+    "slot": "tool",
+    "category": "guard_command_horn",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "support"
+    ],
+    "stats": {
+      "hp": 18,
+      "atk": 0,
+      "def": 5,
+      "spd": 0,
+      "tec": 0,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 27
+    },
+    "tags": [
+      "tool",
+      "guard_command_horn",
+      "combat_medium",
+      "guard"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +18, DEF +5, SUP +10, ACC +2",
+    "flavorText": "불면 아군이 줄을 서는 척은 하는 지휘나팔.",
+    "imageKey": "eq_r_guard_command_horn_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_r_alley_disguise_kit_001",
+    "itemId": "eq_r_alley_disguise_kit_001",
+    "enabled": true,
+    "grade": "R",
+    "name": "골목 변장도구",
+    "slot": "tool",
+    "category": "alley_disguise_kit",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "scout"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 8,
+      "tec": 8,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 5,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 28
+    },
+    "tags": [
+      "tool",
+      "alley_disguise_kit",
+      "combat_medium",
+      "city"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "SPD +8, TEC +8, EVA +5",
+    "flavorText": "짧은 시간 동안 수상하지 않은 척할 수 있는 변장도구.",
+    "imageKey": "eq_r_alley_disguise_kit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_red_thread_tracker_spindle_001",
+    "itemId": "eq_sr_red_thread_tracker_spindle_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "붉은실 추적물레",
+    "slot": "tool",
+    "category": "red_thread_tracker_spindle",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "assassin",
+      "scout"
+    ],
+    "stats": {
+      "hp": 20,
+      "atk": 0,
+      "def": 0,
+      "spd": 12,
+      "tec": 20,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 4,
+      "evasion": 6,
+      "critical": 3,
+      "healing": 0,
+      "combatPower": 58
+    },
+    "tags": [
+      "tool",
+      "red_thread_tracker_spindle",
+      "combat_danger",
+      "red_thread"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +20, SPD +12, TEC +20, ACC +4, EVA +6, CRIT +3",
+    "flavorText": "붉은 실을 감아 적의 이동 경로를 읽는 작은 물레.",
+    "imageKey": "eq_sr_red_thread_tracker_spindle_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_tower_arcane_toolbox_001",
+    "itemId": "eq_sr_tower_arcane_toolbox_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "마탑 폐기 공구함",
+    "slot": "tool",
+    "category": "tower_arcane_toolbox",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "support"
+    ],
+    "stats": {
+      "hp": 12,
+      "atk": 0,
+      "def": 4,
+      "spd": 0,
+      "tec": 28,
+      "sup": 12
+    },
+    "modifiers": {
+      "accuracy": 2,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 60
+    },
+    "tags": [
+      "tool",
+      "tower_arcane_toolbox",
+      "combat_high",
+      "arcane"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +12, DEF +4, TEC +28, SUP +12, ACC +2",
+    "flavorText": "금지된 도구와 폐기된 촉매가 섞인 공구함.",
+    "imageKey": "eq_sr_tower_arcane_toolbox_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_abyss_pressure_gauge_001",
+    "itemId": "eq_sr_abyss_pressure_gauge_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "심해압 계측기",
+    "slot": "tool",
+    "category": "abyss_pressure_gauge",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "support"
+    ],
+    "stats": {
+      "hp": 45,
+      "atk": 0,
+      "def": 16,
+      "spd": 0,
+      "tec": 10,
+      "sup": 8
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 56
+    },
+    "tags": [
+      "tool",
+      "abyss_pressure_gauge",
+      "combat_high",
+      "abyss"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +45, DEF +16, TEC +10, SUP +8",
+    "flavorText": "압력 변화를 읽어 적의 공격 전조를 감지한다.",
+    "imageKey": "eq_sr_abyss_pressure_gauge_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_mimic_vault_probe_001",
+    "itemId": "eq_sr_mimic_vault_probe_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "미믹 금고탐침",
+    "slot": "tool",
+    "category": "mimic_vault_probe",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "scout",
+      "assassin"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 8,
+      "def": 0,
+      "spd": 6,
+      "tec": 18,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 6,
+      "evasion": 0,
+      "critical": 5,
+      "healing": 0,
+      "combatPower": 54
+    },
+    "tags": [
+      "tool",
+      "mimic_vault_probe",
+      "combat_high",
+      "mimic"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +8, SPD +6, TEC +18, ACC +6, CRIT +5",
+    "flavorText": "상자 틈에 찔러 넣으면 물릴지 열릴지 알려주는 탐침.",
+    "imageKey": "eq_sr_mimic_vault_probe_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_foxfire_incense_burner_001",
+    "itemId": "eq_sr_foxfire_incense_burner_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "여우불 향로",
+    "slot": "tool",
+    "category": "foxfire_incense_burner",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 24,
+      "atk": 0,
+      "def": 0,
+      "spd": 5,
+      "tec": 8,
+      "sup": 24
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 5,
+      "combatPower": 60
+    },
+    "tags": [
+      "tool",
+      "foxfire_incense_burner",
+      "combat_high",
+      "spirit"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +24, SPD +5, TEC +8, SUP +24, HEAL +5",
+    "flavorText": "작은 여우불과 향이 아군의 호흡을 맞춘다.",
+    "imageKey": "eq_sr_foxfire_incense_burner_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_blood_rent_audit_scroll_001",
+    "itemId": "eq_sr_blood_rent_audit_scroll_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "혈세 감사두루마리",
+    "slot": "tool",
+    "category": "blood_rent_audit_scroll",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "admin",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 6,
+      "def": 4,
+      "spd": 0,
+      "tec": 22,
+      "sup": 18
+    },
+    "modifiers": {
+      "accuracy": 4,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 56
+    },
+    "tags": [
+      "tool",
+      "blood_rent_audit_scroll",
+      "combat_high",
+      "bounty"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "ATK +6, DEF +4, TEC +22, SUP +18, ACC +4",
+    "flavorText": "적의 부정 지출을 폭로해 방어를 흔드는 두루마리.",
+    "imageKey": "eq_sr_blood_rent_audit_scroll_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_clockwork_repair_drone_001",
+    "itemId": "eq_sr_clockwork_repair_drone_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "태엽 수리드론",
+    "slot": "tool",
+    "category": "clockwork_repair_drone",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "support",
+      "tank"
+    ],
+    "stats": {
+      "hp": 35,
+      "atk": 0,
+      "def": 14,
+      "spd": 4,
+      "tec": 16,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 2,
+      "combatPower": 58
+    },
+    "tags": [
+      "tool",
+      "clockwork_repair_drone",
+      "combat_high",
+      "clockwork"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +35, DEF +14, SPD +4, TEC +16, SUP +10, HEAL +2",
+    "flavorText": "삐걱거리지만 전투 중 장비를 조금씩 조인다.",
+    "imageKey": "eq_sr_clockwork_repair_drone_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_sr_sanctified_emergency_relic_001",
+    "itemId": "eq_sr_sanctified_emergency_relic_001",
+    "enabled": true,
+    "grade": "SR",
+    "name": "성철 응급성물",
+    "slot": "tool",
+    "category": "sanctified_emergency_relic",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 30,
+      "atk": 0,
+      "def": 10,
+      "spd": 0,
+      "tec": 0,
+      "sup": 28
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 6,
+      "combatPower": 60
+    },
+    "tags": [
+      "tool",
+      "sanctified_emergency_relic",
+      "combat_high",
+      "holy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +30, DEF +10, SUP +28, HEAL +6",
+    "flavorText": "기도와 응급처치 사이 어딘가에 있는 성물.",
+    "imageKey": "eq_sr_sanctified_emergency_relic_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_sanctuary_triage_reliquary_001",
+    "itemId": "eq_ssr_sanctuary_triage_reliquary_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "성역 분류성갑함",
+    "slot": "tool",
+    "category": "sanctuary_triage_reliquary",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "commander"
+    ],
+    "stats": {
+      "hp": 80,
+      "atk": 0,
+      "def": 25,
+      "spd": 0,
+      "tec": 0,
+      "sup": 45
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 8,
+      "combatPower": 108
+    },
+    "tags": [
+      "tool",
+      "sanctuary_triage_reliquary",
+      "combat_legend",
+      "holy",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +80, DEF +25, SUP +45, HEAL +8",
+    "flavorText": "누가 쓰러지기 전에 먼저 빛나는 성역 응급함.",
+    "imageKey": "eq_ssr_sanctuary_triage_reliquary_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_catastrophe_black_compass_001",
+    "itemId": "eq_ssr_catastrophe_black_compass_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "재앙흑침 나침반",
+    "slot": "tool",
+    "category": "catastrophe_black_compass",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 0,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 58,
+      "sup": 20
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 0,
+      "critical": 10,
+      "healing": 0,
+      "combatPower": 104
+    },
+    "tags": [
+      "tool",
+      "catastrophe_black_compass",
+      "combat_legend",
+      "curse"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "TEC +58, SUP +20, ACC +8, CRIT +10",
+    "flavorText": "불길한 방향만 가리키지만 적 약점은 정확히 찍는다.",
+    "imageKey": "eq_ssr_catastrophe_black_compass_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_fortress_command_table_mini_001",
+    "itemId": "eq_ssr_fortress_command_table_mini_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "휴대용 요새작전판",
+    "slot": "tool",
+    "category": "fortress_command_table_mini",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "tank"
+    ],
+    "stats": {
+      "hp": 110,
+      "atk": 0,
+      "def": 38,
+      "spd": -3,
+      "tec": 0,
+      "sup": 28
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 104
+    },
+    "tags": [
+      "tool",
+      "fortress_command_table_mini",
+      "combat_legend",
+      "fortress",
+      "commander"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +110, DEF +38, SPD -3, SUP +28",
+    "flavorText": "작은 작전판 하나로 전열 전체를 고집스럽게 버티게 한다.",
+    "imageKey": "eq_ssr_fortress_command_table_mini_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_void_janitor_disposal_bin_001",
+    "itemId": "eq_ssr_void_janitor_disposal_bin_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "공허청소 폐기함",
+    "slot": "tool",
+    "category": "void_janitor_disposal_bin",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 65,
+      "atk": 0,
+      "def": 20,
+      "spd": 0,
+      "tec": 45,
+      "sup": 18
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 8,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 106
+    },
+    "tags": [
+      "tool",
+      "void_janitor_disposal_bin",
+      "combat_legend",
+      "void"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +65, DEF +20, TEC +45, SUP +18, EVA +8",
+    "flavorText": "쓸모없는 상태와 존재감을 함께 집어넣는 폐기함.",
+    "imageKey": "eq_ssr_void_janitor_disposal_bin_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_abyss_admiral_tide_chart_001",
+    "itemId": "eq_ssr_abyss_admiral_tide_chart_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "심해제독 조류도",
+    "slot": "tool",
+    "category": "abyss_admiral_tide_chart",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "commander",
+      "caster"
+    ],
+    "stats": {
+      "hp": 70,
+      "atk": 0,
+      "def": 10,
+      "spd": 0,
+      "tec": 42,
+      "sup": 35
+    },
+    "modifiers": {
+      "accuracy": 6,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 108
+    },
+    "tags": [
+      "tool",
+      "abyss_admiral_tide_chart",
+      "combat_legend",
+      "abyss",
+      "commander"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +70, DEF +10, TEC +42, SUP +35, ACC +6",
+    "flavorText": "전장의 흐름을 해류처럼 읽는 젖지 않는 지도.",
+    "imageKey": "eq_ssr_abyss_admiral_tide_chart_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_dragonblood_forge_tongs_001",
+    "itemId": "eq_ssr_dragonblood_forge_tongs_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "용혈 단조집게",
+    "slot": "tool",
+    "category": "dragonblood_forge_tongs",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "tank"
+    ],
+    "stats": {
+      "hp": 75,
+      "atk": 18,
+      "def": 25,
+      "spd": -2,
+      "tec": 22,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 6,
+      "healing": 0,
+      "combatPower": 102
+    },
+    "tags": [
+      "tool",
+      "dragonblood_forge_tongs",
+      "combat_legend",
+      "dragon",
+      "forge"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +75, ATK +18, DEF +25, SPD -2, TEC +22, CRIT +6",
+    "flavorText": "용혈의 열기로 무기와 자존심을 함께 달구는 집게.",
+    "imageKey": "eq_ssr_dragonblood_forge_tongs_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_contract_executor_stamp_press_001",
+    "itemId": "eq_ssr_contract_executor_stamp_press_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "계약집행 압인기",
+    "slot": "tool",
+    "category": "contract_executor_stamp_press",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "debuffer",
+      "admin"
+    ],
+    "stats": {
+      "hp": 50,
+      "atk": 20,
+      "def": 10,
+      "spd": 0,
+      "tec": 38,
+      "sup": 24
+    },
+    "modifiers": {
+      "accuracy": 8,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 106
+    },
+    "tags": [
+      "tool",
+      "contract_executor_stamp_press",
+      "combat_legend",
+      "contract",
+      "office"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +50, ATK +20, DEF +10, TEC +38, SUP +24, ACC +8",
+    "flavorText": "찍는 순간 계약 위반이 물리 피해가 된다.",
+    "imageKey": "eq_ssr_contract_executor_stamp_press_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ssr_archival_director_auto_index_001",
+    "itemId": "eq_ssr_archival_director_auto_index_001",
+    "enabled": true,
+    "grade": "SSR",
+    "name": "기록국장 자동색인기",
+    "slot": "tool",
+    "category": "archival_director_auto_index",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "commander"
+    ],
+    "stats": {
+      "hp": 40,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 60,
+      "sup": 35
+    },
+    "modifiers": {
+      "accuracy": 10,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 110
+    },
+    "tags": [
+      "tool",
+      "archival_director_auto_index",
+      "combat_legend",
+      "archive"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +40, TEC +60, SUP +35, ACC +10",
+    "flavorText": "전투 로그를 자동으로 분류하고 약점 항목을 강조한다.",
+    "imageKey": "eq_ssr_archival_director_auto_index_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_cardboard_dragon_remote_001",
+    "itemId": "eq_ex_cardboard_dragon_remote_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "골판지 드래곤 조종기",
+    "slot": "tool",
+    "category": "cardboard_dragon_remote",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "dealer",
+      "support"
+    ],
+    "stats": {
+      "hp": 100,
+      "atk": 30,
+      "def": 25,
+      "spd": 10,
+      "tec": 25,
+      "sup": 10
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 12,
+      "healing": 0,
+      "combatPower": 145
+    },
+    "tags": [
+      "tool",
+      "cardboard_dragon_remote",
+      "ex",
+      "joke",
+      "dragon"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +100, ATK +30, DEF +25, SPD +10, TEC +25, SUP +10, CRIT +12",
+    "flavorText": "진짜 드래곤은 없지만 버튼을 누르면 모두가 당황한다.",
+    "imageKey": "eq_ex_cardboard_dragon_remote_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_green_helm_miracle_defibrillator_001",
+    "itemId": "eq_ex_green_helm_miracle_defibrillator_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "그린헬름 기적제세동기",
+    "slot": "tool",
+    "category": "green_helm_miracle_defibrillator",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "healer",
+      "support"
+    ],
+    "stats": {
+      "hp": 90,
+      "atk": 0,
+      "def": 20,
+      "spd": 0,
+      "tec": 0,
+      "sup": 80
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 16,
+      "combatPower": 158
+    },
+    "tags": [
+      "tool",
+      "green_helm_miracle_defibrillator",
+      "ex",
+      "medical"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +90, DEF +20, SUP +80, HEAL +16",
+    "flavorText": "살리는 건지 고문하는 건지 모를 기적의 의료도구.",
+    "imageKey": "eq_ex_green_helm_miracle_defibrillator_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bugged_accounting_terminal_001",
+    "itemId": "eq_ex_bugged_accounting_terminal_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "버그 먹은 회계단말기",
+    "slot": "tool",
+    "category": "bugged_accounting_terminal",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "admin",
+      "caster"
+    ],
+    "stats": {
+      "hp": 60,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 85,
+      "sup": 55
+    },
+    "modifiers": {
+      "accuracy": 12,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 156
+    },
+    "tags": [
+      "tool",
+      "bugged_accounting_terminal",
+      "ex",
+      "office_tool",
+      "accounting"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +60, TEC +85, SUP +55, ACC +12",
+    "flavorText": "수지가 안 맞을수록 전투 보정이 커지는 불량 단말기.",
+    "imageKey": "eq_ex_bugged_accounting_terminal_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_moonlit_idol_stage_console_001",
+    "itemId": "eq_ex_moonlit_idol_stage_console_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "월광 아이돌 무대콘솔",
+    "slot": "tool",
+    "category": "moonlit_idol_stage_console",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "commander"
+    ],
+    "stats": {
+      "hp": 70,
+      "atk": 0,
+      "def": 0,
+      "spd": 35,
+      "tec": 20,
+      "sup": 65
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 12,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 150
+    },
+    "tags": [
+      "tool",
+      "moonlit_idol_stage_console",
+      "ex",
+      "idol",
+      "moonlight"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +70, SPD +35, TEC +20, SUP +65, EVA +12",
+    "flavorText": "조명과 지휘를 동시에 틀어버리는 무대용 콘솔.",
+    "imageKey": "eq_ex_moonlit_idol_stage_console_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_bb_channel_rootkit_tablet_001",
+    "itemId": "eq_ex_bb_channel_rootkit_tablet_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "BB채널 루트킷 태블릿",
+    "slot": "tool",
+    "category": "bb_channel_rootkit_tablet",
+    "recommendedPositions": [
+      "back"
+    ],
+    "recommendedRoles": [
+      "caster",
+      "debuffer"
+    ],
+    "stats": {
+      "hp": 50,
+      "atk": 0,
+      "def": 0,
+      "spd": 0,
+      "tec": 95,
+      "sup": 45
+    },
+    "modifiers": {
+      "accuracy": 10,
+      "evasion": 0,
+      "critical": 14,
+      "healing": 0,
+      "combatPower": 160
+    },
+    "tags": [
+      "tool",
+      "bb_channel_rootkit_tablet",
+      "ex",
+      "hack",
+      "bb_channel"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +50, TEC +95, SUP +45, ACC +10, CRIT +14",
+    "flavorText": "전투 시스템에 얄미운 후배식 간섭을 주입하는 태블릿.",
+    "imageKey": "eq_ex_bb_channel_rootkit_tablet_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_reality_leak_patch_kit_001",
+    "itemId": "eq_ex_reality_leak_patch_kit_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "현실누수 패치키트",
+    "slot": "tool",
+    "category": "reality_leak_patch_kit",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "support",
+      "caster"
+    ],
+    "stats": {
+      "hp": 120,
+      "atk": 0,
+      "def": 35,
+      "spd": 15,
+      "tec": 65,
+      "sup": 0
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 10,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 154
+    },
+    "tags": [
+      "tool",
+      "reality_leak_patch_kit",
+      "ex",
+      "reality_leak"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +120, DEF +35, SPD +15, TEC +65, EVA +10",
+    "flavorText": "찢어진 현실을 임시 패치하는 위험한 도구상자.",
+    "imageKey": "eq_ex_reality_leak_patch_kit_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_unpaid_overtime_timeclock_engine_001",
+    "itemId": "eq_ex_unpaid_overtime_timeclock_engine_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "미지급 야근 타임클럭 엔진",
+    "slot": "tool",
+    "category": "unpaid_overtime_timeclock_engine",
+    "recommendedPositions": [
+      "front",
+      "mid"
+    ],
+    "recommendedRoles": [
+      "tank",
+      "heavy"
+    ],
+    "stats": {
+      "hp": 170,
+      "atk": 20,
+      "def": 60,
+      "spd": -12,
+      "tec": 20,
+      "sup": 20
+    },
+    "modifiers": {
+      "accuracy": 0,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 148
+    },
+    "tags": [
+      "tool",
+      "unpaid_overtime_timeclock_engine",
+      "ex",
+      "office",
+      "heavy"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +170, ATK +20, DEF +60, SPD -12, TEC +20, SUP +20",
+    "flavorText": "퇴근 시간을 태워 방어력을 뽑아내는 악덕 엔진.",
+    "imageKey": "eq_ex_unpaid_overtime_timeclock_engine_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  },
+  {
+    "equipmentId": "eq_ex_dimensional_receipt_printer_001",
+    "itemId": "eq_ex_dimensional_receipt_printer_001",
+    "enabled": true,
+    "grade": "EX",
+    "name": "차원영수증 출력기",
+    "slot": "tool",
+    "category": "dimensional_receipt_printer",
+    "recommendedPositions": [
+      "mid",
+      "back"
+    ],
+    "recommendedRoles": [
+      "admin",
+      "ranged"
+    ],
+    "stats": {
+      "hp": 95,
+      "atk": 10,
+      "def": 10,
+      "spd": 0,
+      "tec": 70,
+      "sup": 25
+    },
+    "modifiers": {
+      "accuracy": 16,
+      "evasion": 0,
+      "critical": 0,
+      "healing": 0,
+      "combatPower": 152
+    },
+    "tags": [
+      "tool",
+      "dimensional_receipt_printer",
+      "ex",
+      "dimension",
+      "receipt"
+    ],
+    "specialEffectId": null,
+    "equipRestriction": null,
+    "summary": "HP +95, ATK +10, DEF +10, TEC +70, SUP +25, ACC +16",
+    "flavorText": "피해와 보상을 다른 차원 영수증으로 출력하는 괴상한 기계.",
+    "imageKey": "eq_ex_dimensional_receipt_printer_001",
+    "balanceStatus": "draft_balanced",
+    "notes": "도구 자동 생성 행"
+  }
+]

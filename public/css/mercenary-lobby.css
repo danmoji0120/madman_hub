@@ -3196,14 +3196,29 @@ body.mission-open {
   overflow: hidden;
 }
 
+.mission-dispatch-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 11px;
+}
+
 .mission-list,
 .mission-squad-list {
-  margin-top: 11px;
   display: grid;
+  align-content: start;
   gap: 9px;
+  min-height: 0;
   max-height: calc(100% - 42px);
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.mission-list {
+  margin-top: 11px;
+}
+
+.mission-squad-list {
+  max-height: none;
 }
 
 .mission-card,
@@ -3524,13 +3539,20 @@ body.mission-open {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
   border-top: 1px solid rgba(214, 168, 93, 0.16);
   padding-top: 12px;
 }
 
 .mission-detail-actions span {
+  flex: 1 1 220px;
   color: rgba(238, 209, 153, 0.62);
   font-size: 12px;
+}
+
+.mission-detail-actions .mission-start-button {
+  width: auto;
+  min-width: 120px;
 }
 
 .mission-reject-button {
@@ -6186,6 +6208,276 @@ body.battle-board-open {
   text-align: right;
 }
 
+
+
+.mercenary-inventory-view {
+  position: fixed;
+  inset: 0;
+  z-index: 47;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.mercenary-inventory-view[hidden] {
+  display: none;
+}
+
+.inventory-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(135, 93, 36, 0.22), transparent 35%),
+    linear-gradient(120deg, rgba(4, 5, 6, 0.72), rgba(28, 18, 10, 0.84));
+  backdrop-filter: blur(3px);
+}
+
+.inventory-shell {
+  position: relative;
+  z-index: 1;
+  width: min(96vw, 1420px);
+  height: min(90vh, 840px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(214, 168, 93, 0.42);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(121, 88, 37, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(24, 16, 10, 0.98), rgba(7, 6, 5, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(255, 235, 180, 0.06), 0 24px 70px rgba(0, 0, 0, 0.68);
+  color: #f4dfb4;
+  overflow: hidden;
+}
+
+.inventory-topbar,
+.inventory-toolbar,
+.inventory-filters,
+.inventory-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inventory-topbar {
+  justify-content: space-between;
+}
+
+.inventory-topbar h2 {
+  margin: 0;
+  color: #ffe2a4;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 31px;
+}
+
+.inventory-topbar p,
+.inventory-kicker,
+.inventory-empty,
+.inventory-item-card,
+.inventory-detail-card {
+  font-family: "MercText", "Malgun Gothic", sans-serif;
+}
+
+.inventory-kicker {
+  color: #c99656;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.inventory-close-button,
+.inventory-tabs button,
+.inventory-disabled-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(214, 168, 93, 0.45);
+  background: linear-gradient(180deg, rgba(74, 47, 22, 0.9), rgba(31, 20, 12, 0.92));
+  color: #ffe2a4;
+  padding: 8px 14px;
+  font-weight: 800;
+}
+
+.inventory-tabs button.is-active {
+  border-color: rgba(255, 219, 137, 0.8);
+  background: linear-gradient(180deg, rgba(118, 74, 28, 0.98), rgba(52, 33, 16, 0.96));
+}
+
+.inventory-toolbar {
+  justify-content: space-between;
+  align-items: flex-end;
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(16, 12, 8, 0.58);
+  padding: 10px;
+}
+
+.inventory-filters label {
+  display: grid;
+  gap: 4px;
+  color: rgba(244, 223, 180, 0.72);
+  font-size: 12px;
+}
+
+.inventory-filters select,
+.inventory-filters input {
+  min-height: 34px;
+  border: 1px solid rgba(214, 168, 93, 0.32);
+  background: rgba(6, 5, 4, 0.82);
+  color: #ffe8b7;
+  padding: 6px 9px;
+}
+
+.inventory-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.inventory-list-panel,
+.inventory-detail-panel {
+  min-height: 0;
+  border: 1px solid rgba(214, 168, 93, 0.26);
+  background: linear-gradient(180deg, rgba(27, 19, 12, 0.78), rgba(8, 7, 6, 0.84));
+  padding: 12px;
+  overflow: hidden;
+}
+
+.inventory-list {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding-right: 4px;
+}
+
+.inventory-item-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  border: 1px solid rgba(152, 108, 58, 0.38);
+  background: rgba(18, 13, 9, 0.72);
+  color: #f4dfb4;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.inventory-item-card.is-selected {
+  border-color: rgba(255, 219, 137, 0.72);
+  box-shadow: inset 0 0 18px rgba(214, 168, 93, 0.12);
+}
+
+.inventory-item-art {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.inventory-item-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.inventory-item-art b,
+.inventory-grade-badge {
+  border: 1px solid rgba(214, 168, 93, 0.42);
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffe2a4;
+  padding: 2px 7px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.inventory-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.inventory-item-copy strong,
+.inventory-detail-card h3 {
+  color: #fff1c2;
+}
+
+.inventory-item-copy em,
+.inventory-item-copy small,
+.inventory-empty,
+.inventory-detail-card p,
+.inventory-detail-card dd,
+.inventory-detail-card blockquote {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.74);
+  font-style: normal;
+}
+
+.inventory-detail-card {
+  height: 100%;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.inventory-detail-card h3 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.inventory-detail-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.inventory-detail-card dl div {
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 8px;
+}
+
+.inventory-detail-card dt {
+  color: rgba(214, 168, 93, 0.82);
+  font-size: 12px;
+}
+
+.inventory-stat-list,
+.inventory-tag-list,
+.inventory-disabled-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inventory-stat-list h4 {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.inventory-stat-list span,
+.inventory-tag-list span {
+  border: 1px solid rgba(214, 168, 93, 0.28);
+  background: rgba(0, 0, 0, 0.28);
+  padding: 5px 8px;
+}
+
+.inventory-disabled-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.inventory-empty-detail {
+  display: grid;
+  gap: 10px;
+  place-content: center;
+  min-height: 100%;
+  text-align: center;
+}
 .mercenary-auth-overlay {
   position: fixed;
   inset: 0;
@@ -7258,6 +7550,20 @@ body.battle-board-open {
 }
 
 @media (max-width: 768px) {
+  .inventory-toolbar,
+  .inventory-filters,
+  .inventory-layout,
+  .inventory-detail-card dl {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-shell {
+    width: calc(100vw - 16px);
+    height: calc(100vh - 16px);
+    overflow: auto;
+  }
+
   .battle-result-modal-summary,
   .battle-result-modal-summary.is-compact,
   .battle-result-reward-grid,

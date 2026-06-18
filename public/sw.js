@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madmen-hub-static-v285';
+const CACHE_NAME = 'madmen-hub-static-v290';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -14,6 +14,8 @@ const PRECACHE_URLS = [
   '/js/main.js',
   '/js/mercenary-data-loader.js',
   '/js/mercenary-audio.js',
+  '/js/mercenary-combat-contract.js',
+  '/js/mercenary-combat-adapters.js',
   '/js/mercenary-lobby.js',
   '/mercenary.html',
   '/data/mercenaries.master.json',
@@ -27,6 +29,9 @@ const PRECACHE_URLS = [
   '/data/mercenary.combat-rewards.master.json',
   '/data/mercenary.combat-rules.master.json',
   '/data/mercenary.combat-logs.master.json',
+  '/data/mercenary.items.master.json',
+  '/data/mercenary.equipment.master.json',
+  '/data/mercenary.equipment-image-prompts.master.json',
   '/assets/mercenary/sfx/ui/button_click.mp3',
   '/assets/mercenary/sfx/ui/button_hover.mp3',
   '/assets/mercenary/sfx/battle/attack_normal.mp3',

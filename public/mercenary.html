@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=285" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=290" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -215,7 +215,6 @@
             </div>
             <div class="mission-squad-list" id="mission-squad-list"></div>
             <div class="mission-dispatch-summary" id="mission-dispatch-summary"></div>
-            <button class="mission-start-button" id="mission-start-button" type="button" disabled>의뢰 시작</button>
           </aside>
         </div>
 
@@ -506,6 +505,44 @@
       </div>
     </section>
 
+
+
+    <section class="mercenary-inventory-view" id="mercenary-inventory-view" aria-label="용병단 보관함" hidden>
+      <div class="inventory-background-scrim" aria-hidden="true"></div>
+      <div class="inventory-shell">
+        <header class="inventory-topbar">
+          <div>
+            <span class="inventory-kicker">창고 장부 0.1</span>
+            <h2>보관함</h2>
+            <p id="inventory-summary-line">보유 아이템을 확인합니다.</p>
+          </div>
+          <button class="inventory-close-button" id="inventory-close-button" type="button">닫기</button>
+        </header>
+        <section class="inventory-toolbar" aria-label="보관함 필터">
+          <div class="inventory-tabs" id="inventory-type-tabs"></div>
+          <div class="inventory-filters">
+            <label>
+              <span>장비 슬롯</span>
+              <select id="inventory-slot-filter"></select>
+            </label>
+            <label>
+              <span>등급</span>
+              <select id="inventory-grade-filter"></select>
+            </label>
+            <label>
+              <span>검색</span>
+              <input id="inventory-search-input" type="search" placeholder="이름, 설명, itemId" autocomplete="off" />
+            </label>
+          </div>
+        </section>
+        <div class="inventory-layout">
+          <section class="inventory-list-panel" aria-label="보관함 목록">
+            <div class="inventory-list" id="inventory-item-list"></div>
+          </section>
+          <aside class="inventory-detail-panel" id="inventory-detail-panel" aria-label="아이템 상세"></aside>
+        </div>
+      </div>
+    </section>
     <section class="settings-overlay" id="mercenary-settings-modal" aria-labelledby="mercenary-settings-title" aria-modal="true" role="dialog" hidden>
       <article class="settings-panel">
         <header class="settings-header">
@@ -537,8 +574,10 @@
   </main>
 
   <script src="/js/api.js?v=219"></script>
-  <script src="/js/mercenary-data-loader.js?v=285"></script>
-  <script src="/js/mercenary-audio.js?v=285"></script>
-  <script src="/js/mercenary-lobby.js?v=285"></script>
+  <script src="/js/mercenary-data-loader.js?v=290"></script>
+  <script src="/js/mercenary-audio.js?v=290"></script>
+  <script src="/js/mercenary-combat-contract.js?v=290"></script>
+  <script src="/js/mercenary-combat-adapters.js?v=290"></script>
+  <script src="/js/mercenary-lobby.js?v=290"></script>
 </body>
 </html>

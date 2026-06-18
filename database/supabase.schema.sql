@@ -469,6 +469,20 @@ CREATE TABLE IF NOT EXISTS user_mercenary_battle_runs (
   UNIQUE(user_id, battle_id)
 );
 
+
+CREATE TABLE IF NOT EXISTS user_mercenary_inventory_items (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_id TEXT NOT NULL,
+  item_type TEXT NOT NULL DEFAULT 'misc',
+  quantity INTEGER NOT NULL DEFAULT 1,
+  locked BOOLEAN NOT NULL DEFAULT FALSE,
+  acquired_source_type TEXT,
+  acquired_source_id TEXT,
+  acquired_run_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 CREATE TABLE IF NOT EXISTS user_mercenary_case_progress (
   id TEXT PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -783,6 +797,9 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_runs_mission ON user_mercenary_run
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user ON user_mercenary_battle_runs(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_battle ON user_mercenary_battle_runs(user_id, battle_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_claimed ON user_mercenary_battle_runs(user_id, claimed_at);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user ON user_mercenary_inventory_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user_item ON user_mercenary_inventory_items(user_id, item_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_run ON user_mercenary_inventory_items(acquired_run_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user ON user_mercenary_case_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_mercenary_case_progress(user_id, case_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id);
