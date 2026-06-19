@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-18T08:58:44.854Z",
+  "generatedAt": "2026-06-19T12:23:44.190Z",
   "combatLogs": {
     "total": 14,
     "enabled": 14,
@@ -24,9 +24,25 @@
       "victory"
     ]
   },
+  "combatStages": {
+    "sourceRows": 31,
+    "enabled": 31,
+    "generatedMissions": 31,
+    "generatedEncounters": 31,
+    "generatedEncounterEnemies": 65,
+    "generatedRewards": 124
+  },
   "enemySkills": {
     "missingActionSkillIds": [],
     "missingBasicAttackIds": []
+  },
+  "inventoryRewards": {
+    "enabledRows": 111,
+    "equipmentRows": 68,
+    "materialRows": 43,
+    "srEquipmentRows": 25,
+    "ssrEquipmentRows": 0,
+    "exEquipmentRows": 0
   },
   "warnings": []
 }

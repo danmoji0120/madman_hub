@@ -105,6 +105,9 @@ Client preview rewards are never trusted for payment.
 Server rewards are resolved from sheet combat mission `rewardGroupId` and combat reward JSON.
 Legacy mock operation ids are no longer reward-claim targets.
 
+Claim requests use a slim payload. The client sends identifiers, outcome, round count, party ids, minimal ally HP states, and a compact clientSummary. It does not send full battle logs, replay frames, rendered report HTML, full equipment snapshots, full enemy snapshots, or master JSON rows. Detailed battle reports and equipment summaries remain available in the result modal from local battleResult data, while the server reconstructs a compact stored battle result for settlement, injury calculation, and stage clear updates.
+
+
 Failed settlement keeps the result modal open and shows `정산 재시도`.
 Retry calls the same claim endpoint with the same battle payload, relying on server idempotency to prevent duplicate rewards.
 

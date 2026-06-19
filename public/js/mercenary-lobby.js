@@ -614,6 +614,11 @@ const inventoryState = {
 
 const battleOperationState = {
   operations: [],
+  baseOperations: [],
+  stageGroups: new Map(),
+  stageClears: [],
+  stageClearLoadState: 'idle',
+  selectedBaseMissionId: '',
   operationLoadError: '',
   selectedOperationId: '',
   parties: [],
@@ -1305,6 +1310,18 @@ function normalizeMercenaryForRoster(item) {
     ? 1
     : Math.max(0, Math.min(1, Number(item.expProgress ?? (expToNext > 0 ? exp / expToNext : 0)) || 0));
   const combatSkill = item.combatSkill || (item.skill ? `${item.skill.name}: ${item.skill.effect}` : '');
+  const equipmentBonus = item.equipmentBonus || item.statBreakdown?.equipmentBonus || {};
+  const equipmentSlots = item.equipmentSlots && typeof item.equipmentSlots === 'object' ? item.equipmentSlots : {};
+  const equippedItems = Array.isArray(item.equippedItems) ? item.equippedItems : [];
+  const equipmentCombatPower = Number(item.equipmentCombatPower ?? equipmentBonus.combatPower ?? 0) || 0;
+  const totalCombatPower = Number(item.totalCombatPower ?? item.displayCombatPower ?? item.combatPower ?? item.power ?? 0) || 0;
+  const baseCombatPowerWithoutEquipment = Number(
+    item.baseCombatPowerWithoutEquipment
+    ?? item.baseCombatPowerNoEquipment
+    ?? item.baseCombatPower
+    ?? (totalCombatPower > 0 ? Math.max(0, totalCombatPower - equipmentCombatPower) : 0)
+    ?? 0
+  ) || 0;
   const normalized = {
     id,
     ownedId,
@@ -1340,9 +1357,16 @@ function normalizeMercenaryForRoster(item) {
     statBreakdown: item.statBreakdown || null,
     stats: normalizeStats(item),
     workPower: Number(item.workPower || 0) || 0,
-    baseCombatPower: Number(item.baseCombatPower ?? item.base_combat_power ?? item.power ?? 0) || 0,
-    combatPower: Number(item.combatPower ?? item.power ?? item.baseCombatPower ?? 0) || 0,
-    power: Number(item.combatPower ?? item.power ?? item.baseCombatPower ?? 0) || 0,
+    baseCombatPower: baseCombatPowerWithoutEquipment,
+    baseCombatPowerWithoutEquipment,
+    equipmentCombatPower,
+    totalCombatPower: totalCombatPower || baseCombatPowerWithoutEquipment + equipmentCombatPower,
+    displayCombatPower: totalCombatPower || baseCombatPowerWithoutEquipment + equipmentCombatPower,
+    combatPower: totalCombatPower || baseCombatPowerWithoutEquipment + equipmentCombatPower,
+    power: totalCombatPower || baseCombatPowerWithoutEquipment + equipmentCombatPower,
+    equipmentBonus,
+    equipmentSlots,
+    equippedItems,
     skill: splitSkill(combatSkill),
     requestBonus: item.missionBonus || item.requestBonus || '의뢰 보너스 미등록',
     adminBonus: item.adminBonus || '행정 보너스 미등록',
@@ -1379,7 +1403,16 @@ function normalizeMercenaryForRoster(item) {
   if (item.treatmentCostGold !== undefined) normalized.treatmentCostGold = Number(item.treatmentCostGold) || 0;
   if (item.treatmentDurationSeconds !== undefined) normalized.treatmentDurationSeconds = Number(item.treatmentDurationSeconds) || 0;
   normalized.isLocked = Boolean(normalized.locked);
-  normalized.equipment = Array.isArray(item.equipment) ? item.equipment : makeDummyEquipment(normalized);
+  normalized.equipment = equippedItems.length
+    ? equippedItems.map((slot) => ({
+      slot: getEquipmentSlotLabel(slot.slot),
+      name: slot.name || slot.equipment?.name || slot.item?.name || slot.itemId || '',
+      grade: slot.grade || slot.equipment?.grade || '',
+      effect: formatEquipmentSummary(slot.equipment || slot),
+      icon: getEquipmentSlotIcon(slot.slot),
+      rawSlot: slot
+    }))
+    : makeDummyEquipment(normalized);
   return normalized;
 }
 
@@ -1513,6 +1546,16 @@ function getBattlefieldBackgroundImage(battlefield = {}, operation = {}) {
     '';
 }
 
+function getStageStatMultiplier(modifiers, key) {
+  const value = Number(modifiers?.[`${key}Multiplier`] || 1);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
+function applyStageEnemyStat(baseValue, modifiers, key, fallback = 0) {
+  const value = Number(baseValue ?? fallback) || fallback;
+  return Math.max(0, Math.round(value * getStageStatMultiplier(modifiers, key)));
+}
+
 function buildBattleEnemiesFromEncounter(encounter) {
   const encounterId = String(encounter?.encounterId || encounter?.id || '').trim();
   const explicitRows = (mercenaryCombatRules.encounterEnemiesByEncounterId.get(encounterId) || [])
@@ -1527,6 +1570,7 @@ function buildBattleEnemiesFromEncounter(encounter) {
     for (let index = 0; index < count; index += 1) {
       const baseStats = template.baseStats || {};
       const enemyLevel = Number(row.enemyLevel || encounter?.enemyLevel || template.level || 1) || 1;
+      const stageModifiers = row.stageModifiers || encounter?.stageModifiers || null;
       const positionKey = normalizeCombatPositionKey(row.positionKey || template.positionKey || template.position);
       const activeSkillId = String(template.actionSkillId || template.skillId || '').trim();
       const basicAttackId = resolveKnownBasicAttackId(template.basicAttackId || 'normal_strike');
@@ -1538,13 +1582,14 @@ function buildBattleEnemiesFromEncounter(encounter) {
         element: Array.isArray(template.tags) ? template.tags[0] || '' : '',
         tags: Array.isArray(template.tags) ? template.tags : [],
         level: enemyLevel,
-        hp: Number(baseStats.hp || template.hp || 1) || 1,
-        maxHp: Number(baseStats.hp || template.hp || 1) || 1,
-        attack: Number(baseStats.atk || template.atk || 1) || 1,
-        defense: Number(baseStats.def || template.def || 0) || 0,
-        speed: Number(baseStats.spd || template.spd || 1) || 1,
-        tec: Number(baseStats.tec || template.tec || 0) || 0,
-        support: Number(baseStats.sup || template.sup || 0) || 0,
+        hp: Math.max(1, applyStageEnemyStat(baseStats.hp || template.hp || 1, stageModifiers, 'hp', 1)),
+        maxHp: Math.max(1, applyStageEnemyStat(baseStats.hp || template.hp || 1, stageModifiers, 'hp', 1)),
+        attack: Math.max(1, applyStageEnemyStat(baseStats.atk || template.atk || 1, stageModifiers, 'atk', 1)),
+        defense: applyStageEnemyStat(baseStats.def || template.def || 0, stageModifiers, 'def', 0),
+        speed: Math.max(1, applyStageEnemyStat(baseStats.spd || template.spd || 1, stageModifiers, 'spd', 1)),
+        tec: applyStageEnemyStat(baseStats.tec || template.tec || 0, stageModifiers, 'tec', 0),
+        support: applyStageEnemyStat(baseStats.sup || template.sup || 0, stageModifiers, 'sup', 0),
+        stageModifiers,
         image: template.imagePath || template.image || '',
         imageKey: template.imageKey || '',
         positionKey,
@@ -1588,6 +1633,15 @@ function buildBattleOperationFromCombatMission(mission) {
     id: String(mission?.operationId || mission?.missionId || mission?.id || '').trim(),
     missionId: mission?.missionId || mission?.id || '',
     source: 'sheet_combat_mission',
+    isStageMission: Boolean(mission?.isStageMission || mission?.stageId || mission?.baseMissionId),
+    stageId: mission?.stageId || '',
+    baseMissionId: mission?.baseMissionId || '',
+    stageNumber: mission?.stageNumber || '',
+    stageTier: mission?.stageTier || mission?.difficultyTier || '',
+    unlockCondition: mission?.unlockCondition || '',
+    generatedMissionId: mission?.generatedMissionId || mission?.missionId || mission?.id || '',
+    generatedEncounterId: mission?.generatedEncounterId || encounter?.encounterId || mission?.encounterId || '',
+    generatedRewardGroupId: mission?.generatedRewardGroupId || rewardGroupId,
     title: mission?.title || encounter?.title || '전투 작전',
     danger: mission?.danger || encounter?.danger || '',
     battlefield: battlefieldName,
@@ -1616,6 +1670,41 @@ function buildBattleOperationFromCombatMission(mission) {
   };
 }
 
+function getBattleStageSortValue(operation) {
+  const raw = String(operation?.stageNumber || '').trim().toUpperCase();
+  if (raw === 'EX') return 999;
+  const parsed = Number(raw || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function rebuildBattleStageGroups() {
+  const operations = battleOperationState.operations || [];
+  const baseOperations = operations.filter((operation) => !operation.isStageMission);
+  const groups = new Map();
+  baseOperations.forEach((base) => groups.set(base.id, { base, stages: [] }));
+  operations.filter((operation) => operation.isStageMission).forEach((stage) => {
+    const baseId = stage.baseMissionId || stage.missionId;
+    if (!groups.has(baseId)) {
+      groups.set(baseId, { base: stage, stages: [] });
+    }
+    groups.get(baseId).stages.push(stage);
+  });
+  groups.forEach((group) => {
+    group.stages.sort((left, right) => getBattleStageSortValue(left) - getBattleStageSortValue(right));
+  });
+  battleOperationState.baseOperations = [...groups.values()].map((group) => group.base);
+  battleOperationState.stageGroups = groups;
+}
+
+function getSelectedBattleBaseId() {
+  const selected = selectedBattleOperation();
+  return selected?.baseMissionId || selected?.id || battleOperationState.selectedBaseMissionId || '';
+}
+
+function getStageGroup(baseId = getSelectedBattleBaseId()) {
+  return battleOperationState.stageGroups.get(baseId) || null;
+}
+
 function applyCombatMissionOperations() {
   const sheetOperations = (mercenaryCombatRules.combatMissions || [])
     .filter((mission) => mission?.enabled !== false)
@@ -1623,14 +1712,26 @@ function applyCombatMissionOperations() {
     .filter((operation) => operation.id && operation.enemies.length);
   if (!sheetOperations.length) {
     battleOperationState.operations = [];
+    battleOperationState.baseOperations = [];
+    battleOperationState.stageGroups = new Map();
     battleOperationState.selectedOperationId = '';
+    battleOperationState.selectedBaseMissionId = '';
     battleOperationState.operationLoadError = '전투 의뢰 데이터를 불러오지 못했습니다.';
     return;
   }
   battleOperationState.operationLoadError = '';
   battleOperationState.operations = sheetOperations;
-  if (!battleOperationState.operations.some((item) => item.id === battleOperationState.selectedOperationId)) {
-    battleOperationState.selectedOperationId = battleOperationState.operations[0]?.id || '';
+  rebuildBattleStageGroups();
+  const current = battleOperationState.operations.find((item) => item.id === battleOperationState.selectedOperationId);
+  const firstBase = battleOperationState.baseOperations[0];
+  const currentBaseId = current?.baseMissionId || current?.id || battleOperationState.selectedBaseMissionId || firstBase?.id || '';
+  battleOperationState.selectedBaseMissionId = currentBaseId;
+  const group = getStageGroup(currentBaseId);
+  const fallbackStage = group?.stages?.[0] || group?.base || firstBase || battleOperationState.operations[0];
+  if (!current || (current.isStageMission && current.baseMissionId !== currentBaseId)) {
+    battleOperationState.selectedOperationId = fallbackStage?.id || '';
+  } else if (!current.isStageMission && group?.stages?.length) {
+    battleOperationState.selectedOperationId = group.stages[0].id;
   }
 }
 
@@ -4224,17 +4325,71 @@ const INVENTORY_SLOT_OPTIONS = [
 
 const INVENTORY_GRADE_OPTIONS = ['all', 'N', 'R', 'SR', 'SSR', 'EX'];
 
-function getInventoryEquipmentForEntry(entry) {
-  return entry?.equipment || inventoryState.equipmentBundle?.equipmentById?.[entry?.itemId] || null;
+const failedEquipmentImageKeys = new Set();
+const READY_EQUIPMENT_IMAGE_STATUSES = new Set(['ready', 'generated', 'complete', 'completed', 'approved', 'done']);
+
+function getInventoryEntryItemId(entry = {}) {
+  return String(entry.itemId || entry.item_id || entry.item?.itemId || entry.item?.item_id || entry.item?.id || '').trim();
 }
 
-function getInventoryItemMasterForEntry(entry) {
-  return entry?.master || inventoryState.equipmentBundle?.byItemId?.[entry?.itemId] || null;
+function getInventoryEquipmentForEntry(entry = {}) {
+  const itemId = getInventoryEntryItemId(entry);
+  const bundle = inventoryState.equipmentBundle || {};
+  if (entry?.equipment) return entry.equipment;
+  if (entry?.equipmentId && bundle.equipmentById?.[entry.equipmentId]) return bundle.equipmentById[entry.equipmentId];
+  if (entry?.equipment_id && bundle.equipmentById?.[entry.equipment_id]) return bundle.equipmentById[entry.equipment_id];
+  if (itemId && bundle.equipmentById?.[itemId]) return bundle.equipmentById[itemId];
+  if (!itemId) return null;
+  const item = bundle.byItemId?.[itemId] || bundle.itemsById?.[itemId] || null;
+  const equipmentId = item?.equipmentId || item?.equipment_id || item?.refId || item?.ref_id || '';
+  if (equipmentId && bundle.equipmentById?.[equipmentId]) return bundle.equipmentById[equipmentId];
+  return (bundle.equipment || []).find((equipment) => {
+    const equipmentItemId = String(equipment.itemId || equipment.item_id || equipment.item?.id || '').trim();
+    return equipmentItemId === itemId;
+  }) || null;
+}
+
+function getInventoryEntryEquipment(entry = {}) {
+  return getInventoryEquipmentForEntry(entry);
+}
+
+function getInventoryItemMasterForEntry(entry = {}) {
+  const itemId = getInventoryEntryItemId(entry);
+  const bundle = inventoryState.equipmentBundle || {};
+  return entry?.master || (itemId ? bundle.byItemId?.[itemId] || bundle.itemsById?.[itemId] : null) || null;
 }
 
 function getInventoryImagePromptForEntry(entry) {
   const equipment = getInventoryEquipmentForEntry(entry);
   return entry?.imagePrompt || (equipment?.imageKey ? inventoryState.equipmentBundle?.imagePromptByKey?.[equipment.imageKey] : null) || null;
+}
+
+function isEquipmentImageReady(prompt = {}) {
+  const generationStatus = String(prompt.generationStatus || prompt.generation_status || '').trim().toLowerCase();
+  const reviewStatus = String(prompt.reviewStatus || prompt.review_status || '').trim().toLowerCase();
+  return READY_EQUIPMENT_IMAGE_STATUSES.has(generationStatus) || READY_EQUIPMENT_IMAGE_STATUSES.has(reviewStatus);
+}
+
+function getEquipmentImageSrc(entryOrEquipment = {}) {
+  const equipment = entryOrEquipment.equipment || entryOrEquipment;
+  const prompt = entryOrEquipment.imagePrompt || getInventoryImagePromptForEntry(entryOrEquipment) || {};
+  const imageKey = String(equipment.imageKey || equipment.image_key || prompt.imageKey || prompt.image_key || '').trim();
+  const fileName = String(prompt.fileName || prompt.file_name || (imageKey ? `${imageKey}.png` : '')).trim();
+  if (!fileName || !isEquipmentImageReady(prompt)) return '';
+  const cacheKey = imageKey || fileName;
+  if (failedEquipmentImageKeys.has(cacheKey)) return '';
+  return `/assets/mercenary/equipment/${fileName}`;
+}
+
+function bindEquipmentImageFallback(root = document) {
+  root.querySelectorAll('[data-equipment-image-key]').forEach((image) => {
+    image.addEventListener('error', () => {
+      const key = image.dataset.equipmentImageKey || image.getAttribute('src') || '';
+      if (key) failedEquipmentImageKeys.add(key);
+      image.hidden = true;
+      image.closest('.inventory-item-art, .mercenary-equipment-art')?.classList.add('is-missing');
+    }, { once: true });
+  });
 }
 
 function normalizeInventoryEntryForUi(entry = {}) {
@@ -4375,13 +4530,12 @@ function renderInventoryFilters() {
 
 function renderInventoryCard(entry) {
   const equipment = entry.equipment || {};
-  const prompt = entry.imagePrompt || {};
-  const fileName = prompt.fileName || (equipment.imageKey ? `${equipment.imageKey}.png` : '');
-  const img = fileName ? `/assets/mercenary/equipment/${fileName}` : '';
+  const img = getEquipmentImageSrc(entry);
+  const imageKey = equipment.imageKey || entry.imagePrompt?.imageKey || entry.itemId || '';
   return `
     <button type="button" class="inventory-item-card ${inventoryState.selectedEntryId === entry.id ? 'is-selected' : ''}" data-inventory-entry="${escapeHtml(entry.id)}">
-      <span class="inventory-item-art">
-        ${img ? `<img src="${escapeHtml(img)}" alt="" onerror="this.hidden=true" />` : ''}
+      <span class="inventory-item-art ${img ? 'has-image' : 'is-missing'}">
+        ${img ? `<img src="${escapeHtml(img)}" alt="" data-equipment-image-key="${escapeHtml(imageKey)}" />` : ''}
         <b>${escapeHtml(entry.grade || '?')}</b>
       </span>
       <span class="inventory-item-copy">
@@ -4389,7 +4543,7 @@ function renderInventoryCard(entry) {
         <em>${escapeHtml(entry.itemType)}${entry.slot ? ` · ${escapeHtml(entry.slot)}` : ''} · x${formatNumber(entry.quantity)}</em>
         <small>${escapeHtml(entry.effectSummary || entry.description || '효과 정보 없음')}</small>
       </span>
-      ${entry.locked ? '<i>잠금</i>' : ''}
+      ${entry.equipped ? `<i class="is-equipped">\uC7A5\uCC29 \uC911</i>` : entry.locked ? '<i>\uC7A0\uAE08</i>' : ''}
     </button>
   `;
 }
@@ -4434,13 +4588,40 @@ function renderInventoryDetail(entry) {
         ${(entry.equipment?.recommendedRoles || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
         ${(entry.equipment?.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
       </section>
+      ${entry.equipped ? `
+        <section class="inventory-equipped-state">
+          <strong>\uC7A5\uCC29 \uC911</strong>
+          <span>${escapeHtml(entry.equippedByMercenaryName || entry.equippedByMercenaryId || '\uC6A9\uBCD1')}</span>
+          <button type="button" data-inventory-unequip="${escapeHtml(entry.equippedByMercenaryId || '')}" data-equipment-slot="${escapeHtml(entry.equippedSlot || entry.slot || '')}">\uD574\uC81C</button>
+        </section>
+      ` : ''}
+      ${entry.itemType === 'equipment' && !entry.equipped ? `
+        <section class="inventory-equip-panel">
+          <label>
+            <span>\uC7A5\uCC29 \uB300\uC0C1</span>
+            <select data-inventory-equip-target>
+              <option value="">\uC6A9\uBCD1 \uC120\uD0DD</option>
+              ${getInventoryEquipOptions(entry).map((member) => `<option value="${escapeHtml(member.id)}">${escapeHtml(member.name)} · ${escapeHtml(member.grade)} Lv.${formatNumber(member.level)} · ${formatNumber(member.power)}</option>`).join('')}
+            </select>
+          </label>
+          <button type="button" data-inventory-equip="${escapeHtml(entry.id)}">\uC7A5\uCC29</button>
+          ${getInventoryEquipOptions(entry).length ? '' : '<p>\uD574\uB2F9 \uC2AC\uB86F\uC774 \uBE44\uC5B4 \uC788\uB294 \uB300\uAE30 \uC6A9\uBCD1\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</p>'}
+        </section>
+      ` : ''}
       <div class="inventory-disabled-actions">
-        <button type="button" disabled>장착 · 다음 업데이트</button>
-        <button type="button" disabled>사용 · 다음 업데이트</button>
-        <button type="button" disabled>판매 · 다음 업데이트</button>
+        <button type="button" disabled>\uC0AC\uC6A9 · \uB2E4\uC74C \uC5C5\uB370\uC774\uD2B8</button>
+        <button type="button" disabled>\uD310\uB9E4 · \uB2E4\uC74C \uC5C5\uB370\uC774\uD2B8</button>
+        <button type="button" disabled>\uC7A0\uAE08/\uD574\uC81C · \uB2E4\uC74C \uC5C5\uB370\uC774\uD2B8</button>
       </div>
     </article>
   `;
+  root.querySelector('[data-inventory-equip]')?.addEventListener('click', (event) => {
+    const target = root.querySelector('[data-inventory-equip-target]');
+    equipInventoryEntryToMercenary(event.currentTarget.dataset.inventoryEquip, target?.value || '');
+  });
+  root.querySelector('[data-inventory-unequip]')?.addEventListener('click', (event) => {
+    unequipMercenaryEquipmentSlot(event.currentTarget.dataset.inventoryUnequip, event.currentTarget.dataset.equipmentSlot);
+  });
 }
 
 function renderInventoryView() {
@@ -4471,6 +4652,7 @@ function renderInventoryView() {
   }
   if (!entries.some((entry) => entry.id === inventoryState.selectedEntryId)) inventoryState.selectedEntryId = entries[0].id;
   list.innerHTML = entries.map(renderInventoryCard).join('');
+  bindEquipmentImageFallback(list);
   list.querySelectorAll('[data-inventory-entry]').forEach((button) => {
     button.addEventListener('click', () => {
       inventoryState.selectedEntryId = button.dataset.inventoryEntry || '';
@@ -4711,7 +4893,7 @@ function getBattlePartyMemberMap() {
 
 function calculateMockMercenaryBattlePower(member) {
   if (!member) return 0;
-  const direct = Number(member.combatPower || member.power || 0);
+  const direct = Number(member.totalCombatPower ?? member.displayCombatPower ?? member.combatPower ?? member.power ?? 0);
   if (direct > 0) return direct;
   const gradeBonus = ({ N: 80, R: 150, SR: 260, SSR: 420, EX: 520 })[String(member.grade || 'N').toUpperCase()] || 80;
   return gradeBonus + Number(member.level || 1) * 24;
@@ -4731,6 +4913,72 @@ function isBattleMercenaryAvailable(member) {
   return member.available !== false && (status === 'idle' || status === '대기 중' || status === '대기중');
 }
 
+function getStageClearMapsForClient() {
+  const clears = Array.isArray(battleOperationState.stageClears) ? battleOperationState.stageClears : [];
+  return {
+    byMissionId: new Map(clears.map((item) => [String(item.missionId || ''), item])),
+    byStageId: new Map(clears.map((item) => [String(item.stageId || ''), item]))
+  };
+}
+
+function splitStageUnlockConditions(unlockCondition) {
+  const text = String(unlockCondition || '').trim();
+  if (!text || text === 'default') return [];
+  return text.split(';').map((item) => item.trim()).filter(Boolean);
+}
+
+function getClientStageUnlockReasons(operation) {
+  if (!operation?.isStageMission) return [];
+  const reasons = [];
+  const officeLevel = Number(mercenaryLobbyState.level || 1) || 1;
+  const requiredOfficeLevel = Math.max(1, Number(operation.requiredOfficeLevel || 1) || 1);
+  if (officeLevel < requiredOfficeLevel) reasons.push(`사무소 Lv.${requiredOfficeLevel} 필요`);
+  const maps = getStageClearMapsForClient();
+  splitStageUnlockConditions(operation.unlockCondition).forEach((condition) => {
+    if (condition === 'default') return;
+    if (condition.startsWith('clear:')) {
+      const requiredMissionId = condition.slice('clear:'.length).trim();
+      if (!maps.byMissionId.has(requiredMissionId) && !maps.byStageId.has(requiredMissionId)) reasons.push('이전 Stage 클리어 필요');
+      return;
+    }
+    const officeMatch = condition.match(/^office_level\s*>=\s*(\d+)$/i);
+    if (officeMatch) {
+      const required = Number(officeMatch[1] || 0);
+      if (officeLevel < required) reasons.push(`사무소 Lv.${required} 필요`);
+      return;
+    }
+    if (condition.startsWith('rumor_seed:')) {
+      reasons.push('소문 조건 미충족');
+      return;
+    }
+    if (condition.startsWith('case_or_rumor:')) {
+      reasons.push('사건/소문 조건 미충족');
+      return;
+    }
+    reasons.push('해금 조건 미충족');
+  });
+  return [...new Set(reasons)];
+}
+
+function isBattleStageUnlocked(operation) {
+  return getClientStageUnlockReasons(operation).length === 0;
+}
+
+async function loadBattleStageClears(options = {}) {
+  const force = Boolean(options.force);
+  if (!force && battleOperationState.stageClearLoadState === 'loading') return;
+  battleOperationState.stageClearLoadState = 'loading';
+  try {
+    const payload = await apiRequest('/api/mercenary/combat-stage-clears', { perfScope: 'mercenary-combat-stage-clears' });
+    battleOperationState.stageClears = Array.isArray(payload?.clears) ? payload.clears : [];
+    battleOperationState.stageClearLoadState = 'loaded';
+  } catch (error) {
+    battleOperationState.stageClears = [];
+    battleOperationState.stageClearLoadState = error.status === 401 ? 'unauthorized' : 'failed';
+    if (error.status !== 401) console.warn('[mercenary/combat-stage-clears] load failed', error);
+  }
+}
+
 function getBattlePartyValidation(party, operation = selectedBattleOperation()) {
   const memberMap = getBattlePartyMemberMap();
   if (ownedMercenaryLoadState.loading) return { ok: false, reason: '용병 정보 불러오는 중...' };
@@ -4748,6 +4996,8 @@ function getBattlePartyValidation(party, operation = selectedBattleOperation()) 
   if (missing) return { ok: false, reason: '용병 정보를 불러오지 못했습니다.' };
   const unavailable = ids.some((id) => !isBattleMercenaryAvailable(memberMap.get(id)));
   if (unavailable) return { ok: false, reason: '전투 불가 용병 포함' };
+  const stageReasons = getClientStageUnlockReasons(operation);
+  if (stageReasons.length) return { ok: false, reason: stageReasons[0] };
   return { ok: true, reason: '' };
 }
 
@@ -4791,6 +5041,444 @@ function summarizeBattleRewards(rewards = []) {
     return summary;
   }, { gold: 0, officeExp: 0, mercExp: 0, extraCount: 0, resultTexts: [] });
 }
+
+const EQUIPMENT_SLOT_LABELS = {
+  weapon: '\uBB34\uAE30',
+  armor: '\uBC29\uC5B4\uAD6C',
+  accessory: '\uC7A5\uC2E0\uAD6C',
+  tool: '\uBCF4\uC870 \uB3C4\uAD6C'
+};
+
+const EQUIPMENT_SLOT_ORDER = ['weapon', 'armor', 'accessory', 'tool'];
+
+const EQUIPMENT_STAT_LABELS = {
+  hp: 'HP',
+  atk: 'ATK',
+  def: 'DEF',
+  spd: 'SPD',
+  tec: 'TEC',
+  sup: 'SUP',
+  accuracy: '\uBA85\uC911',
+  evasion: '\uD68C\uD53C',
+  critical: '\uCE58\uBA85',
+  healing: '\uD68C\uBCF5',
+  combatPower: '\uC804\uD22C\uB825'
+};
+
+function getEquipmentSlotLabel(slot) {
+  return EQUIPMENT_SLOT_LABELS[String(slot || '').trim()] || String(slot || '\uC7A5\uBE44').trim();
+}
+
+function getEquipmentSlotIcon(slot) {
+  const key = String(slot || '').trim();
+  if (key === 'weapon') return 'sword';
+  if (key === 'armor') return 'shield';
+  if (key === 'accessory') return 'spark';
+  return 'briefcase';
+}
+
+function formatEquipmentSummary(equipment = {}) {
+  const stats = equipment.stats || {};
+  const modifiers = equipment.modifiers || {};
+  const rows = Object.entries({ ...stats, ...modifiers })
+    .filter(([, value]) => Number(value || 0) !== 0)
+    .slice(0, 4)
+    .map(([key, value]) => `${EQUIPMENT_STAT_LABELS[key] || key.toUpperCase()} ${Number(value) > 0 ? '+' : ''}${formatNumber(value)}`);
+  return rows.join(' / ') || equipment.summary || equipment.effectSummary || '\uB2A5\uB825\uCE58 \uBCF4\uC815 \uC5C6\uC74C';
+}
+
+function normalizeEquipmentSlotMap(slots = {}) {
+  return EQUIPMENT_SLOT_ORDER.reduce((acc, slot) => {
+    acc[slot] = slots?.[slot] || null;
+    return acc;
+  }, {});
+}
+
+function getInventoryEntryById(entryId) {
+  return inventoryState.entries.find((entry) => String(entry.id) === String(entryId)) || null;
+}
+
+function getOwnedMercenaryByOwnedId(ownedId) {
+  return ownedMercenaryRoster.find((member) => String(getOwnedRosterKey(member) || member.ownedId || member.id) === String(ownedId)) || null;
+}
+
+function getInventoryEquipOptions(entry) {
+  if (!entry || entry.itemType !== 'equipment' || entry.equipped) return [];
+  const slot = String(entry.slot || entry.equipment?.slot || '').trim();
+  return (ownedMercenaryRoster || [])
+    .filter((member) => isBattleMercenaryAvailable(member))
+    .filter((member) => !slot || !member.equipmentSlots?.[slot])
+    .map((member) => ({
+      id: getOwnedRosterKey(member) || member.ownedId || member.id,
+      name: member.name,
+      grade: member.grade,
+      level: member.level,
+      power: calculateMockMercenaryBattlePower(member)
+    }))
+    .filter((item) => item.id);
+}
+
+async function refreshMercenaryEquipmentState(options = {}) {
+  await Promise.allSettled([
+    loadOwnedMercenariesFromApi(),
+    loadInventoryData({ force: true })
+  ]);
+  if (options.renderInventory !== false) renderInventoryView();
+  if (options.renderRoster) renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+  if (options.renderBattleBoard !== false) renderBattleOperationBoard();
+  const manageLayer = document.querySelector('#mercenary-equipment-manage-modal:not([hidden])');
+  const selected = getSelectedOwnedMercenary();
+  if (manageLayer && selected) renderMercenaryEquipmentManageModal(selected);
+}
+
+async function equipInventoryEntryToMercenary(entryId, ownedId) {
+  const entry = getInventoryEntryById(entryId);
+  if (!entry) {
+    showReadyNotice('\uC7A5\uCC29\uD560 \uC7A5\uBE44\uC744 \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.');
+    return;
+  }
+  if (!ownedId) {
+    showReadyNotice('\uC7A5\uCC29 \uB300\uC0C1 \uC6A9\uBCD1\uC744 \uC120\uD0DD\uD574 \uC8FC\uC138\uC694.');
+    return;
+  }
+  try {
+    await apiRequest(`/api/mercenary/my/${encodeURIComponent(ownedId)}/equipment/equip`, {
+      method: 'POST',
+      body: JSON.stringify({ inventoryItemId: entry.id }),
+      perfScope: 'mercenary-equipment-equip'
+    });
+    showReadyNotice('\uC7A5\uBE44\uB97C \uC7A5\uCC29\uD588\uC2B5\uB2C8\uB2E4.');
+    await refreshMercenaryEquipmentState({ renderRoster: true });
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    showReadyNotice(error?.data?.message || error?.message || '\uC7A5\uCC29\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
+  }
+}
+
+async function unequipMercenaryEquipmentSlot(ownedId, slot) {
+  if (!ownedId || !slot) return;
+  try {
+    await apiRequest(`/api/mercenary/my/${encodeURIComponent(ownedId)}/equipment/${encodeURIComponent(slot)}`, {
+      method: 'DELETE',
+      perfScope: 'mercenary-equipment-unequip'
+    });
+    showReadyNotice('\uC7A5\uBE44\uB97C \uD574\uC81C\uD588\uC2B5\uB2C8\uB2E4.');
+    await refreshMercenaryEquipmentState({ renderRoster: true });
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    showReadyNotice(error?.data?.message || error?.message || '\uC7A5\uBE44 \uD574\uC81C\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
+  }
+}
+
+
+function getSelectedOwnedMercenary() {
+  return ownedMercenaryRoster.find((item) => item.rosterId === rosterState.selectedId)
+    || ownedMercenaryRoster.find((item) => String(getOwnedRosterKey(item)) === String(rosterState.selectedId))
+    || null;
+}
+
+function isMercenaryIdleForManagement(mercenary) {
+  return String(mercenary?.operationalStatus || 'idle') === 'idle';
+}
+
+function ensureMercenaryActionLayer(id, className) {
+  let layer = document.querySelector(`#${id}`);
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = id;
+    layer.className = className;
+    layer.hidden = true;
+    document.body.appendChild(layer);
+  }
+  return layer;
+}
+
+function closeMercenaryIllustrationLightbox() {
+  const layer = document.querySelector('#mercenary-illustration-lightbox');
+  if (layer) {
+    layer.hidden = true;
+    layer.innerHTML = '';
+  }
+  document.body.classList.remove('mercenary-lightbox-open');
+}
+
+function openMercenaryIllustrationLightbox(mercenary) {
+  const layer = ensureMercenaryActionLayer('mercenary-illustration-lightbox', 'mercenary-illustration-lightbox');
+  const imagePath = getMercenaryImagePath(mercenary);
+  layer.innerHTML = `
+    <div class="mercenary-action-backdrop" data-mercenary-lightbox-close></div>
+    <section class="mercenary-lightbox-card ${getGradeClass(mercenary.grade)}" role="dialog" aria-modal="true" aria-label="일러스트 확대">
+      <button type="button" class="mercenary-modal-close" data-mercenary-lightbox-close aria-label="닫기">×</button>
+      <div class="mercenary-lightbox-art">
+        ${imagePath ? `<img src="${escapeHtml(imagePath)}" alt="${escapeHtml(mercenary.name || '용병')}" onerror="this.hidden=true; this.nextElementSibling.hidden=false;" />` : ''}
+        <p class="mercenary-lightbox-placeholder" ${imagePath ? 'hidden' : ''}>일러스트 없음</p>
+      </div>
+      <footer>
+        <strong>${escapeHtml(mercenary.name || '이름 없는 용병')}</strong>
+        <span>${escapeHtml(mercenary.grade || 'N')} · ${escapeHtml(mercenary.species || '')}</span>
+      </footer>
+    </section>
+  `;
+  layer.hidden = false;
+  document.body.classList.add('mercenary-lightbox-open');
+  layer.querySelectorAll('[data-mercenary-lightbox-close]').forEach((button) => {
+    button.addEventListener('click', closeMercenaryIllustrationLightbox);
+  });
+}
+
+function closeMercenaryEquipmentManageModal() {
+  const layer = document.querySelector('#mercenary-equipment-manage-modal');
+  if (layer) {
+    layer.hidden = true;
+    layer.innerHTML = '';
+  }
+}
+
+function getEquipmentManageCandidates(slot, ownedId) {
+  const safeSlot = String(slot || '').trim();
+  const safeOwnedId = String(ownedId || '');
+  return (inventoryState.entries || [])
+    .map(normalizeInventoryEntryForUi)
+    .filter((entry) => entry.itemType === 'equipment')
+    .map((entry) => ({ entry, equipment: getInventoryEntryEquipment(entry) }))
+    .filter(({ entry, equipment }) => {
+      const entrySlot = String(equipment?.slot || equipment?.equipmentSlot || entry.slot || '').trim();
+      return entrySlot === safeSlot;
+    })
+    .map(({ entry, equipment }) => ({
+      entry,
+      equipment: equipment || {},
+      missingEquipmentMaster: !equipment,
+      isEquippedBySelected: entry.equipped && String(entry.equippedByMercenaryId || '') === safeOwnedId,
+      isEquippedElsewhere: entry.equipped && String(entry.equippedByMercenaryId || '') !== safeOwnedId
+    }));
+}
+
+function renderMercenaryEquipmentManageModal(mercenary, selectedSlot = 'weapon') {
+  const layer = ensureMercenaryActionLayer('mercenary-equipment-manage-modal', 'mercenary-equipment-manage-modal');
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary.ownedId || '';
+  const slots = normalizeEquipmentSlotMap(mercenary.equipmentSlots || {});
+  const activeSlot = EQUIPMENT_SLOT_ORDER.includes(selectedSlot) ? selectedSlot : 'weapon';
+  const currentSlot = slots[activeSlot];
+  const blocked = !isMercenaryIdleForManagement(mercenary);
+  const candidates = getEquipmentManageCandidates(activeSlot, ownedId);
+  const candidateHtml = candidates.length
+    ? candidates.map(({ entry, equipment, missingEquipmentMaster, isEquippedBySelected, isEquippedElsewhere }) => {
+      const occupied = Boolean(currentSlot) && !isEquippedBySelected;
+      const disabled = blocked || isEquippedElsewhere || occupied || isEquippedBySelected || Boolean(missingEquipmentMaster);
+      const ownerName = entry.equippedByMercenaryName || '다른 용병';
+      return `
+        <article class="mercenary-equipment-candidate ${disabled ? 'is-disabled' : ''}">
+          <div>
+            <strong>${escapeHtml(entry.name || equipment.name || entry.itemId)}</strong>
+            <span>${escapeHtml(entry.grade || equipment.grade || '')} · ${escapeHtml(formatEquipmentSummary(equipment || entry))}</span>
+            ${missingEquipmentMaster ? '<em>장비 마스터 정보 없음</em>' : isEquippedBySelected ? '<em>현재 장착 중</em>' : isEquippedElsewhere ? `<em>${escapeHtml(ownerName)} 장착 중</em>` : occupied ? '<em>먼저 현재 슬롯을 비워주세요</em>' : ''}
+          </div>
+          <button type="button" data-equipment-manage-equip="${escapeHtml(entry.id)}" ${disabled ? 'disabled' : ''}>장착</button>
+        </article>
+      `;
+    }).join('')
+    : '<p class="mercenary-action-empty">이 슬롯에 장착할 수 있는 보관함 장비가 없습니다.</p>';
+
+  layer.innerHTML = `
+    <div class="mercenary-action-backdrop" data-equipment-manage-close></div>
+    <section class="mercenary-equipment-manage-card" role="dialog" aria-modal="true" aria-label="장비 변경">
+      <header>
+        <div>
+          <span>장비 변경</span>
+          <h3>${escapeHtml(mercenary.name || '용병')}</h3>
+        </div>
+        <button type="button" class="mercenary-modal-close" data-equipment-manage-close aria-label="닫기">×</button>
+      </header>
+      ${blocked ? `<p class="mercenary-action-warning">진행 중인 활동이 있어 장비를 변경할 수 없습니다.</p>` : ''}
+      <div class="mercenary-equipment-manage-grid">
+        <aside>
+          ${EQUIPMENT_SLOT_ORDER.map((slotKey) => {
+            const slot = slots[slotKey];
+            const equipment = slot?.equipment || {};
+            const name = slot?.name || equipment.name || slot?.item?.name || '비어 있음';
+            return `
+              <button type="button" class="${slotKey === activeSlot ? 'is-active' : ''}" data-equipment-manage-slot="${escapeHtml(slotKey)}">
+                <span>${escapeHtml(getEquipmentSlotLabel(slotKey))}</span>
+                <strong>${escapeHtml(name)}</strong>
+              </button>
+            `;
+          }).join('')}
+        </aside>
+        <main>
+          <div class="mercenary-current-equipment">
+            <span>${escapeHtml(getEquipmentSlotLabel(activeSlot))}</span>
+            <strong>${escapeHtml(currentSlot?.name || currentSlot?.equipment?.name || currentSlot?.item?.name || '비어 있음')}</strong>
+            <p>${currentSlot ? escapeHtml(formatEquipmentSummary(currentSlot.equipment || currentSlot)) : '장착 중인 장비가 없습니다.'}</p>
+            ${currentSlot ? `<button type="button" data-equipment-manage-unequip="${escapeHtml(activeSlot)}" ${blocked ? 'disabled' : ''}>해제</button>` : ''}
+          </div>
+          <div class="mercenary-equipment-candidate-list">${candidateHtml}</div>
+        </main>
+      </div>
+    </section>
+  `;
+  layer.hidden = false;
+  layer.querySelectorAll('[data-equipment-manage-close]').forEach((button) => {
+    button.addEventListener('click', closeMercenaryEquipmentManageModal);
+  });
+  layer.querySelectorAll('[data-equipment-manage-slot]').forEach((button) => {
+    button.addEventListener('click', () => renderMercenaryEquipmentManageModal(getOwnedMercenaryByOwnedId(ownedId) || mercenary, button.dataset.equipmentManageSlot));
+  });
+  layer.querySelectorAll('[data-equipment-manage-equip]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await equipInventoryEntryToMercenary(button.dataset.equipmentManageEquip, ownedId);
+      const refreshed = getOwnedMercenaryByOwnedId(ownedId) || mercenary;
+      renderMercenaryEquipmentManageModal(refreshed, activeSlot);
+    });
+  });
+  layer.querySelectorAll('[data-equipment-manage-unequip]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await unequipMercenaryEquipmentSlot(ownedId, button.dataset.equipmentManageUnequip);
+      const refreshed = getOwnedMercenaryByOwnedId(ownedId) || mercenary;
+      renderMercenaryEquipmentManageModal(refreshed, activeSlot);
+    });
+  });
+}
+
+async function openMercenaryEquipmentManageModal(mercenary) {
+  if (!mercenary) return;
+  if (!isMercenaryIdleForManagement(mercenary)) {
+    showReadyNotice('진행 중인 활동이 있어 장비를 변경할 수 없습니다.');
+  }
+  await Promise.allSettled([
+    ensureOwnedMercenariesLoaded(),
+    loadInventoryData()
+  ]);
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary.ownedId || '';
+  renderMercenaryEquipmentManageModal(getOwnedMercenaryByOwnedId(ownedId) || mercenary);
+}
+
+async function setMercenaryLockState(mercenary, locked) {
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary.ownedId || '';
+  if (!ownedId) return;
+  try {
+    await apiRequest(`/api/mercenary/my/${encodeURIComponent(ownedId)}/lock`, {
+      method: 'PATCH',
+      body: JSON.stringify({ locked: Boolean(locked) }),
+      perfScope: 'mercenary-lock'
+    });
+    showReadyNotice(locked ? '용병을 잠갔습니다.' : '용병 잠금을 해제했습니다.');
+    await loadOwnedMercenariesFromApi();
+    renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    showReadyNotice(error?.data?.message || error?.message || '잠금 상태를 변경하지 못했습니다.');
+  }
+}
+
+function closeMercenaryDismissModal() {
+  const layer = document.querySelector('#mercenary-dismiss-modal');
+  if (layer) {
+    layer.hidden = true;
+    layer.innerHTML = '';
+  }
+}
+
+function openMercenaryDismissModal(mercenary) {
+  if (!mercenary) return;
+  if (mercenary.isLocked) {
+    showReadyNotice('잠금 상태인 용병은 해고할 수 없습니다.');
+    return;
+  }
+  if (!isMercenaryIdleForManagement(mercenary)) {
+    showReadyNotice('진행 중인 활동이 있어 해고할 수 없습니다.');
+    return;
+  }
+  const layer = ensureMercenaryActionLayer('mercenary-dismiss-modal', 'mercenary-dismiss-modal');
+  const equippedCount = Object.values(normalizeEquipmentSlotMap(mercenary.equipmentSlots || {})).filter(Boolean).length;
+  layer.innerHTML = `
+    <div class="mercenary-action-backdrop" data-dismiss-close></div>
+    <section class="mercenary-dismiss-card" role="dialog" aria-modal="true" aria-label="용병 해고">
+      <header>
+        <div>
+          <span>용병 해고</span>
+          <h3>${escapeHtml(mercenary.name || '용병')}</h3>
+        </div>
+        <button type="button" class="mercenary-modal-close" data-dismiss-close aria-label="닫기">×</button>
+      </header>
+      <p>해고는 목록에서 숨겨지는 soft delete로 처리됩니다. 과거 전투 기록은 유지됩니다.</p>
+      ${equippedCount ? `<p class="mercenary-action-warning">장착 장비 ${formatNumber(equippedCount)}개는 자동 해제되어 보관함으로 돌아갑니다.</p>` : ''}
+      <label>
+        <span>확인을 위해 용병명을 입력하세요.</span>
+        <input type="text" data-dismiss-confirm-input autocomplete="off" placeholder="${escapeHtml(mercenary.name || '')}" />
+      </label>
+      <div class="mercenary-dismiss-actions">
+        <button type="button" data-dismiss-close>취소</button>
+        <button type="button" class="is-danger" data-dismiss-submit disabled>해고</button>
+      </div>
+    </section>
+  `;
+  layer.hidden = false;
+  const input = layer.querySelector('[data-dismiss-confirm-input]');
+  const submit = layer.querySelector('[data-dismiss-submit]');
+  input?.addEventListener('input', () => {
+    submit.disabled = String(input.value || '').trim() !== String(mercenary.name || '').trim();
+  });
+  layer.querySelectorAll('[data-dismiss-close]').forEach((button) => {
+    button.addEventListener('click', closeMercenaryDismissModal);
+  });
+  submit?.addEventListener('click', async () => {
+    await dismissMercenary(mercenary, input?.value || '');
+  });
+}
+
+async function dismissMercenary(mercenary, confirmName) {
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary.ownedId || '';
+  if (!ownedId) return;
+  try {
+    const payload = await apiRequest(`/api/mercenary/my/${encodeURIComponent(ownedId)}/dismiss`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmName, reason: 'user_dismiss' }),
+      perfScope: 'mercenary-dismiss'
+    });
+    const unequipped = Number(payload?.unequippedItemsCount || 0) || 0;
+    showReadyNotice(unequipped ? `용병을 해고했습니다. 장착 장비 ${formatNumber(unequipped)}개를 보관함으로 돌려보냈습니다.` : '용병을 해고했습니다.');
+    closeMercenaryDismissModal();
+    closeMercenaryEquipmentManageModal();
+    await Promise.allSettled([
+      loadOwnedMercenariesFromApi(),
+      loadInventoryData()
+    ]);
+    rosterState.selectedId = ownedMercenaryRoster[0]?.rosterId || ownedMercenaryRoster[0]?.id || '';
+    renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+    renderInventoryView();
+    renderBattleOperationBoard();
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    showReadyNotice(error?.data?.message || error?.message || '용병 해고에 실패했습니다.');
+  }
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    closeMercenaryIllustrationLightbox();
+    closeMercenaryEquipmentManageModal();
+    closeMercenaryDismissModal();
+  }
+});
+
+
 
 function formatBattleRewardLine(operation) {
   const summary = summarizeBattleRewards(operation?.rewards || []);
@@ -4847,8 +5535,9 @@ async function openBattleOperationView() {
   document.body.classList.add('battle-board-open');
   ensureDefaultBattleParty();
   const loadPromise = ensureOwnedMercenariesLoaded({ refreshBattleBoard: true });
+  const stageClearPromise = loadBattleStageClears().then(() => renderBattleOperationBoard());
   renderBattleOperationBoard();
-  await loadPromise;
+  await Promise.all([loadPromise, stageClearPromise]);
 }
 
 function closeBattleOperationView() {
@@ -4856,12 +5545,18 @@ function closeBattleOperationView() {
   document.body.classList.remove('battle-board-open');
 }
 
+function formatStageLabel(operation) {
+  const number = String(operation?.stageNumber || '').trim();
+  return number ? `Stage ${number}` : 'Stage';
+}
+
 function renderBattleOperationList() {
   const list = document.querySelector('#battle-operation-list');
   const count = document.querySelector('#battle-operation-count');
   if (!list) return;
-  if (count) count.textContent = `${battleOperationState.operations.length}건`;
-  if (!battleOperationState.operations.length) {
+  const baseOperations = battleOperationState.baseOperations.length ? battleOperationState.baseOperations : battleOperationState.operations;
+  if (count) count.textContent = `${formatNumber(baseOperations.length)}개 테마`;
+  if (!baseOperations.length) {
     list.innerHTML = `
       <article class="battle-operation-empty">
         <strong>전투 의뢰 데이터 없음</strong>
@@ -4873,28 +5568,148 @@ function renderBattleOperationList() {
     list.querySelector('[data-battle-operation-reload]')?.addEventListener('click', async () => {
       mercenaryCombatRulesLoaded = false;
       await loadMercenaryCombatRuleData();
+      await loadBattleStageClears();
       renderBattleOperationBoard();
     });
     return;
   }
-  list.innerHTML = battleOperationState.operations.map((operation) => {
-    const selected = operation.id === battleOperationState.selectedOperationId;
-    const durationText = operation.durationSec ? formatMissionDuration(operation.durationSec) : `${formatNumber(operation.enemies.length)}체`;
+  list.innerHTML = baseOperations.map((base) => {
+    const group = getStageGroup(base.id);
+    const selected = getSelectedBattleBaseId() === base.id;
+    const stages = group?.stages || [];
+    const unlockedCount = stages.filter(isBattleStageUnlocked).length;
+    const durationText = base.durationSec ? formatMissionDuration(base.durationSec) : `${formatNumber(stages.length || base.enemies.length)}개 Stage`;
     return `
-      <button class="battle-operation-card ${selected ? 'is-selected' : ''} status-${escapeHtml(operation.status)}" type="button" data-battle-operation="${escapeHtml(operation.id)}">
-        <span>${escapeHtml(operation.status)}</span>
-        <strong>${escapeHtml(operation.title)}</strong>
-        <em>${escapeHtml(operation.danger)} · ${escapeHtml(durationText)}</em>
-        <small>${escapeHtml(formatBattleRewardLine(operation))}</small>
+      <button class="battle-operation-card ${selected ? 'is-selected' : ''} status-${escapeHtml(base.status)}" type="button" data-battle-base-operation="${escapeHtml(base.id)}">
+        <span>${escapeHtml(base.status)}</span>
+        <strong>${escapeHtml(base.title)}</strong>
+        <em>${escapeHtml(base.danger)} · ${escapeHtml(durationText)}</em>
+        <small>${formatNumber(unlockedCount)}/${formatNumber(stages.length || 1)} Stage 개방</small>
       </button>
     `;
   }).join('');
-  list.querySelectorAll('[data-battle-operation]').forEach((button) => {
+  list.querySelectorAll('[data-battle-base-operation]').forEach((button) => {
     button.addEventListener('click', () => {
-      battleOperationState.selectedOperationId = button.dataset.battleOperation;
+      const baseId = button.dataset.battleBaseOperation;
+      battleOperationState.selectedBaseMissionId = baseId;
+      const group = getStageGroup(baseId);
+      battleOperationState.selectedOperationId = group?.stages?.[0]?.id || group?.base?.id || baseId;
       renderBattleOperationBoard();
     });
   });
+}
+
+function renderBattleStageSelector(baseId) {
+  const group = getStageGroup(baseId);
+  const stages = group?.stages || [];
+  if (!stages.length) return '<p class="battle-board-note">스테이지 데이터가 없습니다.</p>';
+  return `
+    <section class="battle-stage-selector" aria-label="전투 스테이지 선택">
+      ${stages.map((stage) => {
+        const selected = stage.id === battleOperationState.selectedOperationId;
+        const reasons = getClientStageUnlockReasons(stage);
+        const locked = reasons.length > 0;
+        return `
+          <button type="button" class="${selected ? 'is-selected' : ''} ${locked ? 'is-locked' : ''}" data-battle-stage-operation="${escapeHtml(stage.id)}" title="${escapeHtml(reasons.join(' / '))}" ${locked ? 'disabled' : ''}>
+            <strong>${escapeHtml(formatStageLabel(stage))}</strong>
+            <span>${escapeHtml(stage.stageTier || stage.danger || '')} · ${formatNumber(stage.recommendedPower || 0)}${locked ? ' · 잠김' : ''}</span>
+          </button>
+        `;
+      }).join('')}
+    </section>
+  `;
+}
+
+function renderSelectedStageMeta(operation) {
+  const reasons = getClientStageUnlockReasons(operation);
+  const bossCount = (operation.enemies || []).filter((enemy) => enemy.isBoss).length;
+  return `
+    <dl class="battle-stage-meta">
+      <div><dt>난이도</dt><dd>${escapeHtml(operation.stageTier || operation.danger || '-')}</dd></div>
+      <div><dt>필요 사무소</dt><dd>Lv.${formatNumber(operation.requiredOfficeLevel || 1)}</dd></div>
+      <div><dt>적 수</dt><dd>${formatNumber((operation.enemies || []).length)}</dd></div>
+      <div><dt>보스</dt><dd>${bossCount ? `${formatNumber(bossCount)}체` : '없음'}</dd></div>
+      <div><dt>부상 위험</dt><dd>${escapeHtml(operation.injuryRisk || '-')}</dd></div>
+      <div><dt>해금 상태</dt><dd>${reasons.length ? escapeHtml(reasons.join(' / ')) : '개방'}</dd></div>
+    </dl>
+  `;
+}
+
+function formatStageModifierSummary(modifiers = {}) {
+  const parts = [];
+  [['hp', 'HP'], ['atk', 'ATK'], ['def', 'DEF']].forEach(([key, label]) => {
+    const value = Number(modifiers?.[`${key}Multiplier`] || 1);
+    if (Number.isFinite(value) && value > 1) parts.push(`${label} x${value.toFixed(value % 1 ? 1 : 0)}`);
+  });
+  return parts.join(' / ');
+}
+
+function renderBattleEnemySummary(operation) {
+  const enemies = Array.isArray(operation?.enemies) ? operation.enemies : [];
+  if (!enemies.length) return '';
+  const groups = new Map();
+  enemies.forEach((enemy) => {
+    const key = [
+      enemy.sourceEnemyId || enemy.name,
+      enemy.level,
+      enemy.role,
+      enemy.positionKey,
+      enemy.isBoss ? 'boss' : 'normal'
+    ].join('|');
+    if (!groups.has(key)) {
+      groups.set(key, { ...enemy, count: 0 });
+    }
+    groups.get(key).count += 1;
+  });
+  return `
+    <section class="battle-enemy-summary" aria-label="적 구성">
+      <h4>적 구성</h4>
+      <div class="battle-enemy-summary-list">
+        ${[...groups.values()].map((enemy) => {
+          const modifierText = formatStageModifierSummary(enemy.stageModifiers);
+          return `
+            <article class="${enemy.isBoss ? 'is-boss' : ''}">
+              <strong>${escapeHtml(enemy.isBoss ? `보스: ${enemy.name}` : enemy.name)}</strong>
+              <span>×${formatNumber(enemy.count)} / Lv.${formatNumber(enemy.level || 1)} / ${escapeHtml(enemy.role || '-')} / ${escapeHtml(enemy.positionKey || '-')}</span>
+              ${modifierText ? `<em>${escapeHtml(modifierText)}</em>` : ''}
+            </article>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function getBattleEnemyPreviewGroups(operation) {
+  const groups = new Map();
+  (operation?.enemies || []).forEach((enemy) => {
+    const modifierKey = formatStageModifierSummary(enemy.stageModifiers);
+    const key = [enemy.enemyId || enemy.id || enemy.name, enemy.level, enemy.role, enemy.positionKey, enemy.isBoss ? 'boss' : '', modifierKey].join('|');
+    const existing = groups.get(key);
+    if (existing) existing.count += Number(enemy.count || 1) || 1;
+    else groups.set(key, { ...enemy, count: Number(enemy.count || 1) || 1, modifierText: modifierKey });
+  });
+  return [...groups.values()];
+}
+
+function renderBattleEnemyPreview(operation) {
+  const enemies = getBattleEnemyPreviewGroups(operation);
+  return `
+    <section class="battlefield-preview" style="--battle-bg: url('${escapeHtml(operation.battlefieldImage)}')">
+      <div class="battle-enemy-preview-strip" aria-label="\uC801 \uD504\uB9AC\uBDF0">
+        ${enemies.map((enemy) => `
+          <article class="battle-enemy-preview-card ${enemy.isBoss ? 'is-boss' : ''}">
+            ${enemy.isBoss ? '<b>Boss</b>' : ''}
+            <img src="${escapeHtml(enemy.image || '')}" alt="" onerror="this.hidden=true" />
+            <strong>${escapeHtml(enemy.name)}</strong>
+            <span>×${formatNumber(enemy.count)} · Lv.${formatNumber(enemy.level || 1)}</span>
+            <em>${escapeHtml(enemy.role || '-')} · ${escapeHtml(enemy.positionKey || enemy.element || '-')}</em>
+            ${enemy.modifierText ? `<i>${escapeHtml(enemy.modifierText)}</i>` : ''}
+          </article>
+        `).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function renderBattleOperationDetail(operation) {
@@ -4904,7 +5719,7 @@ function renderBattleOperationDetail(operation) {
     root.innerHTML = `
       <article class="battle-operation-brief battle-operation-empty">
         <header>
-          <span class="battle-board-kicker">작전 브리핑</span>
+          <span class="battle-board-kicker">작전 브리프</span>
           <h3>전투 의뢰 데이터 없음</h3>
           <p>전투 의뢰 JSON을 불러오지 못했습니다.</p>
         </header>
@@ -4915,31 +5730,33 @@ function renderBattleOperationDetail(operation) {
     `;
     return;
   }
+  const baseId = operation.baseMissionId || operation.id;
+  const group = getStageGroup(baseId);
+  const base = group?.base || operation;
   root.innerHTML = `
     <article class="battle-operation-brief">
       <header>
-        <span class="battle-board-kicker">작전 브리핑</span>
-        <h3>${escapeHtml(operation.title)}</h3>
-        <p>${escapeHtml(operation.battlefield)} · 위험도 ${escapeHtml(operation.danger)}</p>
+        <span class="battle-board-kicker">작전 브리프</span>
+        <h3>${escapeHtml(base.title)}</h3>
+        <p>${escapeHtml(operation.title)} · ${escapeHtml(operation.battlefield)} · 위험도 ${escapeHtml(operation.danger)}</p>
       </header>
-      <div class="battlefield-preview" style="--battle-bg: url('${escapeHtml(operation.battlefieldImage)}')">
-        <div class="battlefield-enemy-row">
-          ${operation.enemies.map((enemy) => `
-            <article class="battlefield-enemy-card">
-              <img src="${escapeHtml(enemy.image)}" alt="" onerror="this.hidden=true" />
-              <strong>${escapeHtml(enemy.name)}</strong>
-              <span>${escapeHtml(enemy.role)} · ${escapeHtml(enemy.element)}</span>
-            </article>
-          `).join('')}
-        </div>
-      </div>
+      ${renderBattleStageSelector(baseId)}
+      ${renderBattleEnemyPreview(operation)}
       <section class="battle-operation-copy">
         <p>${escapeHtml(operation.description)}</p>
+        ${renderSelectedStageMeta(operation)}
+        ${renderBattleEnemySummary(operation)}
         ${renderBattlePowerSummary(operation)}
         ${renderBattleRewardPreview(operation)}
       </section>
     </article>
   `;
+  root.querySelectorAll('[data-battle-stage-operation]').forEach((button) => {
+    button.addEventListener('click', () => {
+      battleOperationState.selectedOperationId = button.dataset.battleStageOperation;
+      renderBattleOperationBoard();
+    });
+  });
 }
 
 function renderBattlePartyReadiness() {
@@ -4967,7 +5784,7 @@ function renderBattlePartyReadiness() {
     ['back', '후열', ['back_1']]
   ];
   const validation = getBattlePartyValidation(party, operation);
-  const locked = operation.status === '잠김' || operation.status === '?좉?';
+  const locked = operation.status === '\uc7a0\uae40';
   root.innerHTML = `
     <div class="battle-party-select-row">
       <label>
@@ -5556,6 +6373,119 @@ function getBattlePartySlotDepth(slotKey) {
   return 'ally_back';
 }
 
+
+const BATTLE_EQUIPMENT_STAT_KEYS = ['hp', 'atk', 'def', 'spd', 'tec', 'sup'];
+
+function normalizeBattleEquipmentBonus(member = {}) {
+  const source = member.equipmentBonus || member.statBreakdown?.equipmentBonus || {};
+  const bonus = {
+    hp: Number(source.hp || 0) || 0,
+    atk: Number(source.atk || 0) || 0,
+    def: Number(source.def || 0) || 0,
+    spd: Number(source.spd || 0) || 0,
+    tec: Number(source.tec || 0) || 0,
+    sup: Number(source.sup || 0) || 0,
+    accuracy: Number(source.accuracy || 0) || 0,
+    evasion: Number(source.evasion || 0) || 0,
+    critical: Number(source.critical || 0) || 0,
+    healing: Number(source.healing || 0) || 0,
+    combatPower: Number(member.equipmentCombatPower ?? source.combatPower ?? 0) || 0
+  };
+  return bonus;
+}
+
+function getMemberCurrentCombatStats(member = {}) {
+  return normalizeLowerStats(member.currentStats || member.effectiveStats || member.statBreakdown?.currentStats || member.baseStats || member.stats || {});
+}
+
+function getMemberBaseCombatStatsWithoutEquipment(member = {}, equipmentBonus = normalizeBattleEquipmentBonus(member)) {
+  const current = getMemberCurrentCombatStats(member);
+  const fallback = normalizeLowerStats(member.baseStats || member.stats || {});
+  const base = {};
+  BATTLE_EQUIPMENT_STAT_KEYS.forEach((key) => {
+    const currentValue = Number(current[key]);
+    const fallbackValue = Number(fallback[key] || 0) || 0;
+    const value = Number.isFinite(currentValue) && currentValue > 0
+      ? currentValue - Number(equipmentBonus[key] || 0)
+      : fallbackValue;
+    base[key] = Math.max(key === 'hp' || key === 'atk' || key === 'spd' ? 1 : 0, Math.round(Number(value || 0) || 0));
+  });
+  return base;
+}
+
+function buildMercenaryBattleEquipmentSnapshot(member = {}) {
+  const equipmentBonus = normalizeBattleEquipmentBonus(member);
+  const baseStats = getMemberBaseCombatStatsWithoutEquipment(member, equipmentBonus);
+  const finalStats = {
+    hp: Math.max(1, Math.round(baseStats.hp + equipmentBonus.hp)),
+    atk: Math.max(1, Math.round(baseStats.atk + equipmentBonus.atk)),
+    def: Math.max(0, Math.round(baseStats.def + equipmentBonus.def)),
+    spd: Math.max(1, Math.round(baseStats.spd + equipmentBonus.spd)),
+    tec: Math.max(0, Math.round(baseStats.tec + equipmentBonus.tec)),
+    sup: Math.max(0, Math.round(baseStats.sup + equipmentBonus.sup))
+  };
+  const slots = normalizeEquipmentSlotMap(member.equipmentSlots || {});
+  const equipmentSlots = Object.fromEntries(EQUIPMENT_SLOT_ORDER.map((slotKey) => {
+    const slot = slots[slotKey];
+    if (!slot) return [slotKey, null];
+    return [slotKey, {
+      slot: slotKey,
+      inventoryItemId: slot.inventoryItemId || slot.inventory_item_id || '',
+      itemId: slot.itemId || slot.item_id || '',
+      equipmentId: slot.equipmentId || slot.equipment_id || slot.equipment?.equipmentId || '',
+      name: slot.name || slot.equipment?.name || slot.item?.name || '',
+      grade: slot.grade || slot.equipment?.grade || slot.item?.grade || ''
+    }];
+  }));
+  const equippedNames = Object.values(equipmentSlots).filter(Boolean).map((slot) => slot.name || slot.equipmentId || slot.itemId).filter(Boolean);
+  const baseCombatPower = Number(member.baseCombatPowerWithoutEquipment ?? member.baseCombatPowerNoEquipment ?? member.baseCombatPower ?? calculateDetailCombatPower(baseStats)) || 0;
+  const equipmentCombatPower = Number(equipmentBonus.combatPower || 0) || 0;
+  const totalCombatPower = Number(member.totalCombatPower ?? member.displayCombatPower ?? member.combatPower ?? member.power ?? (baseCombatPower + equipmentCombatPower)) || 0;
+  return {
+    userMercenaryId: String(getOwnedRosterKey(member) || member.ownedId || member.id || ''),
+    name: member.name || '',
+    level: Number(member.level || member.currentLevel || 1) || 1,
+    baseStats,
+    equipmentSlots,
+    equipmentBonus,
+    finalStats,
+    baseCombatPower,
+    equipmentCombatPower,
+    totalCombatPower,
+    equippedNames,
+    applied: equipmentCombatPower > 0 || BATTLE_EQUIPMENT_STAT_KEYS.some((key) => Number(equipmentBonus[key] || 0) !== 0)
+  };
+}
+
+function summarizeBattleEquipmentSnapshots(snapshots = []) {
+  const rows = (Array.isArray(snapshots) ? snapshots : []).filter(Boolean);
+  const appliedRows = rows.filter((snapshot) => snapshot.applied);
+  return {
+    applied: appliedRows.length > 0,
+    appliedCount: appliedRows.length,
+    totalEquipmentPower: appliedRows.reduce((sum, snapshot) => sum + (Number(snapshot.equipmentCombatPower || snapshot.equipmentBonus?.combatPower || 0) || 0), 0),
+    members: rows
+  };
+}
+
+function buildBattlePartyMembersWithEquipmentSnapshot(party = selectedBattleParty(), roster = getBattleOperationRoster()) {
+  const memberMap = new Map((Array.isArray(roster) ? roster : []).map((member) => [String(getOwnedRosterKey(member) || member.rosterId || member.id || ''), member]));
+  return BATTLE_PARTY_SLOTS
+    .map((slot) => {
+      const sourceId = String(party?.slots?.[slot.key] || '');
+      const member = memberMap.get(sourceId);
+      if (!member) return null;
+      const equipmentSnapshot = buildMercenaryBattleEquipmentSnapshot(member);
+      return {
+        ...member,
+        equipmentSnapshot,
+        battleBaseStats: equipmentSnapshot.baseStats,
+        battleFinalStats: equipmentSnapshot.finalStats
+      };
+    })
+    .filter(Boolean);
+}
+
 function getEnemyDepthForPattern(pattern, index, count) {
   const itemNumber = Number(index || 0) + 1;
   if (pattern === 'single_boss') return 'enemy_mid';
@@ -5569,7 +6499,10 @@ function getEnemyDepthForPattern(pattern, index, count) {
 }
 
 function calculateMockBattleStatsFromMercenary(member, slot) {
+  const equipmentSnapshot = member?.equipmentSnapshot || buildMercenaryBattleEquipmentSnapshot(member);
   const level = Math.max(1, Number(member?.level || member?.lv || 1));
+  const displayPower = Number(equipmentSnapshot.totalCombatPower ?? member?.totalCombatPower ?? member?.displayCombatPower ?? member?.combatPower ?? member?.power ?? member?.battlePower ?? 0) || 0;
+  const simulationPower = Number(displayPower || equipmentSnapshot.baseCombatPower + equipmentSnapshot.equipmentCombatPower || 0) || 0;
   const grade = String(member?.grade || 'N').toUpperCase();
   const tags = [
     ...getMockBattleTags(member),
@@ -5579,8 +6512,8 @@ function calculateMockBattleStatsFromMercenary(member, slot) {
   const roleText = [member?.role, member?.job, member?.class, member?.position, member?.name, ...tags].join(' ');
   const role = getMockBattleRole(roleText);
   const slotKey = slot?.key || '';
-  const combatPower = Number(member?.combatPower || member?.power || member?.battlePower || 0);
-  const baseStats = member?.baseStats || member?.stats || {};
+  const combatPower = Math.max(0, simulationPower);
+  const baseStats = equipmentSnapshot.finalStats || member?.battleFinalStats || member?.currentStats || member?.baseStats || member?.stats || {};
   const sheetHp = Number(baseStats.hp || member?.hp || 0);
   const sheetAtk = Number(baseStats.atk || member?.atk || 0);
   const sheetDef = Number(baseStats.def || member?.def || 0);
@@ -5620,7 +6553,14 @@ function calculateMockBattleStatsFromMercenary(member, slot) {
     healPower,
     accuracy: clampBattleValue(normalizeBattleRate(getMercField(member, 'accuracyRate', 'accuracy_rate'), 0.9 + (role === 'dealer' ? 0.02 : 0)), 0.6, 0.98),
     evasionRate: clampBattleValue(normalizeBattleRate(getMercField(member, 'evasionRate', 'evasion_rate'), 0.04), 0, 0.35),
-    critRate: clampBattleValue(normalizeBattleRate(getMercField(member, 'critRate', 'crit_rate'), 0.055), 0, 0.35)
+    critRate: clampBattleValue(normalizeBattleRate(getMercField(member, 'critRate', 'crit_rate'), 0.055), 0, 0.35),
+    baseStats: equipmentSnapshot.baseStats,
+    equipmentBonus: equipmentSnapshot.equipmentBonus,
+    finalStats: equipmentSnapshot.finalStats,
+    equipmentSnapshot,
+    equipmentCombatPower: equipmentSnapshot.equipmentCombatPower,
+    baseCombatPower: equipmentSnapshot.baseCombatPower,
+    totalCombatPower: equipmentSnapshot.totalCombatPower
   };
 }
 
@@ -5753,6 +6693,13 @@ function buildAllyBattleUnits(battleParty, roster) {
         accuracy: stats.accuracy,
         evasionRate: stats.evasionRate,
         critRate: stats.critRate,
+        baseStats: stats.baseStats,
+        equipmentBonus: stats.equipmentBonus,
+        finalStats: stats.finalStats,
+        equipmentSnapshot: stats.equipmentSnapshot,
+        equipmentCombatPower: stats.equipmentCombatPower,
+        baseCombatPower: stats.baseCombatPower,
+        totalCombatPower: stats.totalCombatPower,
         basicAttackId: String(getMercField(member, 'basicAttackId', 'basic_attack_id', 'normal_strike') || 'normal_strike').trim(),
         attackType: String(getMercField(member, 'attackType', 'attack_type', '') || '').trim(),
         activeSkillId: String(getMercField(member, 'activeSkillId', 'active_skill_id', '') || '').trim(),
@@ -5860,6 +6807,8 @@ function areAllAlliesDefeated(viewer = battleOperationState.viewer) {
 }
 
 function getBattleMockOutcome(viewer = battleOperationState.viewer) {
+  const hasStartedReplay = Number(viewer?.currentEventIndex ?? -1) >= 0 || Boolean(viewer?.finished);
+  if (!hasStartedReplay) return 'ongoing';
   if (areAllEnemiesDefeated(viewer)) return 'victory';
   if (areAllAlliesDefeated(viewer)) return 'defeat';
   return 'ongoing';
@@ -7184,7 +8133,17 @@ function simulateClientMockBattle({ operation, battleParty, roster, seed }) {
   const powerRatio = partyPower / recommendedPower;
   const difficultyLabel = getBattleDifficultyLabel(powerRatio);
   const difficultyModifiers = getBattleDifficultyModifiers(powerRatio);
-  const allies = buildAllyBattleUnits(battleParty, roster);
+  const rosterWithEquipmentSnapshots = (Array.isArray(roster) ? roster : []).map((member) => {
+    const equipmentSnapshot = buildMercenaryBattleEquipmentSnapshot(member);
+    return {
+      ...member,
+      equipmentSnapshot,
+      battleBaseStats: equipmentSnapshot.baseStats,
+      battleFinalStats: equipmentSnapshot.finalStats
+    };
+  });
+  const allies = buildAllyBattleUnits(battleParty, rosterWithEquipmentSnapshots);
+  const equipmentSummary = summarizeBattleEquipmentSnapshots(allies.map((unit) => unit.equipmentSnapshot));
   const enemies = buildEnemyBattleUnits(operation).map((enemy) => {
     const maxHp = Math.max(1, Math.round(Number(enemy.maxHp || 1) * Number(difficultyModifiers.enemyHpMultiplier || 1)));
     return {
@@ -7274,6 +8233,10 @@ function simulateClientMockBattle({ operation, battleParty, roster, seed }) {
         enemyMinDamage: difficultyModifiers.enemyMinDamage,
         allowFinisher: difficultyModifiers.allowFinisher
       },
+      equipmentApplied: equipmentSummary.applied,
+      equipmentAppliedCount: equipmentSummary.appliedCount,
+      equipmentPower: equipmentSummary.totalEquipmentPower,
+      equipmentSnapshots: equipmentSummary.members,
       partyWipe,
       defeatType,
       defeatReason
@@ -7295,7 +8258,7 @@ function createBattleResultFromOperation(operation, battleParty) {
 
 function createCombatRequestFromBattleOperation(operation, party = selectedBattleParty(), options = {}) {
   const adapter = window.MercenaryCombatAdapters;
-  if (!adapter?.createCombatMissionRequest) throw new Error('?꾪닾 ?몄텧 ?대뙌?곕? 遺덈윭?ㅼ? 紐삵뻽?듬땲??');
+  if (!adapter?.createCombatMissionRequest) throw new Error(String.fromCharCode(0xC804, 0xD22C, 0x20, 0xD638, 0xCD9C, 0x20, 0xC5B4, 0xB311, 0xD130, 0xB97C, 0x20, 0xBD88, 0xB7EC, 0xC624, 0xC9C0, 0x20, 0xBABB, 0xD588, 0xC2B5, 0xB2C8, 0xB2E4, 0x2E));
   const partyMemberIds = Array.isArray(options.partyMemberIds) && options.partyMemberIds.length
     ? options.partyMemberIds
     : battlePartyMemberIds(party);
@@ -7717,6 +8680,7 @@ function buildBattleReportViewModel(battleResult, ruleContext = {}) {
   const rewards = summarizeRewards(battleResult);
   const injuries = summarizeInjuriesPreview(battleResult, unitSummaries);
   const summary = battleResult?.summary || {};
+  const equipmentSummary = summarizeBattleEquipmentSnapshots(summary.equipmentSnapshots || (battleResult?.allies || []).map((unit) => unit.equipmentSnapshot));
   const totalDamage = unitSummaries.allies.reduce((sum, unit) => sum + unit.damageDealt, 0) || Number(summary.totalAllyDamage || 0);
   const totalHealing = unitSummaries.allies.reduce((sum, unit) => sum + unit.healingDone, 0) || Number(summary.totalHealing || 0);
   const killCount = unitSummaries.allies.reduce((sum, unit) => sum + unit.killCount, 0) || Number(summary.defeatedEnemies || 0);
@@ -7749,6 +8713,7 @@ function buildBattleReportViewModel(battleResult, ruleContext = {}) {
     statusSummary,
     rewards,
     injuries,
+    equipmentSummary,
     rounds: battleResult?.rounds || [],
     dev: {
       battleId: battleResult?.battleId || '',
@@ -8118,6 +9083,33 @@ function renderBattleSettlementRewards(claimState = {}) {
       <div><span>용병 EXP</span><strong>+${formatNumber(mercExp)}</strong></div>
     </div>
     ${renderRewardGrowthSummary(result)}
+    ${renderClaimInventoryRewards(result)}
+  `;
+}
+
+function renderClaimInventoryRewards(claimResult = {}) {
+  const rewards = Array.isArray(claimResult.inventoryRewards) ? claimResult.inventoryRewards : [];
+  if (!rewards.length) return '';
+  return `
+    <section class="battle-result-inventory-rewards">
+      <h4>\uD68D\uB4DD \uC544\uC774\uD15C</h4>
+      <ul>
+        ${rewards.map((item) => {
+          const meta = [
+            item.grade ? `[${item.grade}]` : '',
+            item.slot ? getEquipmentSlotLabel(item.slot) : '',
+            Number(item.combatPower || 0) > 0 ? `\uC804\uD22C\uB825 +${formatNumber(item.combatPower)}` : ''
+          ].filter(Boolean).join(' / ');
+          return `
+            <li>
+              <strong>${escapeHtml(item.name || item.itemId || '\uC544\uC774\uD15C')}</strong>
+              <span>x${formatNumber(item.quantity || 1)}</span>
+              ${meta ? `<em>${escapeHtml(meta)}</em>` : ''}
+            </li>
+          `;
+        }).join('')}
+      </ul>
+    </section>
   `;
 }
 
@@ -8233,6 +9225,40 @@ function renderBattleModalStatusRecords(statusSummary = []) {
   `;
 }
 
+
+function formatEquipmentBonusLine(bonus = {}) {
+  const rows = BATTLE_EQUIPMENT_STAT_KEYS
+    .filter((key) => Number(bonus?.[key] || 0) !== 0)
+    .map((key) => `${(DETAIL_STAT_LABELS[key] || key.toUpperCase())} ${Number(bonus[key]) > 0 ? '+' : ''}${formatNumber(bonus[key])}`);
+  return rows.join(' / ') || '스탯 보너스 없음';
+}
+
+function renderBattleEquipmentSummary(equipmentSummary = {}) {
+  const members = (equipmentSummary.members || []).filter((snapshot) => snapshot?.applied);
+  const rows = members.slice(0, 6).map((snapshot) => {
+    const equipmentNames = (snapshot.equippedNames || []).filter(Boolean).slice(0, 4).join(' / ') || '장착 장비명 없음';
+    return `
+      <article>
+        <strong>${escapeHtml(snapshot.name || '용병')}</strong>
+        <p>${escapeHtml(formatEquipmentBonusLine(snapshot.equipmentBonus || {}))}</p>
+        <em>${escapeHtml(equipmentNames)}</em>
+      </article>
+    `;
+  }).join('');
+  return `
+    <section class="battle-result-detail-section merc-battle-equipment-summary">
+      <h4>장비 적용 요약</h4>
+      <div class="battle-result-modal-summary is-compact">
+        ${renderBattleReportMetric('장비 적용 용병', `${formatNumber(equipmentSummary.appliedCount || 0)}명`)}
+        ${renderBattleReportMetric('총 장비 전투력', `+${formatNumber(equipmentSummary.totalEquipmentPower || 0)}`)}
+      </div>
+      <div class="battle-result-record-list">
+        ${rows || '<p>장비 보너스가 적용된 용병이 없습니다.</p>'}
+      </div>
+    </section>
+  `;
+}
+
 function renderBattleModalDetailedReport(report) {
   const allyDamageTaken = report.unitSummaries?.allies?.reduce((sum, unit) => sum + (Number(unit.damageTaken || 0) || 0), 0) || 0;
   const aliveAllies = report.unitSummaries?.allies?.filter((unit) => unit.survived).length || 0;
@@ -8245,7 +9271,9 @@ function renderBattleModalDetailedReport(report) {
         ${renderBattleReportMetric('남은 아군', formatNumber(aliveAllies))}
         ${renderBattleReportMetric('남은 적', formatNumber(aliveEnemies))}
         ${renderBattleReportMetric('상태 부여', `${formatNumber(report.statusAppliedCount || 0)}회`)}
+        ${renderBattleReportMetric('장비 전투력', `+${formatNumber(report.equipmentSummary?.totalEquipmentPower || 0)}`)}
       </div>
+      ${renderBattleEquipmentSummary(report.equipmentSummary || {})}
       ${renderBattleModalUnitRecords('아군 전투 기록', report.unitSummaries?.allies || [])}
       ${renderBattleModalUnitRecords('적 전투 기록', report.unitSummaries?.enemies || [], { enemy: true })}
       ${renderBattleModalSkillRecords(report.skillSummary || [])}
@@ -8296,6 +9324,7 @@ function renderBattleResultModal() {
       ${renderBattleReportMetric('남은 아군', formatNumber(aliveAllies))}
       ${renderBattleReportMetric('남은 적', formatNumber(aliveEnemies))}
       ${renderBattleReportMetric('상태이상', `${formatNumber(report.statusAppliedCount || 0)}회`)}
+      ${renderBattleReportMetric('장비 전투력', `+${formatNumber(report.equipmentSummary?.totalEquipmentPower || 0)}`)}
     </section>
     <section class="battle-result-modal-section">
       <h3>정산</h3>
@@ -8561,7 +9590,7 @@ function openBattleViewer(operation, party = selectedBattleParty()) {
     return;
   }
   const partyMemberIds = battlePartyMemberIds(party);
-  const partySnapshot = selectedBattlePartyMembers(party);
+  const partySnapshot = buildBattlePartyMembersWithEquipmentSnapshot(party, getBattleOperationRoster());
   let combatRequest;
   let battleResult;
   try {
@@ -8619,33 +9648,76 @@ function closeBattleViewer() {
   resumeMercenaryBgmAfterBattle();
 }
 
+function getBattleClaimRoundCount(battleResult) {
+  if (Array.isArray(battleResult?.rounds)) return battleResult.rounds.length;
+  const numericRoundCount = Number(battleResult?.roundCount ?? battleResult?.summary?.rounds ?? 0);
+  if (Number.isFinite(numericRoundCount) && numericRoundCount > 0) return numericRoundCount;
+  const actions = Array.isArray(battleResult?.actions)
+    ? battleResult.actions
+    : flattenBattleResultActions(battleResult);
+  if (Array.isArray(actions) && actions.length) {
+    const rounds = new Set(actions.map((action) => Number(action?.round || 0)).filter(Boolean));
+    return rounds.size || 0;
+  }
+  return 0;
+}
+
+function buildBattleClaimClientSummary(battleResult, allies) {
+  const summary = battleResult?.summary && typeof battleResult.summary === 'object' ? battleResult.summary : {};
+  const partySnapshot = Array.isArray(battleResult?.partySnapshot)
+    ? battleResult.partySnapshot
+    : Array.isArray(summary?.equipmentSnapshots)
+      ? summary.equipmentSnapshots
+      : [];
+  const partyMemberIds = allies
+    .map((unit) => unit?.sourceId || unit?.ownedId || unit?.mercenaryId || unit?.userMercenaryId || '')
+    .filter(Boolean)
+    .map(String);
+  const equipmentSnapshots = Array.isArray(summary?.equipmentSnapshots) ? summary.equipmentSnapshots : partySnapshot;
+  return {
+    partyMemberIds,
+    enemyCount: Number(summary.enemyCount ?? battleResult?.enemyCount ?? (Array.isArray(battleResult?.enemies) ? battleResult.enemies.length : 0)) || 0,
+    totalDamageDealt: Number(summary.totalDamageDealt ?? summary.damageDealt ?? battleResult?.stats?.totalDamageDealt ?? battleResult?.stats?.damageDealt ?? 0) || 0,
+    totalDamageTaken: Number(summary.totalDamageTaken ?? summary.damageTaken ?? battleResult?.stats?.totalDamageTaken ?? battleResult?.stats?.damageTaken ?? 0) || 0,
+    injuryCount: Array.isArray(battleResult?.injuries) ? battleResult.injuries.length : 0,
+    equipmentApplied: Boolean(summary.equipmentApplied || equipmentSnapshots.some((member) => Number(member?.equipmentBonus?.combatPower || member?.equipmentCombatPower || 0) > 0)),
+    equipmentCombatPower: equipmentSnapshots.reduce((sum, member) => sum + Number(member?.equipmentBonus?.combatPower || member?.equipmentCombatPower || 0), 0)
+  };
+}
+
 function buildBattleClaimPayload(battleResult) {
   const allies = Array.isArray(battleResult?.allies) ? battleResult.allies : [];
-  return {
+  const payload = {
     battleId: battleResult?.battleId || '',
+    runId: battleResult?.runId || battleResult?.battleId || '',
     requestId: battleResult?.requestId || '',
     sourceType: battleResult?.sourceType || 'combat_mission',
     sourceId: battleResult?.sourceId || battleResult?.operationId || '',
     missionId: battleResult?.missionId || battleResult?.operationId || '',
     operationId: battleResult?.operationId || '',
     result: battleResult?.result || '',
+    outcome: battleResult?.outcome || battleResult?.result || '',
     seed: battleResult?.seed ?? null,
+    rounds: getBattleClaimRoundCount(battleResult),
+    roundCount: getBattleClaimRoundCount(battleResult),
+    mvpUserMercenaryId: battleResult?.mvp?.userMercenaryId || battleResult?.mvpUserMercenaryId || null,
     partyUserMercenaryIds: allies.map((unit) => String(unit?.sourceId || '')).filter(Boolean),
     allies: allies.map((unit) => ({
-      sourceId: unit.sourceId,
+      sourceId: unit.sourceId || unit.ownedId || unit.mercenaryId || '',
       finalHp: Number(unit.finalHp ?? unit.hp ?? 0),
       maxHp: Number(unit.maxHp || 1),
       status: unit.status || ''
     })),
-    enemies: (battleResult?.enemies || []).map((unit) => ({
-      sourceId: unit.sourceId,
-      finalHp: Number(unit.finalHp ?? unit.hp ?? 0),
-      maxHp: Number(unit.maxHp || 1),
-      status: unit.status || ''
-    })),
-    summary: battleResult?.summary || {},
-    battleResult
+    clientSummary: buildBattleClaimClientSummary(battleResult, allies)
   };
+  if (MERCENARY_BATTLE_DEBUG) {
+    try {
+      console.debug('[mercenary/battle] slim claim payload bytes', JSON.stringify(payload).length);
+    } catch (error) {
+      console.debug('[mercenary/battle] failed to measure claim payload', error);
+    }
+  }
+  return payload;
 }
 
 async function claimCurrentBattleResult(options = {}) {
@@ -8681,10 +9753,16 @@ async function claimCurrentBattleResult(options = {}) {
       message: payload.alreadyClaimed ? '이미 반영된 전투 결과입니다.' : '전투 결과가 정산되었습니다.'
     };
     updateMercenaryCurrencyDisplay(payload);
+    const shouldRefreshStageClears = battleResult?.result === 'victory';
     await Promise.allSettled([
       loadOwnedMercenariesFromApi(),
-      loadInfirmaryData()
+      loadInfirmaryData(),
+      loadInventoryData({ force: true }),
+      shouldRefreshStageClears ? loadBattleStageClears({ force: true }) : Promise.resolve()
     ]);
+    if (shouldRefreshStageClears && payload?.stageClear) {
+      showReadyNotice('\uC2A4\uD14C\uC774\uC9C0 \uD074\uB9AC\uC5B4. \uB2E4\uC74C Stage \uD574\uAE08 \uC0C1\uD0DC\uB97C \uAC31\uC2E0\uD588\uC2B5\uB2C8\uB2E4.');
+    }
   } catch (error) {
     if (error.status === 401) {
       mercenaryAuthState.authenticated = false;
@@ -9715,23 +10793,34 @@ function renderMercenaryDetail(mercenary) {
 }
 
 function renderMercenaryEquipment(mercenary) {
-  return mercenary.equipment.map((item) => `
-    <article class="equipment-slot ${getGradeClass(mercenary.grade)}">
-      ${renderIcon(item.icon, 'small')}
-      <div>
-        <span>${escapeHtml(item.slot)}</span>
-        <strong>${escapeHtml(item.name)}</strong>
-        <em>${escapeHtml(item.grade)} · ${escapeHtml(item.effect)}</em>
-      </div>
-    </article>
-  `).join('');
+  const slots = normalizeEquipmentSlotMap(mercenary.equipmentSlots || {});
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary.ownedId || '';
+  return EQUIPMENT_SLOT_ORDER.map((slotKey) => {
+    const slot = slots[slotKey];
+    const equipment = slot?.equipment || {};
+    const item = slot?.item || {};
+    const name = slot?.name || equipment.name || item.name || '';
+    return `
+      <article class="equipment-slot ${slot ? getGradeClass(slot.grade || equipment.grade || mercenary.grade) : 'is-empty'}">
+        ${renderIcon(getEquipmentSlotIcon(slotKey), 'small')}
+        <div>
+          <span>${escapeHtml(getEquipmentSlotLabel(slotKey))}</span>
+          <strong>${escapeHtml(name || '\uBE44\uC5B4 \uC788\uC74C')}</strong>
+          <em>${slot ? escapeHtml(`${slot.grade || equipment.grade || ''} · ${formatEquipmentSummary(equipment || slot)}`) : '\uC7A5\uBE44 \uC5C6\uC74C'}</em>
+        </div>
+        ${slot ? `<button type="button" data-mercenary-unequip="${escapeHtml(ownedId)}" data-equipment-slot="${escapeHtml(slotKey)}">\uD574\uC81C</button>` : ''}
+      </article>
+    `;
+  }).join('');
 }
 
 function renderMercenaryVisual(mercenary) {
   const root = document.querySelector('#mercenary-visual');
   if (!root) return;
+  const locked = Boolean(mercenary.isLocked);
+  const busy = !isMercenaryIdleForManagement(mercenary);
   root.innerHTML = `
-    <div class="visual-art-panel ${getGradeClass(mercenary.grade)}">
+    <div class="visual-art-panel ${getGradeClass(mercenary.grade)}" data-merc-action="illustration" role="button" tabindex="0" aria-label="일러스트 확대">
       ${renderImageWithPlaceholder(mercenary, 'merc-full-art')}
     </div>
     <div class="equipment-panel">
@@ -9740,15 +10829,26 @@ function renderMercenaryVisual(mercenary) {
         <span>4 slots</span>
       </div>
       <div class="equipment-list">${renderMercenaryEquipment(mercenary)}</div>
-      <div class="visual-actions">
-        <button type="button" data-roster-ready>일러 확대</button>
-        <button type="button" data-roster-ready>장비 변경</button>
-        <button type="button" data-roster-ready>잠금</button>
-        <button type="button" data-roster-ready>해고</button>
+      <div class="visual-actions mercenary-detail-actions">
+        <button type="button" data-merc-action="illustration">일러 확대</button>
+        <button type="button" data-merc-action="equipment" ${busy ? 'disabled title="진행 중인 활동이 있어 장비를 변경할 수 없습니다."' : ''}>장비 변경</button>
+        <button type="button" data-merc-action="lock">${locked ? '잠금 해제' : '잠금'}</button>
+        <button type="button" class="mercenary-action-danger" data-merc-action="dismiss" ${locked || busy ? 'disabled' : ''} title="${locked ? '잠금 상태인 용병은 해고할 수 없습니다.' : busy ? '진행 중인 활동이 있어 해고할 수 없습니다.' : ''}">해고</button>
       </div>
     </div>
   `;
-  root.querySelectorAll('[data-roster-ready]').forEach((button) => button.addEventListener('click', showReadyNotice));
+  root.querySelectorAll('[data-merc-action="illustration"]').forEach((button) => {
+    button.addEventListener('click', () => openMercenaryIllustrationLightbox(mercenary));
+    button.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') openMercenaryIllustrationLightbox(mercenary);
+    });
+  });
+  root.querySelector('[data-merc-action="equipment"]')?.addEventListener('click', () => openMercenaryEquipmentManageModal(mercenary));
+  root.querySelector('[data-merc-action="lock"]')?.addEventListener('click', () => setMercenaryLockState(mercenary, !locked));
+  root.querySelector('[data-merc-action="dismiss"]')?.addEventListener('click', () => openMercenaryDismissModal(mercenary));
+  root.querySelectorAll('[data-mercenary-unequip]').forEach((button) => {
+    button.addEventListener('click', () => unequipMercenaryEquipmentSlot(button.dataset.mercenaryUnequip, button.dataset.equipmentSlot));
+  });
 }
 
 function renderRosterError(message) {

@@ -20,7 +20,7 @@
   }
 
   async function loadMercenaryMasterData() {
-    const data = await loadJson('/data/mercenaries.master.json?v=290');
+    const data = await loadJson('/data/mercenaries.master.json?v=304');
     return Array.isArray(data) ? data : [];
   }
 
@@ -37,16 +37,16 @@
       combatRules,
       combatLogs
     ] = await Promise.all([
-      loadJsonArray('/data/mercenary.attack-types.json?v=290'),
-      loadJsonArray('/data/mercenary.skills.json?v=290'),
-      loadJsonArray('/data/mercenary.status-effects.json?v=290'),
-      loadJsonArray('/data/mercenary.combat-missions.master.json?v=290'),
-      loadJsonArray('/data/mercenary.enemy-templates.master.json?v=290'),
-      loadJsonArray('/data/mercenary.encounters.master.json?v=290'),
-      loadJsonArray('/data/mercenary.encounter-enemies.master.json?v=290'),
-      loadJsonArray('/data/mercenary.combat-rewards.master.json?v=290'),
-      loadJsonArray('/data/mercenary.combat-rules.master.json?v=290'),
-      loadJsonArray('/data/mercenary.combat-logs.master.json?v=290')
+      loadJsonArray('/data/mercenary.attack-types.json?v=304'),
+      loadJsonArray('/data/mercenary.skills.json?v=304'),
+      loadJsonArray('/data/mercenary.status-effects.json?v=304'),
+      loadJsonArray('/data/mercenary.combat-missions.master.json?v=304'),
+      loadJsonArray('/data/mercenary.enemy-templates.master.json?v=304'),
+      loadJsonArray('/data/mercenary.encounters.master.json?v=304'),
+      loadJsonArray('/data/mercenary.encounter-enemies.master.json?v=304'),
+      loadJsonArray('/data/mercenary.combat-rewards.master.json?v=304'),
+      loadJsonArray('/data/mercenary.combat-rules.master.json?v=304'),
+      loadJsonArray('/data/mercenary.combat-logs.master.json?v=304')
     ]);
     return {
       attackTypes,
@@ -84,15 +84,15 @@
   }
 
   async function loadMercenaryItemsMasterData() {
-    return loadJsonArray('/data/mercenary.items.master.json?v=290');
+    return loadJsonArray('/data/mercenary.items.master.json?v=304');
   }
 
   async function loadMercenaryEquipmentMasterData() {
-    return loadJsonArray('/data/mercenary.equipment.master.json?v=290');
+    return loadJsonArray('/data/mercenary.equipment.master.json?v=304');
   }
 
   async function loadMercenaryEquipmentImagePromptsMasterData() {
-    return loadJsonArray('/data/mercenary.equipment-image-prompts.master.json?v=290');
+    return loadJsonArray('/data/mercenary.equipment-image-prompts.master.json?v=304');
   }
 
   async function loadMercenaryEquipmentBundle() {

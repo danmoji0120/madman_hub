@@ -3070,5 +3070,157 @@
     ],
     "effectSummary": "HP +95, ATK +10, DEF +10, TEC +70, SUP +25, ACC +16",
     "notes": "도구 자동 생성 행"
+  },
+  {
+    "itemId": "mat_slime_core_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "N",
+    "name": "점액핵",
+    "description": "하수도 점액괴물에게서 굳어 나온 끈적한 핵.",
+    "iconKey": "material_slime_core_001",
+    "imageKey": "mat_slime_core_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 25,
+    "sourceTags": [
+      "combat_drop",
+      "sewer"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_rusty_scrap_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "N",
+    "name": "녹슨 고철",
+    "description": "하수도와 낡은 장비에서 회수한 녹슨 금속 조각.",
+    "iconKey": "material_rusty_scrap_001",
+    "imageKey": "mat_rusty_scrap_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 18,
+    "sourceTags": [
+      "combat_drop",
+      "scrap"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_mimic_splinter_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "R",
+    "name": "미믹 파편",
+    "description": "미믹 상자 껍질에서 떨어져 나온 단단한 파편.",
+    "iconKey": "material_mimic_splinter_001",
+    "imageKey": "mat_mimic_splinter_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 55,
+    "sourceTags": [
+      "combat_drop",
+      "mimic"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_debtbreaker_badge_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "R",
+    "name": "채무단 배지",
+    "description": "채무 불이행 용병단이 달고 다니던 낡은 배지.",
+    "iconKey": "material_debtbreaker_badge_001",
+    "imageKey": "mat_debtbreaker_badge_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 60,
+    "sourceTags": [
+      "combat_drop",
+      "debtbreaker"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_arcane_residue_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "SR",
+    "name": "마력 잔재",
+    "description": "마탑 폐기 소환체 주변에 남은 불안정한 마력 찌꺼기.",
+    "iconKey": "material_arcane_residue_001",
+    "imageKey": "mat_arcane_residue_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 180,
+    "sourceTags": [
+      "combat_drop",
+      "arcane"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_abyss_scale_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "SR",
+    "name": "심해 비늘",
+    "description": "부두 심해 하수인에게서 떨어진 축축한 비늘.",
+    "iconKey": "material_abyss_scale_001",
+    "imageKey": "mat_abyss_scale_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 190,
+    "sourceTags": [
+      "combat_drop",
+      "abyss"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_red_thread_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "SSR",
+    "name": "붉은 실타래",
+    "description": "붉은실 추적자가 남긴 끊어지지 않는 실타래.",
+    "iconKey": "material_red_thread_001",
+    "imageKey": "mat_red_thread_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 420,
+    "sourceTags": [
+      "combat_drop",
+      "red_thread"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료"
+  },
+  {
+    "itemId": "mat_distorted_contract_001",
+    "enabled": true,
+    "itemType": "material",
+    "grade": "EX",
+    "name": "왜곡된 계약서",
+    "description": "글자가 스스로 고쳐지는 기묘한 계약서 조각.",
+    "iconKey": "material_distorted_contract_001",
+    "imageKey": "mat_distorted_contract_001",
+    "stackable": true,
+    "maxStack": 999,
+    "sellValue": 1200,
+    "sourceTags": [
+      "combat_drop",
+      "special_contract"
+    ],
+    "effectSummary": "제작 재료",
+    "notes": "전투 보상 드랍 재료. 일반 전투 드랍 미사용 예비 재료"
   }
 ]

@@ -1193,7 +1193,8 @@ body.mission-open {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .merc-card-meta strong {
@@ -1844,12 +1845,24 @@ body.mission-open {
 
 .equipment-slot {
   display: grid;
-  grid-template-columns: 38px 1fr;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   border: 1px solid rgba(214, 171, 82, 0.34);
   padding: 9px;
   background: rgba(14, 9, 5, 0.62);
+}
+
+.equipment-slot.is-empty {
+  opacity: 0.72;
+}
+
+.equipment-slot button {
+  min-height: 30px;
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  background: rgba(44, 27, 13, 0.84);
+  color: #ffe2a4;
+  padding: 4px 8px;
 }
 
 .equipment-slot strong,
@@ -3858,6 +3871,43 @@ body.battle-board-open {
   font-family: "MercTitle", "Malgun Gothic", serif;
 }
 
+.battle-result-inventory-rewards {
+  display: grid;
+  gap: 8px;
+  grid-column: 1 / -1;
+  padding: 10px;
+  border: 1px solid rgba(151, 111, 59, 0.3);
+  background: rgba(18, 12, 7, 0.46);
+}
+
+.battle-result-inventory-rewards h4 {
+  margin: 0;
+  color: #ffe5aa;
+}
+
+.battle-result-inventory-rewards ul {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.battle-result-inventory-rewards li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 8px;
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(35, 22, 12, 0.55);
+}
+
+.battle-result-inventory-rewards em {
+  grid-column: 1 / -1;
+  color: rgba(231, 209, 171, 0.72);
+  font-style: normal;
+}
+
 .battle-result-settlement.is-error {
   color: #ffb1a4;
 }
@@ -4063,10 +4113,11 @@ body.battle-board-open {
 }
 
 .battle-board-shell {
-  width: min(98vw, 1640px);
-  height: min(94vh, 900px);
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  width: min(96vw, 1500px);
+  height: calc(100vh - 72px);
+  max-height: calc(100vh - 72px);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   padding: 16px;
   overflow: hidden;
@@ -4135,7 +4186,9 @@ body.battle-board-open {
 .battle-board-layout {
   min-height: 0;
   display: grid;
-  grid-template-columns: 300px minmax(520px, 1fr) 340px;
+  grid-template-columns: 240px minmax(560px, 1fr) 300px;
+  flex: 1;
+  overflow: hidden;
   gap: 12px;
 }
 
@@ -4186,6 +4239,7 @@ body.battle-board-open {
 
 .battle-operation-card strong,
 .battlefield-enemy-card strong,
+.battle-enemy-preview-card strong,
 .battle-party-lane > strong,
 .battle-party-slot b,
 .battle-viewer-unit strong {
@@ -4205,7 +4259,7 @@ body.battle-board-open {
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(280px, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -4219,30 +4273,147 @@ body.battle-board-open {
     var(--battle-bg, radial-gradient(circle, rgba(110, 72, 38, 0.35), rgba(5, 4, 3, 0.96))) center / cover no-repeat;
 }
 
+.battlefield-preview {
+  min-height: 154px;
+  padding: 12px;
+}
+
+.battle-enemy-preview-strip,
 .battlefield-enemy-row {
-  position: absolute;
-  inset: auto 16px 16px;
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 0 0 8px;
+  scrollbar-width: thin;
+}
+
+.battle-enemy-preview-strip {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.battlefield-enemy-row {
+  position: relative;
   justify-content: center;
 }
 
+.battle-enemy-preview-card,
 .battlefield-enemy-card {
-  width: 112px;
+  flex: 0 0 116px;
+  min-width: 116px;
+  max-width: 128px;
+  min-height: 132px;
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 4px;
   padding: 8px;
   border: 1px solid rgba(214, 168, 93, 0.26);
-  background: rgba(10, 7, 5, 0.72);
+  background: rgba(10, 7, 5, 0.76);
   text-align: center;
 }
 
+.battle-enemy-preview-card.is-boss {
+  border-color: rgba(255, 112, 94, 0.58);
+  box-shadow: inset 0 0 18px rgba(157, 38, 28, 0.2);
+}
+
+.battle-enemy-preview-card b {
+  justify-self: end;
+  border: 1px solid rgba(255, 112, 94, 0.55);
+  color: #ffd1c9;
+  background: rgba(71, 17, 14, 0.62);
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
+.battle-enemy-preview-card img,
 .battlefield-enemy-card img {
-  width: 72px;
-  height: 78px;
+  width: 62px;
+  height: 62px;
   object-fit: contain;
+}
+
+.battle-enemy-preview-card strong,
+.battle-enemy-preview-card span,
+.battle-enemy-preview-card em,
+.battle-enemy-preview-card i {
+  max-width: 100%;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.22;
+}
+
+.battle-enemy-preview-card span,
+.battle-enemy-preview-card em,
+.battle-enemy-preview-card i {
+  color: rgba(244, 223, 180, 0.72);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.battle-enemy-preview-card i {
+  border: 1px solid rgba(214, 168, 93, 0.24);
+  padding: 2px 5px;
+  background: rgba(0, 0, 0, 0.26);
+}
+
+
+.battle-stage-selector {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(151, 111, 59, 0.32);
+  background: rgba(11, 8, 5, 0.48);
+}
+
+.battle-stage-selector button {
+  width: 118px;
+  min-width: 118px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  gap: 1px;
+  padding: 6px 9px;
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  background: linear-gradient(180deg, rgba(56, 36, 17, 0.92), rgba(18, 12, 8, 0.96));
+  color: #f4d39a;
+  font-family: "MercText", "Malgun Gothic", serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.battle-stage-selector button strong {
+  color: #ffe6ae;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-stage-selector button span {
+  color: rgba(231, 209, 171, 0.7);
+  font-size: 11px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-stage-selector button.is-selected {
+  border-color: rgba(239, 190, 96, 0.9);
+  box-shadow: 0 0 14px rgba(221, 160, 67, 0.24);
+}
+
+.battle-stage-selector button.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.28);
+}
+
+.battle-stage-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .battle-operation-copy,
@@ -4343,6 +4514,117 @@ body.battle-board-open {
 .battle-operation-copy .battle-reward-preview li strong {
   color: #ffe5aa;
   font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+
+
+.battle-operation-detail {
+  overflow-y: auto;
+}
+
+.battle-operation-detail > div,
+.battle-party-ready-panel #battle-party-readiness {
+  min-height: 0;
+}
+
+.battle-operation-brief header p {
+  margin: 4px 0 0;
+}
+
+.battle-operation-brief .battle-operation-copy {
+  padding-bottom: 18px;
+}
+
+.battle-stage-selector button span {
+  white-space: nowrap;
+}
+
+.battle-stage-selector button:disabled {
+  cursor: not-allowed;
+}
+
+.battle-enemy-summary {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(151, 111, 59, 0.32);
+  background: rgba(11, 8, 5, 0.48);
+}
+
+.battle-enemy-summary h4 {
+  margin: 0;
+  color: #ffe2a2;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-enemy-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.battle-enemy-summary-list article {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(214, 168, 93, 0.24);
+  background: rgba(65, 39, 17, 0.34);
+}
+
+.battle-enemy-summary-list article.is-boss {
+  border-color: rgba(232, 113, 81, 0.48);
+  background: rgba(91, 34, 25, 0.35);
+}
+
+.battle-enemy-summary-list strong {
+  color: #ffe6ae;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-enemy-summary-list span,
+.battle-enemy-summary-list em {
+  color: rgba(231, 209, 171, 0.72);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.battle-party-ready-panel #battle-party-readiness {
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+
+.battle-party-actions {
+  position: sticky;
+  bottom: 0;
+  padding-top: 6px;
+  background: linear-gradient(180deg, rgba(7, 6, 5, 0), rgba(7, 6, 5, 0.95) 35%);
+}
+
+@media (max-width: 1280px) {
+  .battle-board-layout {
+    grid-template-columns: 200px minmax(460px, 1fr) 260px;
+  }
+
+  .battle-enemy-summary-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .battle-board-shell {
+    width: calc(100vw - 24px);
+    height: calc(100vh - 48px);
+    max-height: calc(100vh - 48px);
+  }
+
+  .battle-board-layout {
+    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(240px, 0.55fr);
+  }
+
+  .battle-party-ready-panel {
+    grid-column: 1 / -1;
+  }
 }
 
 .battle-party-lane,
@@ -6286,7 +6568,9 @@ body.battle-board-open {
 
 .inventory-close-button,
 .inventory-tabs button,
-.inventory-disabled-actions button {
+.inventory-disabled-actions button,
+.inventory-equip-panel button,
+.inventory-equipped-state button {
   min-height: 38px;
   border: 1px solid rgba(214, 168, 93, 0.45);
   background: linear-gradient(180deg, rgba(74, 47, 22, 0.9), rgba(31, 20, 12, 0.92));
@@ -6448,7 +6732,9 @@ body.battle-board-open {
 
 .inventory-stat-list,
 .inventory-tag-list,
-.inventory-disabled-actions {
+.inventory-disabled-actions,
+.inventory-equip-panel,
+.inventory-equipped-state {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -6469,6 +6755,44 @@ body.battle-board-open {
 .inventory-disabled-actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.inventory-item-card .is-equipped,
+.inventory-equipped-state strong {
+  border: 1px solid rgba(109, 209, 155, 0.42);
+  color: #b8ffd3;
+  background: rgba(14, 61, 36, 0.52);
+  padding: 3px 7px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.inventory-equip-panel,
+.inventory-equipped-state {
+  align-items: center;
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 9px;
+}
+
+.inventory-equip-panel label {
+  flex: 1 1 260px;
+  display: grid;
+  gap: 5px;
+}
+
+.inventory-equip-panel select {
+  min-height: 34px;
+  border: 1px solid rgba(214, 168, 93, 0.32);
+  background: rgba(6, 5, 4, 0.82);
+  color: #ffe8b7;
+  padding: 6px 9px;
+}
+
+.inventory-equip-panel p,
+.inventory-equipped-state span {
+  margin: 0;
+  color: rgba(244, 223, 180, 0.72);
 }
 
 .inventory-empty-detail {
@@ -7673,5 +7997,810 @@ body.battle-board-open {
   .merc-image-placeholder::before {
     content: none !important;
     display: none !important;
+  }
+}
+
+.visual-actions button:disabled,
+.mercenary-equipment-candidate button:disabled,
+.mercenary-dismiss-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+}
+
+.visual-actions .mercenary-action-danger,
+.mercenary-dismiss-actions .is-danger {
+  border-color: rgba(224, 91, 75, 0.64);
+  color: #ffd1c9;
+  background: rgba(101, 24, 18, 0.58);
+}
+
+.mercenary-illustration-lightbox,
+.mercenary-equipment-manage-modal,
+.mercenary-dismiss-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.mercenary-illustration-lightbox[hidden],
+.mercenary-equipment-manage-modal[hidden],
+.mercenary-dismiss-modal[hidden] {
+  display: none !important;
+}
+
+.mercenary-action-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 2, 1, 0.78);
+  backdrop-filter: blur(6px);
+}
+
+.mercenary-lightbox-card,
+.mercenary-equipment-manage-card,
+.mercenary-dismiss-card {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(220, 174, 88, 0.48);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
+  background: linear-gradient(160deg, rgba(35, 22, 12, 0.98), rgba(12, 8, 5, 0.98));
+  color: #f7ead0;
+}
+
+.mercenary-lightbox-card {
+  display: grid;
+  gap: 12px;
+  max-width: min(94vw, 960px);
+  max-height: 92vh;
+  padding: 18px;
+}
+
+.mercenary-lightbox-art {
+  display: grid;
+  place-items: center;
+  min-width: min(74vw, 760px);
+  min-height: min(70vh, 620px);
+}
+
+.mercenary-lightbox-art img {
+  max-width: min(92vw, 900px);
+  max-height: 82vh;
+  object-fit: contain;
+}
+
+.mercenary-lightbox-placeholder,
+.mercenary-action-empty,
+.mercenary-action-warning {
+  margin: 0;
+  color: rgba(245, 224, 184, 0.78);
+  font-family: "MercText", "Malgun Gothic", serif;
+}
+
+.mercenary-lightbox-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mercenary-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(220, 174, 88, 0.46);
+  color: #ffedc0;
+  background: rgba(8, 5, 3, 0.76);
+  cursor: pointer;
+}
+
+.mercenary-equipment-manage-card {
+  width: min(96vw, 920px);
+  max-height: min(88vh, 760px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  overflow: hidden;
+}
+
+.mercenary-equipment-manage-card header,
+.mercenary-dismiss-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mercenary-equipment-manage-card header span,
+.mercenary-dismiss-card header span {
+  color: rgba(226, 193, 131, 0.76);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.mercenary-equipment-manage-card h3,
+.mercenary-dismiss-card h3 {
+  margin: 3px 0 0;
+  color: #fff0bd;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.mercenary-equipment-manage-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.mercenary-equipment-manage-grid aside,
+.mercenary-equipment-candidate-list {
+  min-height: 0;
+  overflow: auto;
+}
+
+.mercenary-equipment-manage-grid aside {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.mercenary-equipment-manage-grid aside button,
+.mercenary-equipment-candidate,
+.mercenary-current-equipment {
+  border: 1px solid rgba(214, 168, 93, 0.26);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.mercenary-equipment-manage-grid aside button {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  text-align: left;
+  color: #f6e2b5;
+  cursor: pointer;
+}
+
+.mercenary-equipment-manage-grid aside button.is-active {
+  border-color: rgba(255, 217, 132, 0.82);
+  background: rgba(77, 47, 14, 0.48);
+}
+
+.mercenary-equipment-manage-grid main {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mercenary-current-equipment {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.mercenary-current-equipment button,
+.mercenary-equipment-candidate button,
+.mercenary-dismiss-actions button {
+  min-height: 34px;
+  border: 1px solid rgba(222, 178, 88, 0.42);
+  color: #f5dba0;
+  background: rgba(17, 10, 5, 0.66);
+  cursor: pointer;
+}
+
+.mercenary-equipment-candidate-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.mercenary-equipment-candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 74px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+}
+
+.mercenary-equipment-candidate strong,
+.mercenary-current-equipment strong {
+  color: #fff0bd;
+}
+
+.mercenary-equipment-candidate span,
+.mercenary-equipment-candidate em,
+.mercenary-current-equipment p {
+  display: block;
+  margin: 2px 0 0;
+  color: rgba(245, 224, 184, 0.72);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.mercenary-equipment-candidate.is-disabled {
+  opacity: 0.68;
+}
+
+.mercenary-dismiss-card {
+  width: min(92vw, 520px);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.mercenary-dismiss-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.mercenary-dismiss-card input {
+  min-height: 38px;
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  color: #ffe8b7;
+  background: rgba(6, 5, 4, 0.84);
+  padding: 8px 10px;
+}
+
+.mercenary-dismiss-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .mercenary-equipment-manage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mercenary-lightbox-art {
+    min-width: 0;
+    min-height: 52vh;
+  }
+}
+
+.merc-battle-equipment-summary .battle-result-record-list article {
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 9px;
+}
+
+.merc-battle-equipment-summary strong,
+.merc-battle-equipment-summary p,
+.merc-battle-equipment-summary em {
+  display: block;
+}
+
+.merc-battle-equipment-summary p,
+.merc-battle-equipment-summary em {
+  margin: 3px 0 0;
+  color: rgba(245, 224, 184, 0.74);
+  font-size: 12px;
+  font-style: normal;
+}
+
+/* Mobile survival patch v304 */
+@media (max-width: 768px) {
+  html,
+  body.mercenary-lobby-page {
+    min-width: 0;
+  }
+
+  .mercenary-lobby {
+    width: 100%;
+    max-width: 100vw;
+    grid-template-columns: minmax(0, 1fr);
+    overflow-x: hidden;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .lobby-topbar,
+  .status-panel,
+  .assistant-panel,
+  .lobby-stage,
+  .bottom-ui,
+  .merc-panel,
+  .status-list,
+  .status-item,
+  .assistant-copy,
+  .hotspot-layer {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .status-panel,
+  .assistant-panel,
+  .lobby-stage,
+  .bottom-ui {
+    width: 100%;
+  }
+
+  .lobby-level-row,
+  .top-resource-cluster {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .bottom-ui {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .quick-nav {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+    justify-items: stretch;
+  }
+
+  .quick-nav button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mercenary-battle-view,
+  .battle-result-modal-layer,
+  .mercenary-inventory-view,
+  .mercenary-roster-screen,
+  .mercenary-illustration-lightbox,
+  .mercenary-equipment-manage-modal,
+  .mercenary-dismiss-modal {
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .battle-board-shell,
+  .inventory-shell,
+  .roster-shell {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-right: 0;
+    border-left: 0;
+    padding: 10px;
+  }
+
+  .battle-board-shell {
+    gap: 8px;
+  }
+
+  .battle-board-topbar,
+  .inventory-topbar,
+  .inventory-toolbar,
+  .roster-header {
+    display: grid;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .battle-board-title h2,
+  .inventory-topbar h2,
+  .roster-title {
+    font-size: 24px;
+    line-height: 1.1;
+  }
+
+  .battle-board-title p,
+  .inventory-topbar p {
+    font-size: 12px;
+  }
+
+  .battle-board-close,
+  .inventory-close-button,
+  .roster-close-button {
+    min-height: 42px;
+    justify-self: stretch;
+  }
+
+  .battle-board-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .battle-operation-list-panel,
+  .battle-operation-detail,
+  .battle-party-ready-panel {
+    min-width: 0;
+    overflow: visible;
+    padding: 10px;
+  }
+
+  .battle-operation-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(188px, 72vw);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .battle-operation-card {
+    min-height: 88px;
+    scroll-snap-align: start;
+  }
+
+  .battle-operation-brief {
+    height: auto;
+    grid-template-rows: auto;
+  }
+
+  .battlefield-preview {
+    min-height: 132px;
+  }
+
+  .battle-stage-selector {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    margin: -2px -2px 0;
+    padding: 8px;
+  }
+
+  .battle-stage-selector button {
+    width: 104px;
+    min-width: 104px;
+    min-height: 46px;
+    padding: 6px 8px;
+  }
+
+  .battle-stage-meta,
+  .battle-operation-copy dl,
+  .battle-power-summary,
+  .battle-party-summary,
+  .battle-operation-copy .battle-reward-preview ul,
+  .battle-enemy-summary-list {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-enemy-preview-card,
+  .battlefield-enemy-card {
+    flex-basis: 108px;
+    min-width: 108px;
+    max-width: 118px;
+  }
+
+  .battle-enemy-preview-card img,
+  .battlefield-enemy-card img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .battle-party-ready-panel #battle-party-readiness {
+    grid-template-rows: auto auto auto;
+  }
+
+  .battle-party-lanes {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .battle-party-actions,
+  .battle-result-modal-actions,
+  .inventory-equip-panel,
+  .inventory-equipped-state,
+  .visual-actions {
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    z-index: 8;
+    margin-right: -10px;
+    margin-bottom: -10px;
+    margin-left: -10px;
+    padding: 10px;
+    border-top: 1px solid rgba(214, 168, 93, 0.28);
+    background: linear-gradient(180deg, rgba(8, 6, 4, 0), rgba(8, 6, 4, 0.98) 24%);
+  }
+
+  .battle-party-actions button,
+  .battle-result-modal-actions button,
+  .inventory-equip-panel button,
+  .inventory-equipped-state button,
+  .visual-actions button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .battle-result-modal-card {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    padding: 10px;
+    padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-left: 0;
+    gap: 10px;
+  }
+
+  .battle-result-modal-header {
+    padding: 12px;
+  }
+
+  .battle-result-modal-header h2 {
+    font-size: 34px;
+  }
+
+  .battle-result-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .battle-result-log-details {
+    max-height: 44dvh;
+    overflow-y: auto;
+  }
+
+  .inventory-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .inventory-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .inventory-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .inventory-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .inventory-layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .inventory-list-panel,
+  .inventory-detail-panel {
+    min-width: 0;
+    overflow: visible;
+    padding: 10px;
+  }
+
+  .inventory-list {
+    max-height: 34dvh;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .inventory-item-card {
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .inventory-item-card .is-equipped {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .inventory-item-art {
+    width: 56px;
+    height: 56px;
+  }
+
+  .inventory-detail-card {
+    height: auto;
+    overflow: visible;
+  }
+
+  .inventory-detail-card dl,
+  .inventory-stat-list,
+  .inventory-tag-list,
+  .inventory-disabled-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-equip-panel,
+  .inventory-equipped-state,
+  .inventory-disabled-actions {
+    display: grid;
+    gap: 8px;
+  }
+
+  .inventory-equip-panel label {
+    flex-basis: auto;
+  }
+
+  .roster-shell {
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .roster-controls,
+  .roster-layout,
+  .roster-visual-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .roster-layout {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .roster-list-panel,
+  .roster-detail-panel,
+  .roster-visual-panel {
+    overflow: visible;
+  }
+
+  .roster-list {
+    max-height: 34dvh;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .roster-visual-panel {
+    grid-template-rows: auto auto;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .visual-art-panel {
+    min-height: 220px;
+  }
+
+  .merc-full-art {
+    height: 38dvh;
+    min-height: 220px;
+    max-height: 320px;
+  }
+
+  .equipment-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .equipment-slot {
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .equipment-slot button {
+    grid-column: 1 / -1;
+    min-height: 34px;
+  }
+
+  .visual-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mercenary-lightbox-card,
+  .mercenary-equipment-manage-card,
+  .mercenary-dismiss-card {
+    width: 100vw;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border-right: 0;
+    border-left: 0;
+    padding: 12px;
+    overflow: auto;
+  }
+
+  .mercenary-lightbox-art {
+    min-width: 0;
+    min-height: 0;
+    height: min(68dvh, 620px);
+  }
+
+  .mercenary-lightbox-art img {
+    max-width: 94vw;
+    max-height: 68dvh;
+  }
+
+  .mercenary-lightbox-card footer,
+  .mercenary-equipment-manage-card header,
+  .mercenary-dismiss-card header,
+  .mercenary-dismiss-actions {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .mercenary-equipment-manage-grid {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .mercenary-equipment-manage-grid aside {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(84px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .mercenary-equipment-manage-grid main,
+  .mercenary-equipment-candidate-list {
+    overflow: visible;
+  }
+
+  .mercenary-equipment-candidate {
+    grid-template-columns: 1fr;
+  }
+
+  .mercenary-equipment-candidate button {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 480px) {
+  .battle-board-shell,
+  .battle-result-modal-card,
+  .inventory-shell,
+  .roster-shell,
+  .mercenary-lightbox-card,
+  .mercenary-equipment-manage-card,
+  .mercenary-dismiss-card {
+    padding: 8px;
+  }
+
+  .battle-board-layout,
+  .inventory-layout,
+  .roster-layout {
+    padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .battle-operation-list {
+    grid-auto-columns: minmax(172px, 82vw);
+  }
+
+  .battle-stage-selector button {
+    width: 96px;
+    min-width: 96px;
+  }
+
+  .battle-enemy-preview-card,
+  .battlefield-enemy-card {
+    flex-basis: 100px;
+    min-width: 100px;
+  }
+
+  .battle-result-unit-record dl,
+  .inventory-filters,
+  .equipment-list,
+  .merc-detail-breakdown-row {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-item-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .inventory-item-art {
+    width: 52px;
+    height: 52px;
+  }
+
+  .mercenary-equipment-manage-grid aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

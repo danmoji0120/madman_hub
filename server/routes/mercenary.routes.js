@@ -16,7 +16,8 @@ function handle(task) {
       return res.status(error.status || 400).json({
         success: false,
         code: error.code,
-        message: error.message || '용병 시스템 처리 중 오류가 발생했습니다.'
+        message: error.message || '용병 시스템 처리 중 오류가 발생했습니다.',
+        ...(Array.isArray(error.reasons) ? { reasons: error.reasons } : {})
       });
     }
   };
@@ -44,8 +45,16 @@ router.get('/runs', handle((req) => mercenarySystem.listRuns(req.user.id)));
 router.post('/runs/start', handle((req) => mercenarySystem.startMissionRun(req.user.id, req.body)));
 router.post('/runs/claim', handle((req) => mercenarySystem.claimMissionRun(req.user.id, req.body?.runId)));
 router.post('/battles/claim', handle((req) => mercenarySystem.claimBattleResult(req.user.id, req.body)));
+router.get('/combat-stage-clears', handle((req) => mercenarySystem.listCombatStageClears(req.user.id)));
 router.get('/inventory', handle((req) => mercenarySystem.getUserInventory(req.user.id, req.query || {})));
 router.get('/inventory/summary', handle((req) => mercenarySystem.getUserInventorySummary(req.user.id)));
+router.get('/equipment-slots', handle((req) => mercenarySystem.listUserEquipmentSlots(req.user.id)));
+router.patch('/my/:userMercenaryId/lock', handle((req) => mercenarySystem.setOwnedMercenaryLock(req.user.id, req.params.userMercenaryId, req.body?.locked)));
+router.post('/my/:userMercenaryId/lock', handle((req) => mercenarySystem.setOwnedMercenaryLock(req.user.id, req.params.userMercenaryId, req.body?.locked)));
+router.post('/my/:userMercenaryId/dismiss', handle((req) => mercenarySystem.dismissOwnedMercenary(req.user.id, req.params.userMercenaryId, req.body || {})));
+router.get('/my/:userMercenaryId/equipment', handle((req) => mercenarySystem.getUserMercenaryEquipment(req.user.id, req.params.userMercenaryId)));
+router.post('/my/:userMercenaryId/equipment/equip', handle((req) => mercenarySystem.equipInventoryItem(req.user.id, req.params.userMercenaryId, req.body?.inventoryItemId)));
+router.delete('/my/:userMercenaryId/equipment/:slot', handle((req) => mercenarySystem.unequipSlot(req.user.id, req.params.userMercenaryId, req.params.slot)));
 router.get('/infirmary', handle((req) => mercenarySystem.getInfirmaryState(req.user.id)));
 router.post('/infirmary/treat/start', handle((req) => mercenarySystem.startTreatment(req.user.id, req.body?.ownedMercenaryId)));
 router.post('/infirmary/treat/claim', handle((req) => mercenarySystem.claimTreatment(req.user.id, req.body?.treatmentId)));

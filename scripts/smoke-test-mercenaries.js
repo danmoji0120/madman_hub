@@ -26,6 +26,8 @@ const { start } = require('../server/app');
 const { close, run, get } = require('../server/db');
 const { addPointTransaction, ensurePointAccount } = require('../server/services/points.service');
 const { treatmentCost } = require('../server/config/mercenaries.config');
+const equipmentMaster = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/data/mercenary.equipment.master.json'), 'utf8'));
+const mercenaryMaster = JSON.parse(fs.readFileSync(path.join(__dirname, '../public/data/mercenaries.master.json'), 'utf8'));
 
 const baseUrl = `http://127.0.0.1:${process.env.PORT}`;
 
@@ -85,6 +87,7 @@ async function main() {
   try {
     const health = await request('/health');
     assert.strictEqual(health.status, 'ok');
+    await request('/api/mercenary/combat-stage-clears', {}, 401);
 
     const email = `mercenary-smoke-${Date.now()}@example.com`;
     const password = 'secret123';
@@ -103,6 +106,116 @@ async function main() {
     assert.ok(loggedIn.token);
     const auth = { Authorization: `Bearer ${loggedIn.token}`, 'Content-Type': 'application/json' };
     const userId = loggedIn.user.id;
+
+    const initialStageClears = await request('/api/mercenary/combat-stage-clears', { headers: auth });
+    assert.strictEqual(initialStageClears.success, true);
+    assert.deepStrictEqual(initialStageClears.clears, []);
+    const lockedStageClaim = await request('/api/mercenary/battles/claim', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({
+        battleId: `locked-stage-${Date.now()}`,
+        operationId: 'combat_sewer_slime_cleanup_stage_02',
+        result: 'victory',
+        partyUserMercenaryIds: ['missing-owned-mercenary'],
+        allies: [],
+        enemies: [],
+        battleResult: { rounds: [] }
+      })
+    }, 403);
+    assert.strictEqual(lockedStageClaim.code, 'STAGE_LOCKED');
+    assert.ok(Array.isArray(lockedStageClaim.reasons));
+
+    const smokeEquipment = equipmentMaster.find((item) => item.itemId && item.slot === 'weapon');
+    assert.ok(smokeEquipment?.itemId);
+    const smokeMasterId = mercenaryMaster.find((item) => item.id)?.id;
+    assert.ok(smokeMasterId);
+    const createdOwned = await run(
+      `INSERT INTO user_mercenaries
+       (user_id, mercenary_id, current_level, current_exp, status, operational_status, is_locked)
+       VALUES (?, ?, 1, 0, ?, 'idle', 0)`,
+      [userId, smokeMasterId, '대기 중']
+    );
+    const smokeOwnedId = String(createdOwned.id);
+    const smokeInventoryId = `smoke-inventory-${Date.now()}`;
+    await run(
+      `INSERT INTO user_mercenary_inventory_items
+       (id, user_id, item_id, item_type, quantity, locked, acquired_source_type)
+       VALUES (?, ?, ?, 'equipment', 1, 0, 'smoke')`,
+      [smokeInventoryId, userId, smokeEquipment.itemId]
+    );
+    const emptyEquipmentSlots = await request('/api/mercenary/equipment-slots', { headers: auth });
+    assert.strictEqual(emptyEquipmentSlots.success, true);
+    assert.ok(Array.isArray(emptyEquipmentSlots.items));
+    await request(`/api/mercenary/my/${smokeOwnedId}/equipment/equip`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemId: 'missing-inventory-item' })
+    }, 404);
+    const equipped = await request(`/api/mercenary/my/${smokeOwnedId}/equipment/equip`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemId: smokeInventoryId })
+    });
+    assert.strictEqual(equipped.success, true);
+    assert.ok(equipped.equipmentSlots.weapon);
+    assert.ok(Number(equipped.equipmentBonus.combatPower || 0) > 0);
+    await request(`/api/mercenary/my/${smokeOwnedId}/equipment/equip`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemId: smokeInventoryId })
+    }, 409);
+    const equippedInventory = await request('/api/mercenary/inventory', { headers: auth });
+    assert.strictEqual(equippedInventory.items.find((item) => item.id === smokeInventoryId)?.equipped, true);
+    const unequipped = await request(`/api/mercenary/my/${smokeOwnedId}/equipment/weapon`, {
+      method: 'DELETE',
+      headers: auth
+    });
+    assert.strictEqual(unequipped.success, true);
+    assert.strictEqual(unequipped.equipmentSlots.weapon, null);
+
+    const lockResult = await request(`/api/mercenary/my/${smokeOwnedId}/lock`, {
+      method: 'PATCH',
+      headers: auth,
+      body: JSON.stringify({ locked: true })
+    });
+    assert.strictEqual(lockResult.success, true);
+    assert.strictEqual(lockResult.locked, true);
+    await request(`/api/mercenary/my/${smokeOwnedId}/dismiss`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ confirmName: mercenaryMaster.find((item) => item.id === smokeMasterId)?.name || smokeMasterId })
+    }, 409);
+    const unlockResult = await request(`/api/mercenary/my/${smokeOwnedId}/lock`, {
+      method: 'PATCH',
+      headers: auth,
+      body: JSON.stringify({ locked: false })
+    });
+    assert.strictEqual(unlockResult.success, true);
+    assert.strictEqual(unlockResult.locked, false);
+    await request(`/api/mercenary/my/${smokeOwnedId}/dismiss`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ confirmName: 'wrong-name' })
+    }, 400);
+    const reEquipped = await request(`/api/mercenary/my/${smokeOwnedId}/equipment/equip`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemId: smokeInventoryId })
+    });
+    assert.strictEqual(reEquipped.success, true);
+    const dismissResult = await request(`/api/mercenary/my/${smokeOwnedId}/dismiss`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ confirmName: mercenaryMaster.find((item) => item.id === smokeMasterId)?.name || smokeMasterId })
+    });
+    assert.strictEqual(dismissResult.success, true);
+    assert.strictEqual(dismissResult.dismissedMercenaryId, smokeOwnedId);
+    assert.ok(Number(dismissResult.unequippedItemsCount || 0) >= 1);
+    const afterDismissInventory = await request('/api/mercenary/inventory', { headers: auth });
+    assert.strictEqual(afterDismissInventory.items.find((item) => item.id === smokeInventoryId)?.equipped, false);
+    const afterDismissRoster = await request('/api/mercenary/my', { headers: auth });
+    assert.strictEqual(afterDismissRoster.items.some((item) => String(item.ownedId || item.id) === smokeOwnedId), false);
 
     await addPointTransaction({
       userId,

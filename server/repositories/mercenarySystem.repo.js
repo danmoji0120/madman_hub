@@ -40,6 +40,9 @@ function normalizeOwned(row) {
     currentActivityType: row.current_activity_type || null,
     currentActivityId: row.current_activity_id || null,
     isLocked: Boolean(row.is_locked ?? row.locked),
+    dismissedAt: row.dismissed_at || null,
+    dismissedReason: row.dismissed_reason || null,
+    dismissedByUser: Boolean(row.dismissed_by_user),
     statusUpdatedAt: row.status_updated_at || null,
     hiredAt: row.hired_at
   };
@@ -147,6 +150,40 @@ function normalizeInventoryEntry(row) {
     acquiredSourceType: row.acquired_source_type || null,
     acquiredSourceId: row.acquired_source_id || null,
     acquiredRunId: row.acquired_run_id || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+
+function normalizeEquipmentSlot(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    userMercenaryId: String(row.user_mercenary_id || ''),
+    slot: row.slot,
+    inventoryItemId: row.inventory_item_id,
+    itemId: row.item_id,
+    equipmentId: row.equipment_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeCombatStageClear(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.user_id,
+    missionId: row.mission_id,
+    stageId: row.stage_id,
+    baseMissionId: row.base_mission_id,
+    clearCount: Number(row.clear_count || 0),
+    bestResult: row.best_result || null,
+    bestRounds: row.best_rounds === null || row.best_rounds === undefined ? null : Number(row.best_rounds),
+    firstClearedAt: row.first_cleared_at || null,
+    lastClearedAt: row.last_cleared_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -415,13 +452,14 @@ async function listUserMercenaries(userId) {
       .from('user_mercenaries')
       .select('*')
       .eq('user_id', userId)
+      .is('dismissed_at', null)
       .order('hired_at', { ascending: false });
     if (error) throw error;
     return (data || []).map(normalizeOwned);
   }
 
   const rows = await all(
-    'SELECT * FROM user_mercenaries WHERE user_id = ? ORDER BY hired_at DESC, id DESC',
+    'SELECT * FROM user_mercenaries WHERE user_id = ? AND dismissed_at IS NULL ORDER BY hired_at DESC, id DESC',
     [userId]
   );
   return rows.map(normalizeOwned);
@@ -452,13 +490,14 @@ async function hasOwnedMercenary(userId, mercenaryId) {
       .select('id')
       .eq('user_id', userId)
       .eq('mercenary_id', mercenaryId)
+      .is('dismissed_at', null)
       .limit(1);
     if (error) throw error;
     return Boolean(data?.length);
   }
 
   const row = await get(
-    'SELECT id FROM user_mercenaries WHERE user_id = ? AND mercenary_id = ? LIMIT 1',
+    'SELECT id FROM user_mercenaries WHERE user_id = ? AND mercenary_id = ? AND dismissed_at IS NULL LIMIT 1',
     [userId, mercenaryId]
   );
   return Boolean(row);
@@ -602,6 +641,98 @@ async function updateUserMercenaryStatusIfCurrent(userId, ownedMercenaryId, expe
   if (!result.changes) return null;
   return getUserMercenary(userId, ownedMercenaryId);
 }
+
+
+async function setUserMercenaryLocked(userId, ownedMercenaryId, locked) {
+  const safeLocked = Boolean(locked);
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenaries')
+      .update({
+        locked: safeLocked,
+        is_locked: safeLocked,
+        status_updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .eq('id', ownedMercenaryId)
+      .is('dismissed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOwned(data);
+  }
+
+  await run(
+    `UPDATE user_mercenaries
+     SET locked = ?,
+         is_locked = ?,
+         status_updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND dismissed_at IS NULL`,
+    [safeLocked ? 1 : 0, safeLocked ? 1 : 0, userId, ownedMercenaryId]
+  );
+  return getUserMercenary(userId, ownedMercenaryId);
+}
+
+async function dismissUserMercenary(userId, ownedMercenaryId, { reason = 'user_dismiss', dismissedAt } = {}) {
+  const safeReason = String(reason || 'user_dismiss').slice(0, 120);
+  const safeDismissedAt = dismissedAt || new Date().toISOString();
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenaries')
+      .update({
+        dismissed_at: safeDismissedAt,
+        dismissed_reason: safeReason,
+        dismissed_by_user: true,
+        operational_status: 'dismissed',
+        current_activity_type: null,
+        current_activity_id: null,
+        status_updated_at: safeDismissedAt
+      })
+      .eq('user_id', userId)
+      .eq('id', ownedMercenaryId)
+      .is('dismissed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeOwned(data);
+  }
+
+  await run(
+    `UPDATE user_mercenaries
+     SET dismissed_at = ?,
+         dismissed_reason = ?,
+         dismissed_by_user = 1,
+         operational_status = 'dismissed',
+         current_activity_type = NULL,
+         current_activity_id = NULL,
+         status_updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND dismissed_at IS NULL`,
+    [safeDismissedAt, safeReason, userId, ownedMercenaryId]
+  );
+  return getUserMercenary(userId, ownedMercenaryId);
+}
+
+async function removeOwnedMercenaryFromSquads(userId, ownedMercenaryId) {
+  const safeOwnedId = String(ownedMercenaryId);
+  const squads = await listUserSquads(userId);
+  let changedCount = 0;
+  for (const squad of squads) {
+    const nextIds = (squad.ownedMercenaryIds || []).filter((id) => String(id) !== safeOwnedId);
+    const nextLeader = String(squad.leaderOwnedMercenaryId || '') === safeOwnedId ? null : squad.leaderOwnedMercenaryId;
+    if (nextIds.length !== (squad.ownedMercenaryIds || []).length || nextLeader !== squad.leaderOwnedMercenaryId) {
+      await updateUserSquad({
+        userId,
+        squadId: squad.id,
+        name: squad.name,
+        ownedMercenaryIds: nextIds,
+        leaderOwnedMercenaryId: nextLeader
+      });
+      changedCount += 1;
+    }
+  }
+  return changedCount;
+}
+
 
 async function updateUserMercenaryProgress(userId, ownedMercenaryId, { currentLevel, currentExp }) {
   const safeLevel = Math.max(1, Number(currentLevel || 1) || 1);
@@ -1028,6 +1159,105 @@ async function claimBattleRun(userId, battleId, { rewards, injuries, battleResul
   return getBattleRunByBattleId(userId, battleId);
 }
 
+async function listCombatStageClears(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_combat_stage_clears')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_cleared_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(normalizeCombatStageClear);
+  }
+
+  const rows = await all(
+    'SELECT * FROM user_mercenary_combat_stage_clears WHERE user_id = ? ORDER BY last_cleared_at DESC, created_at DESC',
+    [userId]
+  );
+  return rows.map(normalizeCombatStageClear);
+}
+
+async function upsertCombatStageClear({ id, userId, missionId, stageId, baseMissionId, result = 'victory', rounds = null, clearedAt }) {
+  const safeRounds = rounds === null || rounds === undefined ? null : Math.max(0, Number(rounds || 0) || 0);
+  if (provider === 'supabase') {
+    const client = getSupabaseAdminClient();
+    const existingResult = await client
+      .from('user_mercenary_combat_stage_clears')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('mission_id', missionId)
+      .maybeSingle();
+    if (existingResult.error) throw existingResult.error;
+    const existing = existingResult.data;
+    if (existing) {
+      const currentBest = existing.best_rounds === null || existing.best_rounds === undefined ? null : Number(existing.best_rounds);
+      const nextBestRounds = safeRounds === null ? currentBest : currentBest === null ? safeRounds : Math.min(currentBest, safeRounds);
+      const { data, error } = await client
+        .from('user_mercenary_combat_stage_clears')
+        .update({
+          clear_count: Number(existing.clear_count || 0) + 1,
+          best_result: result,
+          best_rounds: nextBestRounds,
+          last_cleared_at: clearedAt,
+          updated_at: clearedAt
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return normalizeCombatStageClear(data);
+    }
+    const { data, error } = await client
+      .from('user_mercenary_combat_stage_clears')
+      .insert({
+        id,
+        user_id: userId,
+        mission_id: missionId,
+        stage_id: stageId,
+        base_mission_id: baseMissionId,
+        clear_count: 1,
+        best_result: result,
+        best_rounds: safeRounds,
+        first_cleared_at: clearedAt,
+        last_cleared_at: clearedAt,
+        created_at: clearedAt,
+        updated_at: clearedAt
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeCombatStageClear(data);
+  }
+
+  const existing = await get(
+    'SELECT * FROM user_mercenary_combat_stage_clears WHERE user_id = ? AND mission_id = ? LIMIT 1',
+    [userId, missionId]
+  );
+  if (existing) {
+    const currentBest = existing.best_rounds === null || existing.best_rounds === undefined ? null : Number(existing.best_rounds);
+    const nextBestRounds = safeRounds === null ? currentBest : currentBest === null ? safeRounds : Math.min(currentBest, safeRounds);
+    await run(
+      `UPDATE user_mercenary_combat_stage_clears
+       SET clear_count = clear_count + 1,
+           best_result = ?,
+           best_rounds = ?,
+           last_cleared_at = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [result, nextBestRounds, clearedAt, existing.id]
+    );
+    return normalizeCombatStageClear(await get('SELECT * FROM user_mercenary_combat_stage_clears WHERE id = ?', [existing.id]));
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_combat_stage_clears
+     (id, user_id, mission_id, stage_id, base_mission_id, clear_count, best_result, best_rounds, first_cleared_at, last_cleared_at)
+     VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
+    [id, userId, missionId, stageId, baseMissionId, result, safeRounds, clearedAt, clearedAt]
+  );
+  return normalizeCombatStageClear(await get('SELECT * FROM user_mercenary_combat_stage_clears WHERE id = ?', [id]));
+}
+
 
 async function listUserInventoryItems(userId) {
   if (provider === 'supabase') {
@@ -1046,6 +1276,169 @@ async function listUserInventoryItems(userId) {
   );
   return rows.map(normalizeInventoryEntry);
 }
+
+
+async function getUserInventoryItem(userId, inventoryItemId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', inventoryItemId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeInventoryEntry(data);
+  }
+
+  return normalizeInventoryEntry(await get(
+    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND id = ?',
+    [userId, inventoryItemId]
+  ));
+}
+
+async function listUserEquipmentSlots(userId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(normalizeEquipmentSlot);
+  }
+
+  const rows = await all(
+    'SELECT * FROM user_mercenary_equipment_slots WHERE user_id = ? ORDER BY updated_at DESC, created_at DESC',
+    [userId]
+  );
+  return rows.map(normalizeEquipmentSlot);
+}
+
+async function listEquipmentSlotsForMercenary(userId, userMercenaryId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('user_mercenary_id', String(userMercenaryId));
+    if (error) throw error;
+    return (data || []).map(normalizeEquipmentSlot);
+  }
+
+  const rows = await all(
+    'SELECT * FROM user_mercenary_equipment_slots WHERE user_id = ? AND user_mercenary_id = ?',
+    [userId, String(userMercenaryId)]
+  );
+  return rows.map(normalizeEquipmentSlot);
+}
+
+async function getEquipmentSlotByInventoryItemId(userId, inventoryItemId) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('inventory_item_id', inventoryItemId)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeEquipmentSlot(data);
+  }
+
+  return normalizeEquipmentSlot(await get(
+    'SELECT * FROM user_mercenary_equipment_slots WHERE user_id = ? AND inventory_item_id = ?',
+    [userId, inventoryItemId]
+  ));
+}
+
+async function getEquipmentSlot(userId, userMercenaryId, slot) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('user_mercenary_id', String(userMercenaryId))
+      .eq('slot', slot)
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeEquipmentSlot(data);
+  }
+
+  return normalizeEquipmentSlot(await get(
+    'SELECT * FROM user_mercenary_equipment_slots WHERE user_id = ? AND user_mercenary_id = ? AND slot = ?',
+    [userId, String(userMercenaryId), slot]
+  ));
+}
+
+async function equipInventoryItemSlot({ id, userId, userMercenaryId, slot, inventoryItemId, itemId, equipmentId }) {
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .insert({
+        id,
+        user_id: userId,
+        user_mercenary_id: String(userMercenaryId),
+        slot,
+        inventory_item_id: inventoryItemId,
+        item_id: itemId,
+        equipment_id: equipmentId
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeEquipmentSlot(data);
+  }
+
+  await run(
+    `INSERT INTO user_mercenary_equipment_slots
+     (id, user_id, user_mercenary_id, slot, inventory_item_id, item_id, equipment_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, userId, String(userMercenaryId), slot, inventoryItemId, itemId, equipmentId]
+  );
+  return getEquipmentSlot(userId, userMercenaryId, slot);
+}
+
+async function unequipInventoryItemSlot(userId, userMercenaryId, slot) {
+  const existing = await getEquipmentSlot(userId, userMercenaryId, slot);
+  if (!existing) return null;
+  if (provider === 'supabase') {
+    const { error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .delete()
+      .eq('user_id', userId)
+      .eq('user_mercenary_id', String(userMercenaryId))
+      .eq('slot', slot);
+    if (error) throw error;
+    return existing;
+  }
+
+  await run(
+    'DELETE FROM user_mercenary_equipment_slots WHERE user_id = ? AND user_mercenary_id = ? AND slot = ?',
+    [userId, String(userMercenaryId), slot]
+  );
+  return existing;
+}
+
+
+
+async function unequipAllInventoryItemSlotsForMercenary(userId, userMercenaryId) {
+  const existing = await listEquipmentSlotsForMercenary(userId, userMercenaryId);
+  if (provider === 'supabase') {
+    const { error } = await getSupabaseAdminClient()
+      .from('user_mercenary_equipment_slots')
+      .delete()
+      .eq('user_id', userId)
+      .eq('user_mercenary_id', String(userMercenaryId));
+    if (error) throw error;
+    return existing;
+  }
+
+  await run(
+    'DELETE FROM user_mercenary_equipment_slots WHERE user_id = ? AND user_mercenary_id = ?',
+    [userId, String(userMercenaryId)]
+  );
+  return existing;
+}
+
 
 async function addInventoryItem({ id, userId, itemId, itemType = 'misc', quantity = 1, locked = false, acquiredSourceType = null, acquiredSourceId = null, acquiredRunId = null, stackable = false }) {
   const safeQuantity = Math.max(1, Number(quantity || 1) || 1);
@@ -1766,6 +2159,9 @@ module.exports = {
   upsertRecruitBoard,
   listUserMercenaries,
   getUserMercenary,
+  setUserMercenaryLocked,
+  dismissUserMercenary,
+  removeOwnedMercenaryFromSquads,
   hasOwnedMercenary,
   createUserMercenary,
   updateUserMercenaryStatus,
@@ -1785,7 +2181,17 @@ module.exports = {
   getBattleRunByBattleId,
   createBattleRun,
   claimBattleRun,
+  listCombatStageClears,
+  upsertCombatStageClear,
   listUserInventoryItems,
+  getUserInventoryItem,
+  listUserEquipmentSlots,
+  listEquipmentSlotsForMercenary,
+  getEquipmentSlotByInventoryItemId,
+  getEquipmentSlot,
+  equipInventoryItemSlot,
+  unequipInventoryItemSlot,
+  unequipAllInventoryItemSlotsForMercenary,
   addInventoryItem,
   listActiveMissionOffers,
   getMissionOffer,

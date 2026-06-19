@@ -70,10 +70,14 @@ The equipment bundle uses empty arrays/maps if JSON fetch fails, so the mercenar
 
 Not implemented in this step:
 
-- Inventory database
-- Equipment ownership
-- Equip/unequip
 - Enhancement
 - Set effects
 - Applying equipment stats to combat
 - Connecting equipment to combat rewards
+
+
+## Equip / unequip 0.1
+
+Runtime equipment ownership is stored in `user_mercenary_inventory_items`, and per-mercenary equipped slots are stored in `user_mercenary_equipment_slots`. One mercenary can equip one item per slot, and one inventory entry can only be equipped once.
+
+Equipment bonuses are shown in mercenary detail, inventory detail, and battle board party power. As of equipment combat 0.2, equipped HP/ATK/DEF/SPD/TEC/SUP bonuses are snapshotted at battle start and applied to client battle units. Accuracy, evasion, critical, and healing modifiers are still snapshot/display-only and are reserved for a later combat formula pass.

@@ -11,6 +11,7 @@ const SHEET_NAMES = {
   enemyTemplates: '\uC801 \uD15C\uD50C\uB9BF',
   encounters: '\uC804\uD22C \uC778\uCE74\uC6B4\uD130',
   encounterEnemies: '\uC804\uD22C \uC778\uCE74\uC6B4\uD130 \uD3B8\uC131',
+  combatStages: '\uC804\uD22C \uC2A4\uD14C\uC774\uC9C0 \uB9C8\uC2A4\uD130',
   combatRewards: '\uC804\uD22C \uBCF4\uC0C1 \uD480',
   combatRules: '\uC804\uD22C \uADDC\uCE59',
   combatLogs: '\uC804\uD22C \uB85C\uADF8 \uBB38\uAD6C'
@@ -565,33 +566,300 @@ function normalizeEncounterEnemyRow(row, headerMap, rowNumber) {
 function normalizeCombatRewardRow(row, headerMap, rowNumber) {
   const exported = parseExportObject(row, headerMap, SHEET_NAMES.combatRewards, rowNumber);
   if (exported) {
+    const equipmentItemId = normalizeId(exported.equipmentItemId || exported.equipment_item_id);
+    const materialItemId = normalizeId(exported.materialItemId || exported.material_item_id);
+    const itemId = normalizeId(exported.itemId || exported.item_id || equipmentItemId || materialItemId);
+    const weight = parseNumber(exported.weight, 0);
     return {
       ...exported,
       rewardGroupId: normalizeId(exported.rewardGroupId),
       rewardType: normalizeId(exported.rewardType),
-      weight: parseNumber(exported.weight, 0),
+      weight,
+      dropRate: parseNumber(exported.dropRate ?? exported.drop_rate ?? weight, weight),
       gold: parseInteger(exported.gold, 0),
       officeExp: parseInteger(exported.officeExp, 0),
       mercExp: parseInteger(exported.mercExp ?? exported.mercenaryExp, 0),
+      itemId,
+      equipmentItemId,
+      materialItemId,
       enabled: exported.enabled !== false
     };
   }
+  const weight = parseNumber(firstCell(row, headerMap, ['가중치', 'weight']), 0);
+  const equipmentItemId = normalizeId(firstCell(row, headerMap, ['장비 item_id', 'equipmentItemId', 'equipment_item_id']));
+  const materialItemId = normalizeId(firstCell(row, headerMap, ['재료 item_id', 'materialItemId', 'material_item_id']));
+  const itemId = normalizeId(firstCell(row, headerMap, ['item_id', 'itemId'], equipmentItemId || materialItemId));
   return {
     rewardGroupId: normalizeId(firstCell(row, headerMap, ['reward_group_id', 'rewardGroupId'])),
     rewardType: normalizeId(firstCell(row, headerMap, ['reward_type', 'rewardType'])),
-    weight: parseNumber(firstCell(row, headerMap, ['가중치', 'weight']), 0),
+    weight,
+    dropRate: parseNumber(firstCell(row, headerMap, ['dropRate', 'drop_rate'], weight), weight),
     gold: parseInteger(firstCell(row, headerMap, ['골드', 'gold']), 0),
     officeExp: parseInteger(firstCell(row, headerMap, ['사무소 EXP', 'officeExp']), 0),
     mercExp: parseInteger(firstCell(row, headerMap, ['용병 EXP', 'mercExp', 'mercenaryExp']), 0),
-    equipmentItemId: normalizeId(firstCell(row, headerMap, ['장비 item_id', 'equipmentItemId'])),
-    materialItemId: normalizeId(firstCell(row, headerMap, ['재료 item_id', 'materialItemId'])),
+    itemId,
+    equipmentItemId,
+    materialItemId,
     rumorSeedId: normalizeId(firstCell(row, headerMap, ['소문 seed_id', 'rumorSeedId'])),
     caseId: normalizeId(firstCell(row, headerMap, ['사건 case_id', 'caseId'])),
     resultText: String(firstCell(row, headerMap, ['결과 문구', 'resultText'])).trim(),
+    notes: String(firstCell(row, headerMap, ['비고', 'notes'])).trim(),
     iconKey: normalizeId(firstCell(row, headerMap, ['reward_icon_key', 'iconKey'])),
     systemRequirement: normalizeId(firstCell(row, headerMap, ['시스템 요구', 'systemRequirement'])),
     enabled: parseBoolean(firstCell(row, headerMap, ['활성 상태', 'enabled'], 'true'))
   };
+}
+
+function parseOptionalExportJson(row, headerMap) {
+  const text = String(firstCell(row, headerMap, ['export_json', 'exportJson']) || '').trim();
+  if (!text || text === '{}') return {};
+  if (!/^[{\[]/.test(text)) return {};
+  const parsed = parseJsonCell(text, null);
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+}
+
+function normalizeCombatStageRow(row, headerMap, rowNumber) {
+  const stageId = normalizeId(firstCell(row, headerMap, ['stage_id', 'stageId']));
+  const exported = parseOptionalExportJson(row, headerMap);
+  const stage = {
+    id: stageId,
+    stageId,
+    enabled: parseBoolean(firstCell(row, headerMap, ['\uC0AC\uC6A9 \uC5EC\uBD80', 'enabled'], 'true')),
+    generatedMissionId: normalizeId(firstCell(row, headerMap, ['generated_mission_id', 'generatedMissionId'])),
+    baseMissionId: normalizeId(firstCell(row, headerMap, ['base_mission_id', 'baseMissionId'])),
+    stageNumber: String(firstCell(row, headerMap, ['\uC2A4\uD14C\uC774\uC9C0 \uBC88\uD638', 'stage_number', 'stageNumber']) || '').trim(),
+    title: String(firstCell(row, headerMap, ['\uC2A4\uD14C\uC774\uC9C0\uBA85', 'stage_name', 'title'])).trim(),
+    difficultyTier: String(firstCell(row, headerMap, ['\uB09C\uC774\uB3C4 \uD2F0\uC5B4', 'difficulty_tier', 'difficultyTier'])).trim(),
+    requiredOfficeLevel: parseInteger(firstCell(row, headerMap, ['\uD544\uC694 \uC0AC\uBB34\uC18C Lv', 'requiredOfficeLevel']), 1),
+    recommendedPower: parseInteger(firstCell(row, headerMap, ['\uAD8C\uC7A5 \uC804\uD22C\uB825', 'recommendedPower']), 0),
+    baseEncounterId: normalizeId(firstCell(row, headerMap, ['base_encounter_id', 'baseEncounterId'])),
+    generatedEncounterId: normalizeId(firstCell(row, headerMap, ['generated_encounter_id', 'generatedEncounterId'])),
+    baseRewardGroupId: normalizeId(firstCell(row, headerMap, ['base_reward_group_id', 'baseRewardGroupId'])),
+    generatedRewardGroupId: normalizeId(firstCell(row, headerMap, ['generated_reward_group_id', 'generatedRewardGroupId'])),
+    enemyLevelBonus: parseInteger(firstCell(row, headerMap, ['enemy_level_bonus', 'enemyLevelBonus']), 0),
+    enemyHpMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_hp_multiplier', 'enemyHpMultiplier']), 1),
+    enemyAtkMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_atk_multiplier', 'enemyAtkMultiplier']), 1),
+    enemyDefMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_def_multiplier', 'enemyDefMultiplier']), 1),
+    enemySpdMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_spd_multiplier', 'enemySpdMultiplier']), 1),
+    enemyTecMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_tec_multiplier', 'enemyTecMultiplier']), 1),
+    enemySupMultiplier: parseNumber(firstCell(row, headerMap, ['enemy_sup_multiplier', 'enemySupMultiplier']), 1),
+    enemyCountBonus: parseInteger(firstCell(row, headerMap, ['enemy_count_bonus', 'enemyCountBonus']), 0),
+    bossEnemyId: normalizeId(firstCell(row, headerMap, ['boss_enemy_id', 'bossEnemyId'])),
+    bossCount: parseInteger(firstCell(row, headerMap, ['boss_count', 'bossCount']), 0),
+    goldMultiplier: parseNumber(firstCell(row, headerMap, ['gold_multiplier', 'goldMultiplier']), 1),
+    officeExpMultiplier: parseNumber(firstCell(row, headerMap, ['office_exp_multiplier', 'officeExpMultiplier']), 1),
+    mercenaryExpMultiplier: parseNumber(firstCell(row, headerMap, ['mercenary_exp_multiplier', 'mercenaryExpMultiplier']), 1),
+    dropRateMultiplier: parseNumber(firstCell(row, headerMap, ['drop_rate_multiplier', 'dropRateMultiplier']), 1),
+    injuryRiskMultiplier: parseNumber(firstCell(row, headerMap, ['\uBD80\uC0C1 \uC704\uD5D8 \uBC30\uC728', 'injuryRiskMultiplier']), 1),
+    unlockCondition: String(firstCell(row, headerMap, ['\uD574\uAE08 \uC870\uAC74', 'unlockCondition'])).trim(),
+    displayText: String(firstCell(row, headerMap, ['\uD45C\uC2DC \uBB38\uAD6C', 'displayText'])).trim(),
+    notes: String(firstCell(row, headerMap, ['\uBE44\uACE0', 'notes'])).trim(),
+    sourceRow: rowNumber
+  };
+  return {
+    ...stage,
+    ...exported,
+    id: exported.id || stage.id,
+    stageId: exported.stageId || stage.stageId,
+    generatedMissionId: normalizeId(exported.generatedMissionId || stage.generatedMissionId),
+    generatedEncounterId: normalizeId(exported.generatedEncounterId || stage.generatedEncounterId),
+    generatedRewardGroupId: normalizeId(exported.generatedRewardGroupId || stage.generatedRewardGroupId)
+  };
+}
+
+function buildStageModifier(stage) {
+  return {
+    stageId: stage.stageId,
+    enemyLevelBonus: stage.enemyLevelBonus,
+    hpMultiplier: stage.enemyHpMultiplier,
+    atkMultiplier: stage.enemyAtkMultiplier,
+    defMultiplier: stage.enemyDefMultiplier,
+    spdMultiplier: stage.enemySpdMultiplier,
+    tecMultiplier: stage.enemyTecMultiplier,
+    supMultiplier: stage.enemySupMultiplier
+  };
+}
+
+function multiplyInteger(value, multiplier) {
+  const base = Number(value || 0) || 0;
+  const factor = Number(multiplier || 1) || 1;
+  return Math.max(0, Math.round(base * factor));
+}
+
+function inferEquipmentRewardGrade(reward = {}) {
+  const text = String(reward.itemId || reward.equipmentItemId || '').toLowerCase();
+  if (text.startsWith('eq_ex_')) return 'EX';
+  if (text.startsWith('eq_ssr_')) return 'SSR';
+  if (text.startsWith('eq_sr_')) return 'SR';
+  if (text.startsWith('eq_r_')) return 'R';
+  if (text.startsWith('eq_n_')) return 'N';
+  return '';
+}
+
+function clampEquipmentDropRate(reward, dropRate) {
+  const rewardType = String(reward?.rewardType || '').toLowerCase();
+  if (rewardType !== 'equipment') return dropRate;
+  const grade = inferEquipmentRewardGrade(reward);
+  if (grade === 'N') return Math.min(dropRate, 25);
+  if (grade === 'R') return Math.min(dropRate, 18);
+  if (grade === 'SR') return Math.min(dropRate, 3);
+  if (grade === 'SSR' || grade === 'EX') return 0;
+  return dropRate;
+}
+
+function deriveCombatStageExports({ stages, combatMissions, encounters, encounterEnemies, combatRewards }) {
+  const missionById = new Map(combatMissions.map((item) => [item.missionId, item]));
+  const encounterById = new Map(encounters.map((item) => [item.encounterId, item]));
+  const enemiesByEncounterId = new Map();
+  encounterEnemies.forEach((row) => {
+    const key = row.encounterId;
+    if (!enemiesByEncounterId.has(key)) enemiesByEncounterId.set(key, []);
+    enemiesByEncounterId.get(key).push(row);
+  });
+  const rewardsByGroupId = new Map();
+  combatRewards.forEach((row) => {
+    const key = row.rewardGroupId;
+    if (!rewardsByGroupId.has(key)) rewardsByGroupId.set(key, []);
+    rewardsByGroupId.get(key).push(row);
+  });
+
+  const derived = { missions: [], encounters: [], encounterEnemies: [], rewards: [], warnings: [] };
+  stages.filter((stage) => stage.enabled !== false).forEach((stage) => {
+    const baseMission = missionById.get(stage.baseMissionId);
+    const baseEncounter = encounterById.get(stage.baseEncounterId);
+    const baseEnemyRows = enemiesByEncounterId.get(stage.baseEncounterId) || [];
+    const baseRewardRows = rewardsByGroupId.get(stage.baseRewardGroupId) || [];
+    if (!baseMission) {
+      derived.warnings.push(`stage ${stage.stageId}: missing base mission ${stage.baseMissionId}`);
+      return;
+    }
+    if (!baseEncounter) {
+      derived.warnings.push(`stage ${stage.stageId}: missing base encounter ${stage.baseEncounterId}`);
+      return;
+    }
+    if (!baseEnemyRows.length) {
+      derived.warnings.push(`stage ${stage.stageId}: missing base encounter enemies ${stage.baseEncounterId}`);
+      return;
+    }
+    if (!baseRewardRows.length) {
+      derived.warnings.push(`stage ${stage.stageId}: missing base reward group ${stage.baseRewardGroupId}`);
+      return;
+    }
+
+    const stageNotes = [`derived from ${stage.baseMissionId}`, `stage ${stage.stageId}`, stage.notes].filter(Boolean).join(' | ');
+    derived.missions.push({
+      ...baseMission,
+      id: stage.generatedMissionId,
+      missionId: stage.generatedMissionId,
+      operationId: stage.generatedMissionId,
+      title: stage.title || baseMission.title,
+      requiredOfficeLevel: stage.requiredOfficeLevel,
+      recommendedPower: stage.recommendedPower,
+      encounterId: stage.generatedEncounterId,
+      rewardGroupId: stage.generatedRewardGroupId,
+      injuryRiskPercent: Math.max(0, Math.round(Number(baseMission.injuryRiskPercent || 0) * Number(stage.injuryRiskMultiplier || 1))),
+      unlockCondition: stage.unlockCondition,
+      displayText: stage.displayText || baseMission.displayText,
+      sourceStatus: 'stage_derived',
+      isStageMission: true,
+      baseMissionId: stage.baseMissionId,
+      stageId: stage.stageId,
+      stageNumber: stage.stageNumber,
+      stageTier: stage.difficultyTier,
+      difficultyTier: stage.difficultyTier,
+      generatedMissionId: stage.generatedMissionId,
+      generatedEncounterId: stage.generatedEncounterId,
+      generatedRewardGroupId: stage.generatedRewardGroupId,
+      notes: stageNotes
+    });
+
+    const baseEnemyLevel = Number(baseEncounter.enemyLevel || 1) || 1;
+    const stageModifier = buildStageModifier(stage);
+    derived.encounters.push({
+      ...baseEncounter,
+      id: stage.generatedEncounterId,
+      encounterId: stage.generatedEncounterId,
+      title: stage.title || `${baseEncounter.title || stage.baseEncounterId} Stage ${stage.stageNumber}`,
+      enemyLevel: Math.max(1, baseEnemyLevel + Number(stage.enemyLevelBonus || 0)),
+      rewardGroupId: stage.generatedRewardGroupId,
+      stageId: stage.stageId,
+      baseEncounterId: stage.baseEncounterId,
+      stageModifiers: stageModifier,
+      exportStatus: 'stage_derived',
+      notes: stageNotes
+    });
+
+    let maxOrder = 0;
+    let maxEnemyLevel = 1;
+    baseEnemyRows.forEach((row) => {
+      const baseLevel = Number(row.enemyLevel || baseEncounter.enemyLevel || 1) || 1;
+      const order = Number(row.order || 0) || 0;
+      maxOrder = Math.max(maxOrder, order);
+      maxEnemyLevel = Math.max(maxEnemyLevel, baseLevel);
+      derived.encounterEnemies.push({
+        ...row,
+        encounterId: stage.generatedEncounterId,
+        slot: `${row.slot || row.enemyId}_stage_${stage.stageNumber || stage.stageId}`,
+        order,
+        count: Math.max(1, Number(row.count || 1) + Number(stage.enemyCountBonus || 0)),
+        enemyLevel: Math.max(1, baseLevel + Number(stage.enemyLevelBonus || 0)),
+        rewardGroupId: stage.generatedRewardGroupId,
+        stageId: stage.stageId,
+        baseEncounterId: stage.baseEncounterId,
+        stageModifiers: stageModifier,
+        notes: [row.notes, stageNotes].filter(Boolean).join(' | ')
+      });
+    });
+
+    if (stage.bossEnemyId && Number(stage.bossCount || 0) > 0) {
+      derived.encounterEnemies.push({
+        encounterId: stage.generatedEncounterId,
+        enabled: true,
+        slot: `boss_01_${stage.stageId}`,
+        order: maxOrder + 10,
+        enemyId: stage.bossEnemyId,
+        count: Math.max(1, Number(stage.bossCount || 1) || 1),
+        enemyLevel: Math.max(1, maxEnemyLevel + Number(stage.enemyLevelBonus || 0)),
+        positionKey: 'front',
+        role: 'boss',
+        grade: '',
+        roleModifierKey: 'boss',
+        spawnGroup: 'boss',
+        isBoss: true,
+        rewardGroupId: stage.generatedRewardGroupId,
+        battleRuleId: baseEnemyRows[0]?.battleRuleId || baseEncounter.battleRuleId || '',
+        backgroundKey: baseEnemyRows[0]?.backgroundKey || baseEncounter.backgroundKey || '',
+        stageId: stage.stageId,
+        baseEncounterId: stage.baseEncounterId,
+        stageModifiers: stageModifier,
+        notes: stageNotes
+      });
+    }
+
+    baseRewardRows.forEach((reward) => {
+      const rewardType = String(reward.rewardType || '').toLowerCase();
+      const isDrop = ['material', 'equipment', 'drop', 'case_clue', 'rumor_seed'].some((key) => rewardType.includes(key));
+      const stageDropRate = isDrop
+        ? clampEquipmentDropRate(reward, parseNumber(reward.dropRate ?? reward.weight, 0) * Number(stage.dropRateMultiplier || 1))
+        : reward.dropRate;
+      derived.rewards.push({
+        ...reward,
+        rewardGroupId: stage.generatedRewardGroupId,
+        gold: multiplyInteger(reward.gold, stage.goldMultiplier),
+        officeExp: multiplyInteger(reward.officeExp, stage.officeExpMultiplier),
+        mercExp: multiplyInteger(reward.mercExp ?? reward.mercenaryExp, stage.mercenaryExpMultiplier),
+        mercenaryExp: multiplyInteger(reward.mercenaryExp ?? reward.mercExp, stage.mercenaryExpMultiplier),
+        weight: isDrop ? stageDropRate : reward.weight,
+        dropRate: stageDropRate,
+        amountMin: reward.amountMin !== undefined ? multiplyInteger(reward.amountMin, isDrop ? stage.dropRateMultiplier : 1) : reward.amountMin,
+        amountMax: reward.amountMax !== undefined ? multiplyInteger(reward.amountMax, isDrop ? stage.dropRateMultiplier : 1) : reward.amountMax,
+        stageId: stage.stageId,
+        baseRewardGroupId: stage.baseRewardGroupId,
+        notes: [reward.notes, stageNotes].filter(Boolean).join(' | ')
+      });
+    });
+  });
+  return derived;
 }
 
 function normalizeCombatRuleRow(row, headerMap, rowNumber) {
@@ -720,6 +988,20 @@ function validateCombatExports({ combatMissions, enemyTemplates, encounters, enc
   combatLogs.forEach((log) => {
     if (!log.id || !log.logGroupId || !log.logType || !log.template) warnings.push(`combat log row ${log.sourceRow || '?'}: missing required field`);
   });
+  const inventoryRewardTypes = new Set(['material', 'equipment', 'item', 'drop']);
+  combatRewards.forEach((reward) => {
+    if (reward.enabled === false) return;
+    const rewardType = String(reward.rewardType || '').toLowerCase();
+    if (!inventoryRewardTypes.has(rewardType)) return;
+    const itemId = reward.itemId || reward.equipmentItemId || reward.materialItemId || '';
+    if (!itemId) warnings.push(`combat reward ${reward.rewardGroupId}/${rewardType}: missing itemId`);
+    if (rewardType === 'equipment') {
+      const grade = inferEquipmentRewardGrade(reward);
+      const dropRate = parseNumber(reward.dropRate ?? reward.weight, 0);
+      if (grade === 'SSR' || grade === 'EX') warnings.push(`combat reward ${reward.rewardGroupId}: ${grade} equipment is not allowed in normal combat drops (${itemId})`);
+      if (grade === 'SR' && dropRate > 3) warnings.push(`combat reward ${reward.rewardGroupId}: SR equipment dropRate ${dropRate} exceeds 3% clamp (${itemId})`);
+    }
+  });
   return { warnings, missingActionSkillIds, missingBasicAttackIds };
 }
 
@@ -765,7 +1047,7 @@ async function main() {
 
   const combatMissionRows = await fetchSheetRows(SHEET_NAMES.combatMissions);
   const combatMissionTable = rowsToObjects(combatMissionRows, ['mission_id']);
-  const combatMissions = combatMissionTable.dataRows
+  let combatMissions = combatMissionTable.dataRows
     .map((row, index) => normalizeCombatMissionRow(row, combatMissionTable.headerMap, index + 1))
     .filter((item) => item.missionId);
 
@@ -777,21 +1059,38 @@ async function main() {
 
   const encounterRows = await fetchSheetRows(SHEET_NAMES.encounters);
   const encounterTable = rowsToObjects(encounterRows, ['encounter_id']);
-  const encounters = encounterTable.dataRows
+  let encounters = encounterTable.dataRows
     .map((row, index) => normalizeEncounterRow(row, encounterTable.headerMap, index + 1))
     .filter((item) => item.encounterId);
 
   const encounterEnemyRows = await fetchSheetRows(SHEET_NAMES.encounterEnemies);
   const encounterEnemyTable = rowsToObjects(encounterEnemyRows, ['encounter_id', 'enemy_id']);
-  const encounterEnemies = encounterEnemyTable.dataRows
+  let encounterEnemies = encounterEnemyTable.dataRows
     .map((row, index) => normalizeEncounterEnemyRow(row, encounterEnemyTable.headerMap, index + 1))
     .filter((item) => item.encounterId && item.enemyId);
 
   const combatRewardRows = await fetchSheetRows(SHEET_NAMES.combatRewards);
   const combatRewardTable = rowsToObjects(combatRewardRows, ['reward_group_id']);
-  const combatRewards = combatRewardTable.dataRows
+  let combatRewards = combatRewardTable.dataRows
     .map((row, index) => normalizeCombatRewardRow(row, combatRewardTable.headerMap, index + 1))
-    .filter((item) => item.rewardGroupId && item.rewardType);
+    .filter((item) => item.rewardGroupId && item.rewardType && item.enabled !== false);
+
+  const combatStageRows = await fetchSheetRows(SHEET_NAMES.combatStages);
+  const combatStageTable = rowsToObjects(combatStageRows, ['stage_id', 'generated_mission_id']);
+  const combatStages = combatStageTable.dataRows
+    .map((row, index) => normalizeCombatStageRow(row, combatStageTable.headerMap, index + 1))
+    .filter((item) => item.stageId && item.generatedMissionId);
+  const derivedStages = deriveCombatStageExports({
+    stages: combatStages,
+    combatMissions,
+    encounters,
+    encounterEnemies,
+    combatRewards
+  });
+  combatMissions = [...combatMissions, ...derivedStages.missions];
+  encounters = [...encounters, ...derivedStages.encounters];
+  encounterEnemies = [...encounterEnemies, ...derivedStages.encounterEnemies];
+  combatRewards = [...combatRewards, ...derivedStages.rewards];
 
   const combatRuleRows = await fetchSheetRows(SHEET_NAMES.combatRules);
   const combatRuleTable = rowsToObjects(combatRuleRows, ['battle_rule_id']);
@@ -818,6 +1117,11 @@ async function main() {
   });
   const combatLogGroups = [...new Set(combatLogs.map((log) => log.logGroupId).filter(Boolean))].sort();
   const combatLogTypes = [...new Set(combatLogs.map((log) => log.logType).filter(Boolean))].sort();
+  const inventoryRewardTypes = new Set(['material', 'equipment', 'item', 'drop']);
+  const inventoryRewards = combatRewards.filter((reward) => (
+    reward.enabled !== false
+    && inventoryRewardTypes.has(String(reward.rewardType || '').toLowerCase())
+  ));
   const validationReport = {
     generatedAt: new Date().toISOString(),
     combatLogs: {
@@ -826,11 +1130,27 @@ async function main() {
       groups: combatLogGroups,
       logTypes: combatLogTypes
     },
+    combatStages: {
+      sourceRows: combatStages.length,
+      enabled: combatStages.filter((stage) => stage.enabled !== false).length,
+      generatedMissions: derivedStages.missions.length,
+      generatedEncounters: derivedStages.encounters.length,
+      generatedEncounterEnemies: derivedStages.encounterEnemies.length,
+      generatedRewards: derivedStages.rewards.length
+    },
     enemySkills: {
       missingActionSkillIds: combatValidation.missingActionSkillIds,
       missingBasicAttackIds: combatValidation.missingBasicAttackIds
     },
-    warnings: combatValidation.warnings
+    inventoryRewards: {
+      enabledRows: inventoryRewards.length,
+      equipmentRows: inventoryRewards.filter((reward) => reward.rewardType === 'equipment').length,
+      materialRows: inventoryRewards.filter((reward) => reward.rewardType === 'material').length,
+      srEquipmentRows: inventoryRewards.filter((reward) => reward.rewardType === 'equipment' && inferEquipmentRewardGrade(reward) === 'SR').length,
+      ssrEquipmentRows: inventoryRewards.filter((reward) => reward.rewardType === 'equipment' && inferEquipmentRewardGrade(reward) === 'SSR').length,
+      exEquipmentRows: inventoryRewards.filter((reward) => reward.rewardType === 'equipment' && inferEquipmentRewardGrade(reward) === 'EX').length
+    },
+    warnings: [...derivedStages.warnings, ...combatValidation.warnings]
   };
 
   writeJsonAtomic(OUTPUT_PATHS.mercenaries, mercenaries);
@@ -857,7 +1177,10 @@ async function main() {
   console.log(`Wrote ${combatRewards.length} combat rewards to ${OUTPUT_PATHS.combatRewards}`);
   console.log(`Wrote ${combatRules.length} combat rules to ${OUTPUT_PATHS.combatRules}`);
   console.log(`Wrote ${combatLogs.length} combat logs to ${OUTPUT_PATHS.combatLogs}`);
+  console.log(`Derived ${derivedStages.missions.length} combat stage missions from ${combatStages.length} stage rows`);
+  console.log(`Enabled inventory combat reward rows: ${inventoryRewards.length}`);
   console.log(`Wrote combat validation report to ${VALIDATION_REPORT_PATH}`);
+  derivedStages.warnings.forEach((warning) => console.warn(`[combat stage warning] ${warning}`));
   combatValidation.warnings.forEach((warning) => console.warn(`[combat export warning] ${warning}`));
 }
 
@@ -869,6 +1192,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  main,
   parseCsv,
   parseTags,
   parseBoolean,
@@ -881,6 +1205,8 @@ module.exports = {
   normalizeSkillRow,
   normalizeStatusEffectRow,
   normalizeCombatMissionRow,
+  normalizeCombatStageRow,
+  deriveCombatStageExports,
   normalizeEnemyTemplateRow,
   normalizeEncounterRow,
   normalizeEncounterEnemyRow,

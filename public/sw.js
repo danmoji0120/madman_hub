@@ -1,4 +1,4 @@
-const CACHE_NAME = 'madmen-hub-static-v290';
+const CACHE_NAME = 'madmen-hub-static-v304';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -32,25 +32,12 @@ const PRECACHE_URLS = [
   '/data/mercenary.items.master.json',
   '/data/mercenary.equipment.master.json',
   '/data/mercenary.equipment-image-prompts.master.json',
-  '/assets/mercenary/sfx/ui/button_click.mp3',
-  '/assets/mercenary/sfx/ui/button_hover.mp3',
-  '/assets/mercenary/sfx/battle/attack_normal.mp3',
-  '/assets/mercenary/sfx/battle/attack_critical.mp3',
-  '/assets/mercenary/sfx/battle/attack_magic.mp3',
-  '/assets/mercenary/sfx/battle/attack_ranged.mp3',
-  '/assets/mercenary/sfx/battle/heal.mp3',
-  '/assets/mercenary/sfx/battle/miss.mp3',
-  '/assets/mercenary/sfx/battle/hit_light.mp3',
-  '/assets/mercenary/sfx/battle/hit_heavy.mp3',
-  '/assets/mercenary/sfx/battle/battle_victory.mp3',
-  '/assets/mercenary/sfx/battle/battle_defeat.mp3',
-  '/assets/mercenary/bgm/battle_01.mp3',
-  '/assets/mercenary/bgm/battle_02.mp3',
   '/icons/icon.svg',
   '/icons/maskable-icon.svg'
 ];
 
-const STATIC_ASSET_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|mp3|woff2?|ttf|otf|webmanifest)$/i;
+const STATIC_ASSET_PATTERN = /\.(?:css|js|mjs|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|otf|webmanifest)$/i;
+const AUDIO_ASSET_PATTERN = /\.(?:mp3|ogg|wav|m4a|flac)$/i;
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -66,11 +53,23 @@ function isSensitiveRequest(request, url) {
   return false;
 }
 
+function isRangeRequest(request) {
+  return request.headers.has('range');
+}
+
+function isAudioAsset(url) {
+  return AUDIO_ASSET_PATTERN.test(url.pathname);
+}
+
 async function fetchAndCache(request) {
   const response = await fetch(request);
-  if (response && response.ok && response.type === 'basic') {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(request, response.clone());
+  if (response && response.status === 200 && response.type === 'basic') {
+    try {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, response.clone());
+    } catch (cacheError) {
+      console.warn('[sw] cache put skipped:', request.url, cacheError);
+    }
   }
   return response;
 }
@@ -114,6 +113,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  if (isRangeRequest(request) || isAudioAsset(url)) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   if (isSensitiveRequest(request, url)) {
     event.respondWith(fetch(request));

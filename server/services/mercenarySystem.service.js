@@ -11,6 +11,7 @@ const CASE_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.cases
 const COMBAT_MISSION_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-missions.master.json');
 const COMBAT_REWARD_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.combat-rewards.master.json');
 const ITEM_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.items.master.json');
+const EQUIPMENT_SLOT_KEYS = ['weapon', 'armor', 'accessory', 'tool'];
 const EQUIPMENT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment.master.json');
 const EQUIPMENT_IMAGE_PROMPT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment-image-prompts.master.json');
 const REMOVED_LEGACY_BATTLE_OPERATION_IDS = new Set([
@@ -1055,6 +1056,108 @@ function readCombatRewardData() {
   return combatRewardCache;
 }
 
+function getCombatMissionByOperationId(operationId) {
+  const safeOperationId = String(operationId || '').trim();
+  return readCombatMissionData().find((item) => item.enabled && (
+    item.operationId === safeOperationId ||
+    item.missionId === safeOperationId ||
+    item.id === safeOperationId
+  )) || null;
+}
+
+function splitUnlockConditions(unlockCondition) {
+  const text = String(unlockCondition || '').trim();
+  if (!text || text === 'default') return [];
+  return text.split(';').map((item) => item.trim()).filter(Boolean);
+}
+
+function buildStageClearMaps(clears = []) {
+  return {
+    byMissionId: new Map(clears.map((item) => [String(item.missionId || ''), item])),
+    byStageId: new Map(clears.map((item) => [String(item.stageId || ''), item]))
+  };
+}
+
+function getStageUnlockReasons({ mission, profile, clears }) {
+  if (!mission?.stageId && !mission?.isStageMission) return [];
+  const reasons = [];
+  const officeLevel = Number(profile?.officeLevel || 1) || 1;
+  const requiredOfficeLevel = Math.max(1, Number(mission.requiredOfficeLevel || 1) || 1);
+  if (officeLevel < requiredOfficeLevel) {
+    reasons.push({
+      code: 'OFFICE_LEVEL_REQUIRED',
+      message: `office_level>=${requiredOfficeLevel}`,
+      requiredOfficeLevel,
+      currentOfficeLevel: officeLevel
+    });
+  }
+
+  const clearMaps = buildStageClearMaps(clears);
+  for (const condition of splitUnlockConditions(mission.unlockCondition)) {
+    if (condition === 'default') continue;
+    if (condition.startsWith('clear:')) {
+      const requiredMissionId = condition.slice('clear:'.length).trim();
+      if (!clearMaps.byMissionId.has(requiredMissionId) && !clearMaps.byStageId.has(requiredMissionId)) {
+        reasons.push({ code: 'CLEAR_REQUIRED', message: condition, requiredMissionId });
+      }
+      continue;
+    }
+    const officeMatch = condition.match(/^office_level\s*>=\s*(\d+)$/i);
+    if (officeMatch) {
+      const required = Number(officeMatch[1] || 0);
+      if (officeLevel < required) {
+        reasons.push({
+          code: 'OFFICE_LEVEL_REQUIRED',
+          message: condition,
+          requiredOfficeLevel: required,
+          currentOfficeLevel: officeLevel
+        });
+      }
+      continue;
+    }
+    if (condition.startsWith('rumor_seed:')) {
+      reasons.push({ code: 'RUMOR_SEED_REQUIRED', message: condition });
+      continue;
+    }
+    if (condition.startsWith('case_or_rumor:')) {
+      reasons.push({ code: 'CASE_OR_RUMOR_REQUIRED', message: condition });
+      continue;
+    }
+    reasons.push({ code: 'UNSUPPORTED_UNLOCK_CONDITION', message: condition });
+  }
+  return reasons;
+}
+
+async function assertCombatStageUnlocked(userId, mission) {
+  if (!mission?.stageId && !mission?.isStageMission) return { ok: true, reasons: [] };
+  const [profile, clears] = await Promise.all([
+    getOrCreateMercenaryProfile(userId),
+    repo.listCombatStageClears(userId)
+  ]);
+  const reasons = getStageUnlockReasons({ mission, profile, clears });
+  if (reasons.length) {
+    const error = httpError(403, 'Locked combat stage.', 'STAGE_LOCKED');
+    error.reasons = reasons;
+    throw error;
+  }
+  return { ok: true, reasons: [] };
+}
+
+async function listCombatStageClears(userId) {
+  return { clears: await repo.listCombatStageClears(userId) };
+}
+
+function getBattleRoundCount(battleResult = {}) {
+  const directRoundCount = Number(battleResult.roundCount ?? (typeof battleResult.rounds === 'number' ? battleResult.rounds : 0));
+  if (Number.isFinite(directRoundCount) && directRoundCount > 0) return directRoundCount;
+  if (Array.isArray(battleResult.rounds)) return battleResult.rounds.length;
+  if (Array.isArray(battleResult.actions)) {
+    const rounds = new Set(battleResult.actions.map((action) => Number(action?.round || 0)).filter(Boolean));
+    return rounds.size || null;
+  }
+  return null;
+}
+
 
 
 function readItemMasterData() {
@@ -1785,17 +1888,72 @@ async function lockOwnedMercenaryForActivity(userId, ownedMercenaryId, {
   return updated;
 }
 
+
+function assertOwnedMercenaryVisible(owned) {
+  if (!owned || owned.dismissedAt || String(owned.operationalStatus || '') === 'dismissed') {
+    throw httpError(404, 'Owned mercenary not found.', 'OWNED_MERCENARY_NOT_FOUND');
+  }
+}
+
+function assertMercenaryCanDismiss(owned) {
+  assertOwnedMercenaryVisible(owned);
+  if (owned.isLocked || owned.locked) throw httpError(409, '잠금 상태인 용병은 해고할 수 없습니다.', 'MERCENARY_LOCKED');
+  if (String(owned.operationalStatus || 'idle') !== 'idle') {
+    throw httpError(409, '진행 중인 활동이 있어 해고할 수 없습니다.', 'MERCENARY_BUSY');
+  }
+}
+
+async function setOwnedMercenaryLock(userId, ownedMercenaryId, locked) {
+  const owned = await repo.getUserMercenary(userId, ownedMercenaryId);
+  assertOwnedMercenaryVisible(owned);
+  if (typeof locked !== 'boolean') throw httpError(400, 'locked must be boolean.', 'INVALID_LOCK_VALUE');
+  const updated = await repo.setUserMercenaryLocked(userId, ownedMercenaryId, locked);
+  const master = masterById().get(updated?.mercenaryId);
+  return {
+    ok: true,
+    mercenary: buildOwnedMercenaryItem(updated, master),
+    locked: Boolean(updated?.isLocked)
+  };
+}
+
+async function dismissOwnedMercenary(userId, ownedMercenaryId, payload = {}) {
+  const owned = await repo.getUserMercenary(userId, ownedMercenaryId);
+  assertMercenaryCanDismiss(owned);
+  const master = masterById().get(owned.mercenaryId);
+  const displayName = String(master?.name || owned.mercenaryId || '').trim();
+  const confirmName = String(payload.confirmName || '').trim();
+  if (!confirmName || confirmName !== displayName) {
+    throw httpError(400, '용병명을 정확히 입력해야 합니다.', 'CONFIRM_NAME_MISMATCH');
+  }
+  const unequippedItems = await repo.unequipAllInventoryItemSlotsForMercenary(userId, ownedMercenaryId);
+  const removedFromFormations = await repo.removeOwnedMercenaryFromSquads(userId, ownedMercenaryId);
+  const dismissed = await repo.dismissUserMercenary(userId, ownedMercenaryId, {
+    reason: payload.reason || 'user_dismiss',
+    dismissedAt: new Date().toISOString()
+  });
+  return {
+    ok: true,
+    dismissedMercenaryId: String(ownedMercenaryId),
+    mercenary: buildOwnedMercenaryItem(dismissed, master),
+    unequippedItemsCount: unequippedItems.length,
+    removedFromFormations,
+    refunded: null
+  };
+}
+
+
 async function listMyMercenaries(userId) {
-  const [ownedRows, profile, communityPoints] = await Promise.all([
+  const [ownedRows, profile, communityPoints, equipmentSlots] = await Promise.all([
     repo.listUserMercenaries(userId),
     getOrCreateMercenaryProfile(userId),
-    getCommunityPoints(userId)
+    getCommunityPoints(userId),
+    repo.listUserEquipmentSlots(userId)
   ]);
   const mercenaryProfile = publicMercenaryProfile(profile);
   const lookup = masterById();
-  const items = ownedRows
+  const items = attachEquipmentToMercenaryItems(ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
-    .filter(Boolean);
+    .filter(Boolean), equipmentSlots);
 
   return {
     ok: true,
@@ -1811,16 +1969,17 @@ async function listMyMercenaries(userId) {
 }
 
 async function buildMercenaryOfficeView(userId) {
-  const [ownedRows, assignments, profile, communityPoints] = await Promise.all([
+  const [ownedRows, assignments, profile, communityPoints, equipmentSlots] = await Promise.all([
     repo.listUserMercenaries(userId),
     repo.listOfficeAssignments(userId),
     getOrCreateMercenaryProfile(userId),
-    getCommunityPoints(userId)
+    getCommunityPoints(userId),
+    repo.listUserEquipmentSlots(userId)
   ]);
   const lookup = masterById();
-  const items = ownedRows
+  const items = attachEquipmentToMercenaryItems(ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
-    .filter(Boolean);
+    .filter(Boolean), equipmentSlots);
   const itemByOwnedId = new Map(items.map((item) => [String(item.ownedId), item]));
   const facilities = getOfficeFacilitiesConfig().map((facility) => buildOfficeFacilityResponse(facility, assignments, itemByOwnedId));
   const officeEffects = mergeOfficeEffects(facilities.map((facility) => facility.effects));
@@ -2941,7 +3100,7 @@ function getBattleOperationRewardConfig(operationId) {
   if (REMOVED_LEGACY_BATTLE_OPERATION_IDS.has(safeOperationId)) {
     throw httpError(410, '구버전 전투 기록은 더 이상 보상 수령 대상이 아닙니다.', 'LEGACY_BATTLE_OPERATION_REMOVED');
   }
-  const mission = readCombatMissionData().find((item) => item.enabled && (item.operationId === safeOperationId || item.missionId === safeOperationId || item.id === safeOperationId));
+  const mission = getCombatMissionByOperationId(safeOperationId);
   if (mission?.rewardGroupId) {
     const rewards = readCombatRewardData().filter((item) => (
       item.enabled
@@ -2977,17 +3136,36 @@ function extractBattleParticipantIds(payload = {}) {
 }
 
 function normalizeBattleResultPayload(payload = {}) {
-  const battleResult = payload.battleResult && typeof payload.battleResult === 'object'
-    ? payload.battleResult
-    : payload;
-  const battleId = String(payload.battleId || battleResult.battleId || '').trim();
-  const operationId = String(payload.operationId || battleResult.operationId || '').trim();
-  const result = String(payload.result || battleResult.result || '').trim();
+  const hasFullBattleResult = payload.battleResult && typeof payload.battleResult === 'object';
+  const sourceBattleResult = hasFullBattleResult ? payload.battleResult : {};
+  const battleId = String(payload.battleId || payload.runId || sourceBattleResult.battleId || '').trim();
+  const operationId = String(payload.operationId || payload.missionId || payload.sourceId || sourceBattleResult.operationId || '').trim();
+  const result = String(payload.result || payload.outcome || sourceBattleResult.result || sourceBattleResult.outcome || '').trim();
   if (!battleId) throw httpError(400, 'battleId is required.', 'BATTLE_ID_REQUIRED');
   if (!operationId) throw httpError(400, 'operationId is required.', 'OPERATION_ID_REQUIRED');
   if (!['victory', 'defeat', 'draw', 'party_wipe', 'timeout'].includes(result)) {
     throw httpError(400, 'Invalid battle result.', 'INVALID_BATTLE_RESULT');
   }
+  const slimRoundCount = Number(payload.roundCount ?? payload.rounds ?? sourceBattleResult.roundCount ?? 0);
+  const battleResult = hasFullBattleResult
+    ? sourceBattleResult
+    : {
+      battleId,
+      requestId: payload.requestId || null,
+      sourceType: payload.sourceType || 'combat_mission',
+      sourceId: payload.sourceId || operationId,
+      missionId: payload.missionId || operationId,
+      operationId,
+      result,
+      outcome: result,
+      seed: payload.seed ?? null,
+      roundCount: Number.isFinite(slimRoundCount) && slimRoundCount > 0 ? slimRoundCount : null,
+      allies: Array.isArray(payload.allies) ? payload.allies : [],
+      enemies: [],
+      summary: payload.clientSummary && typeof payload.clientSummary === 'object'
+        ? payload.clientSummary
+        : payload.summary || {}
+    };
   const participantIds = extractBattleParticipantIds({ ...payload, battleResult });
   if (!participantIds.length) throw httpError(400, 'Battle party is required.', 'BATTLE_PARTY_REQUIRED');
   return {
@@ -3015,6 +3193,165 @@ function calculateBattleRewards(operationId, result) {
     rewardSource: config.rewardSource || 'sheet_combat_reward',
     rewardGroupId: config.rewardGroupId || ''
   };
+}
+
+const INVENTORY_COMBAT_REWARD_TYPES = new Set(['material', 'equipment', 'item', 'drop']);
+
+function createDeterministicRandom(seedText) {
+  let state = 2166136261;
+  const text = String(seedText || 'mercenary-combat-reward');
+  for (let index = 0; index < text.length; index += 1) {
+    state ^= text.charCodeAt(index);
+    state = Math.imul(state, 16777619) >>> 0;
+  }
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function normalizeDropRate(value) {
+  if (value === null || value === undefined || value === '') return 1;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 1;
+  if (numeric <= 0) return 0;
+  return Math.min(1, numeric > 1 ? numeric / 100 : numeric);
+}
+
+function getRewardQuantityRange(row = {}) {
+  const minRaw = row.amountMin ?? row.amount_min ?? row.minAmount ?? row.quantityMin ?? row.quantity_min;
+  const maxRaw = row.amountMax ?? row.amount_max ?? row.maxAmount ?? row.quantityMax ?? row.quantity_max;
+  const amountRaw = row.quantity ?? row.amount ?? row.count;
+  if (minRaw !== undefined || maxRaw !== undefined) {
+    const min = Math.max(0, Math.floor(Number(minRaw ?? maxRaw ?? 1) || 0));
+    const max = Math.max(min, Math.floor(Number(maxRaw ?? minRaw ?? min) || min));
+    return { min, max };
+  }
+  const amount = Math.max(0, Math.floor(Number(amountRaw ?? 1) || 0));
+  return { min: amount, max: amount };
+}
+
+function rollRewardQuantity(row, random) {
+  const { min, max } = getRewardQuantityRange(row);
+  if (max <= 0) return 0;
+  if (max === min) return max;
+  return min + Math.floor(random() * (max - min + 1));
+}
+
+function resolveCombatInventoryRewardItem(row = {}, bundle = getInventoryMasterBundle()) {
+  const rewardType = String(row.rewardType || row.reward_type || row.type || '').trim().toLowerCase();
+  const explicitItemId = String(
+    row.itemId || row.item_id || row.rewardItemId || row.reward_item_id ||
+    row.materialItemId || row.material_item_id || row.equipmentItemId || row.equipment_item_id || ''
+  ).trim();
+  const equipmentId = String(row.equipmentId || row.equipment_id || row.equipmentItemId || row.equipment_item_id || '').trim();
+  let item = explicitItemId ? bundle.byItemId.get(explicitItemId) : null;
+  let equipment = item?.itemType === 'equipment' ? bundle.equipmentByItemId.get(item.itemId) || null : null;
+  if (!item && equipmentId) {
+    equipment = bundle.equipmentById.get(equipmentId) || bundle.equipmentByItemId.get(equipmentId) || null;
+    if (equipment?.itemId) item = bundle.byItemId.get(equipment.itemId) || null;
+  }
+  if (!equipment && item?.itemType === 'equipment') equipment = bundle.equipmentByItemId.get(item.itemId) || null;
+  return {
+    rewardType,
+    requestedItemId: explicitItemId || equipmentId,
+    item,
+    equipment
+  };
+}
+
+function buildCombatInventoryRewardRows(rewardGroupId) {
+  const safeRewardGroupId = String(rewardGroupId || '').trim();
+  if (!safeRewardGroupId) return [];
+  return readCombatRewardData().filter((row) => (
+    row.enabled
+    && row.rewardGroupId === safeRewardGroupId
+    && INVENTORY_COMBAT_REWARD_TYPES.has(String(row.rewardType || row.reward_type || row.type || '').trim().toLowerCase())
+  ));
+}
+
+function formatInventoryRewardEntry(entry, options = {}, bundle = getInventoryMasterBundle()) {
+  const item = bundle.byItemId.get(entry?.itemId) || null;
+  const equipment = item?.itemType === 'equipment'
+    ? bundle.equipmentByItemId.get(item.itemId) || null
+    : null;
+  return {
+    inventoryItemId: entry?.id || '',
+    itemId: entry?.itemId || '',
+    itemType: item?.itemType || entry?.itemType || 'misc',
+    name: item?.name || equipment?.name || entry?.itemId || '',
+    grade: item?.grade || equipment?.grade || '',
+    slot: equipment?.slot || '',
+    quantity: Number(entry?.quantity || 1) || 1,
+    rewardType: options.rewardType || item?.itemType || entry?.itemType || 'item',
+    resultText: options.resultText || '',
+    combatPower: Number(equipment?.modifiers?.combatPower || 0) || 0
+  };
+}
+
+async function listInventoryRewardsForBattleRun(userId, battleId) {
+  const safeBattleId = String(battleId || '').trim();
+  if (!safeBattleId) return [];
+  const bundle = getInventoryMasterBundle();
+  return (await repo.listUserInventoryItems(userId))
+    .filter((entry) => (
+      String(entry.acquiredRunId || '') === safeBattleId
+      && String(entry.acquiredSourceType || '') === 'combat_claim'
+    ))
+    .map((entry) => formatInventoryRewardEntry(entry, {}, bundle));
+}
+
+async function grantCombatInventoryRewards(userId, { battleId, missionId, rewardGroupId, seed }) {
+  const rows = buildCombatInventoryRewardRows(rewardGroupId);
+  if (!rows.length) return [];
+  const bundle = getInventoryMasterBundle();
+  const random = createDeterministicRandom(`${battleId || ''}|${missionId || ''}|${rewardGroupId || ''}|${seed || ''}`);
+  const granted = [];
+  for (const row of rows) {
+    const dropRate = normalizeDropRate(row.dropRate ?? row.drop_rate);
+    if (dropRate <= 0 || random() > dropRate) continue;
+    const quantity = rollRewardQuantity(row, random);
+    if (quantity <= 0) continue;
+    const resolved = resolveCombatInventoryRewardItem(row, bundle);
+    const item = resolved.item;
+    if (!item?.itemId) {
+      console.warn('[mercenary/combat-reward] inventory reward skipped: item master not found', {
+        rewardGroupId,
+        rewardType: resolved.rewardType,
+        itemId: resolved.requestedItemId || ''
+      });
+      continue;
+    }
+    const itemType = item.itemType || (resolved.rewardType === 'equipment' ? 'equipment' : resolved.rewardType || 'misc');
+    const perEntryQuantity = itemType === 'equipment' ? 1 : quantity;
+    const grantCount = itemType === 'equipment' ? quantity : 1;
+    for (let index = 0; index < grantCount; index += 1) {
+      const entry = await repo.addInventoryItem({
+        id: `inv_${randomUUID()}`,
+        userId,
+        itemId: item.itemId,
+        itemType,
+        quantity: perEntryQuantity,
+        locked: false,
+        acquiredSourceType: 'combat_claim',
+        acquiredSourceId: missionId || rewardGroupId,
+        acquiredRunId: battleId,
+        stackable: false
+      });
+      granted.push({
+        ...formatInventoryRewardEntry(entry, {
+          rewardType: resolved.rewardType,
+          resultText: row.resultText || ''
+        }, bundle),
+        rewardType: resolved.rewardType,
+        resultText: row.resultText || ''
+      });
+    }
+  }
+  return granted;
 }
 
 function calculateBattleTreatmentCost({ injuryStatus, maxHp, level }) {
@@ -3067,9 +3404,160 @@ function getInventoryMasterBundle() {
     imagePrompts,
     byItemId: new Map(items.map((item) => [item.itemId, item])),
     equipmentByItemId: new Map(equipment.map((item) => [item.itemId, item])),
+    equipmentById: new Map(equipment.map((item) => [item.equipmentId, item])),
     imagePromptByKey: new Map(imagePrompts.map((item) => [item.imageKey, item]))
   };
 }
+
+
+function emptyEquipmentSlotMap() {
+  return EQUIPMENT_SLOT_KEYS.reduce((acc, slot) => {
+    acc[slot] = null;
+    return acc;
+  }, {});
+}
+
+function normalizeEquipmentSlotKey(slot) {
+  const key = String(slot || '').trim();
+  return EQUIPMENT_SLOT_KEYS.includes(key) ? key : '';
+}
+
+function enrichEquipmentSlot(slot, bundle = getInventoryMasterBundle(), ownedById = new Map()) {
+  if (!slot) return null;
+  const equipment = bundle.equipmentByItemId.get(slot.itemId) || bundle.equipmentById.get(slot.equipmentId) || null;
+  const item = bundle.byItemId.get(slot.itemId) || null;
+  const owner = ownedById.get(String(slot.userMercenaryId)) || null;
+  return {
+    ...slot,
+    equipment,
+    item,
+    name: equipment?.name || item?.name || slot.itemId,
+    grade: equipment?.grade || item?.grade || '',
+    slot: normalizeEquipmentSlotKey(slot.slot) || slot.slot,
+    equippedMercenaryName: owner?.name || owner?.mercenaryId || ''
+  };
+}
+
+function calculateEquipmentBonus(slots = [], bundle = getInventoryMasterBundle()) {
+  const bonus = {
+    hp: 0,
+    atk: 0,
+    def: 0,
+    spd: 0,
+    tec: 0,
+    sup: 0,
+    accuracy: 0,
+    evasion: 0,
+    critical: 0,
+    healing: 0,
+    combatPower: 0
+  };
+  let flatCombatPowerBonus = 0;
+  for (const rawSlot of Array.isArray(slots) ? slots : []) {
+    const slot = rawSlot?.equipment ? rawSlot : enrichEquipmentSlot(rawSlot, bundle);
+    const equipment = slot?.equipment;
+    if (!equipment) continue;
+    const stats = equipment.stats || {};
+    const modifiers = equipment.modifiers || {};
+    ['hp', 'atk', 'def', 'spd', 'tec', 'sup'].forEach((key) => {
+      bonus[key] += Number(stats[key] || 0) || 0;
+    });
+    bonus.accuracy += Number(modifiers.accuracy || 0) || 0;
+    bonus.evasion += Number(modifiers.evasion || 0) || 0;
+    bonus.critical += Number(modifiers.critical || 0) || 0;
+    bonus.healing += Number(modifiers.healing || 0) || 0;
+    flatCombatPowerBonus += Number(modifiers.combatPower || 0) || 0;
+  }
+  bonus.combatPower = calculateCombatPowerFromStats(bonus) + flatCombatPowerBonus;
+  return Object.fromEntries(Object.entries(bonus).map(([key, value]) => [key, Math.round(Number(value || 0) || 0)]));
+}
+
+function buildEquipmentSummary(slots = [], bundle = getInventoryMasterBundle(), ownedById = new Map()) {
+  const enrichedSlots = (Array.isArray(slots) ? slots : []).map((slot) => enrichEquipmentSlot(slot, bundle, ownedById)).filter(Boolean);
+  const slotMap = emptyEquipmentSlotMap();
+  enrichedSlots.forEach((slot) => {
+    const key = normalizeEquipmentSlotKey(slot.slot);
+    if (key) slotMap[key] = slot;
+  });
+  return {
+    slots: slotMap,
+    items: enrichedSlots,
+    equipmentBonus: calculateEquipmentBonus(enrichedSlots, bundle)
+  };
+}
+
+function applyEquipmentSummaryToMercenary(item, summary) {
+  if (!item || !summary) return item;
+  const equipmentBonus = summary.equipmentBonus || calculateEquipmentBonus(summary.items || []);
+  const baseCurrentStats = item.currentStats || {};
+  const currentStatParts = calculateCurrentStatsFromParts(baseCurrentStats, {}, {}, equipmentBonus, {});
+  const currentStats = {
+    ...currentStatParts,
+    combatPower: Math.max(0, Math.round(Number(baseCurrentStats.combatPower || item.combatPower || 0) + Number(equipmentBonus.combatPower || 0)))
+  };
+  const statBreakdown = {
+    ...(item.statBreakdown || {}),
+    equipmentBonus: {
+      ...(item.statBreakdown?.equipmentBonus || emptyServerStatBlock()),
+      ...equipmentBonus
+    },
+    currentStats
+  };
+  const baseCombatPowerWithoutEquipment = Number(baseCurrentStats.combatPower || item.combatPower || 0) || 0;
+  return {
+    ...item,
+    equipmentSlots: summary.slots,
+    equippedItems: summary.items,
+    equipmentBonus,
+    equipmentCombatPower: Number(equipmentBonus.combatPower || 0) || 0,
+    baseCombatPowerWithoutEquipment,
+    totalCombatPower: currentStats.combatPower,
+    displayCombatPower: currentStats.combatPower,
+    statBreakdown,
+    currentStats,
+    effectiveStats: normalizeBaseStats(currentStats),
+    combatPower: currentStats.combatPower,
+    power: currentStats.combatPower
+  };
+}
+
+function attachEquipmentToMercenaryItems(items = [], slots = [], bundle = getInventoryMasterBundle()) {
+  const itemsByOwnedId = new Map(items.map((item) => [String(item.ownedId), item]));
+  const slotsByOwnedId = new Map();
+  (Array.isArray(slots) ? slots : []).forEach((slot) => {
+    const key = String(slot.userMercenaryId || '');
+    if (!slotsByOwnedId.has(key)) slotsByOwnedId.set(key, []);
+    slotsByOwnedId.get(key).push(slot);
+  });
+  return items.map((item) => {
+    const summary = buildEquipmentSummary(slotsByOwnedId.get(String(item.ownedId)) || [], bundle, itemsByOwnedId);
+    return applyEquipmentSummaryToMercenary(item, summary);
+  });
+}
+
+function attachEquipmentStateToInventoryEntries(entries = [], slots = [], bundle = getInventoryMasterBundle(), ownedItems = []) {
+  const ownedById = new Map(ownedItems.map((item) => [String(item.ownedId || item.id), item]));
+  const slotByInventoryId = new Map((Array.isArray(slots) ? slots : []).map((slot) => [String(slot.inventoryItemId), enrichEquipmentSlot(slot, bundle, ownedById)]));
+  return entries.map((entry) => {
+    const equippedSlot = slotByInventoryId.get(String(entry.id)) || null;
+    return {
+      ...entry,
+      equipped: Boolean(equippedSlot),
+      equippedSlot: equippedSlot?.slot || null,
+      equippedByMercenaryId: equippedSlot?.userMercenaryId || null,
+      equippedByMercenaryName: equippedSlot?.equippedMercenaryName || null,
+      equipmentSlot: equippedSlot
+    };
+  });
+}
+
+function assertMercenaryCanChangeEquipment(owned) {
+  if (!owned) throw httpError(404, 'Owned mercenary not found.', 'OWNED_MERCENARY_NOT_FOUND');
+  if (String(owned.operationalStatus || 'idle') !== 'idle') {
+    throw httpError(409, 'Mercenary is not available for equipment changes.', 'MERCENARY_NOT_AVAILABLE');
+  }
+}
+
 
 function enrichInventoryEntry(entry, bundle = getInventoryMasterBundle()) {
   const item = bundle.byItemId.get(entry.itemId) || null;
@@ -3132,9 +3620,21 @@ function buildInventorySummary(entries = []) {
 
 async function getUserInventory(userId, filters = {}) {
   const bundle = getInventoryMasterBundle();
-  const entries = (await repo.listUserInventoryItems(userId))
-    .map((entry) => enrichInventoryEntry(entry, bundle))
-    .filter((entry) => matchesInventoryQuery(entry, filters));
+  const [rawEntries, equipmentSlots, ownedRows] = await Promise.all([
+    repo.listUserInventoryItems(userId),
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserMercenaries(userId)
+  ]);
+  const lookup = masterById();
+  const ownedItems = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const entries = attachEquipmentStateToInventoryEntries(
+    rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)),
+    equipmentSlots,
+    bundle,
+    ownedItems
+  ).filter((entry) => matchesInventoryQuery(entry, filters));
   return {
     items: entries,
     summary: buildInventorySummary(entries)
@@ -3143,11 +3643,95 @@ async function getUserInventory(userId, filters = {}) {
 
 async function getUserInventorySummary(userId) {
   const bundle = getInventoryMasterBundle();
-  const entries = (await repo.listUserInventoryItems(userId)).map((entry) => enrichInventoryEntry(entry, bundle));
+  const [rawEntries, equipmentSlots, ownedRows] = await Promise.all([
+    repo.listUserInventoryItems(userId),
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserMercenaries(userId)
+  ]);
+  const lookup = masterById();
+  const ownedItems = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const entries = attachEquipmentStateToInventoryEntries(rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)), equipmentSlots, bundle, ownedItems);
   return {
     summary: buildInventorySummary(entries)
   };
 }
+
+
+async function listUserEquipmentSlots(userId) {
+  const bundle = getInventoryMasterBundle();
+  const [slots, ownedRows] = await Promise.all([
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserMercenaries(userId)
+  ]);
+  const lookup = masterById();
+  const ownedItems = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const ownedById = new Map(ownedItems.map((item) => [String(item.ownedId), item]));
+  const items = slots.map((slot) => enrichEquipmentSlot(slot, bundle, ownedById)).filter(Boolean);
+  return {
+    items,
+    equipmentSlots: items,
+    equipmentBonusByMercenaryId: Object.fromEntries(ownedItems.map((item) => {
+      const summary = buildEquipmentSummary(items.filter((slot) => String(slot.userMercenaryId) === String(item.ownedId)), bundle, ownedById);
+      return [String(item.ownedId), summary.equipmentBonus];
+    }))
+  };
+}
+
+async function getUserMercenaryEquipment(userId, userMercenaryId) {
+  const owned = await repo.getUserMercenary(userId, userMercenaryId);
+  if (!owned) throw httpError(404, 'Owned mercenary not found.', 'OWNED_MERCENARY_NOT_FOUND');
+  const bundle = getInventoryMasterBundle();
+  const slots = await repo.listEquipmentSlotsForMercenary(userId, userMercenaryId);
+  const summary = buildEquipmentSummary(slots, bundle, new Map([[String(userMercenaryId), buildOwnedMercenaryItem(owned, masterById().get(owned.mercenaryId))]]));
+  return {
+    equipmentSlots: summary.slots,
+    equipmentItems: summary.items,
+    equipmentBonus: summary.equipmentBonus
+  };
+}
+
+async function equipInventoryItem(userId, userMercenaryId, inventoryItemId) {
+  const owned = await repo.getUserMercenary(userId, userMercenaryId);
+  assertMercenaryCanChangeEquipment(owned);
+  const inventoryEntry = await repo.getUserInventoryItem(userId, inventoryItemId);
+  if (!inventoryEntry) throw httpError(404, 'Inventory item not found.', 'INVENTORY_ITEM_NOT_FOUND');
+  if (inventoryEntry.itemType !== 'equipment') throw httpError(400, 'Only equipment items can be equipped.', 'NOT_EQUIPMENT_ITEM');
+  const bundle = getInventoryMasterBundle();
+  const equipment = bundle.equipmentByItemId.get(inventoryEntry.itemId);
+  if (!equipment) throw httpError(404, 'Equipment master data not found.', 'EQUIPMENT_MASTER_NOT_FOUND');
+  const slot = normalizeEquipmentSlotKey(equipment.slot);
+  if (!slot) throw httpError(400, 'Invalid equipment slot.', 'INVALID_EQUIPMENT_SLOT');
+  if (await repo.getEquipmentSlotByInventoryItemId(userId, inventoryItemId)) {
+    throw httpError(409, 'Inventory item is already equipped.', 'EQUIPMENT_ALREADY_EQUIPPED');
+  }
+  if (await repo.getEquipmentSlot(userId, userMercenaryId, slot)) {
+    throw httpError(409, 'Equipment slot is already occupied.', 'EQUIPMENT_SLOT_OCCUPIED');
+  }
+  await repo.equipInventoryItemSlot({
+    id: `equip_${randomUUID()}`,
+    userId,
+    userMercenaryId,
+    slot,
+    inventoryItemId,
+    itemId: inventoryEntry.itemId,
+    equipmentId: equipment.equipmentId
+  });
+  return getUserMercenaryEquipment(userId, userMercenaryId);
+}
+
+async function unequipSlot(userId, userMercenaryId, slot) {
+  const owned = await repo.getUserMercenary(userId, userMercenaryId);
+  assertMercenaryCanChangeEquipment(owned);
+  const safeSlot = normalizeEquipmentSlotKey(slot);
+  if (!safeSlot) throw httpError(400, 'Invalid equipment slot.', 'INVALID_EQUIPMENT_SLOT');
+  await repo.unequipInventoryItemSlot(userId, userMercenaryId, safeSlot);
+  return getUserMercenaryEquipment(userId, userMercenaryId);
+}
+
 
 function normalizeInventoryPayload(payload = {}) {
   return {
@@ -3192,6 +3776,7 @@ async function claimBattleResult(userId, payload = {}) {
   const normalized = normalizeBattleResultPayload(payload);
   const existing = await repo.getBattleRunByBattleId(userId, normalized.battleId);
   if (existing?.claimedAt) {
+    const inventoryRewards = await listInventoryRewardsForBattleRun(userId, normalized.battleId);
     return {
       ok: true,
       claimed: true,
@@ -3199,10 +3784,14 @@ async function claimBattleResult(userId, payload = {}) {
       result: existing.result,
       rewards: existing.rewards || { gold: 0, officeExp: 0, mercenaryExp: 0, items: [] },
       injuries: existing.injuries || [],
+      inventoryRewards,
       run: existing,
       message: 'Battle result already claimed.'
     };
   }
+  const combatMission = getCombatMissionByOperationId(normalized.operationId);
+  if (!combatMission) throw httpError(400, 'Unknown battle operation.', 'UNKNOWN_BATTLE_OPERATION');
+  await assertCombatStageUnlocked(userId, combatMission);
 
   const ownedRows = await repo.listUserMercenaries(userId);
   const ownedById = new Map(ownedRows.map((row) => [String(row.id), row]));
@@ -3248,6 +3837,7 @@ async function claimBattleResult(userId, payload = {}) {
     });
     if (!claimed?.claimedAt) {
       const latest = await repo.getBattleRunByBattleId(userId, normalized.battleId);
+      const inventoryRewards = await listInventoryRewardsForBattleRun(userId, normalized.battleId);
       if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
       return {
         ok: true,
@@ -3256,9 +3846,29 @@ async function claimBattleResult(userId, payload = {}) {
         result: latest?.result || normalized.result,
         rewards: latest?.rewards || { gold: 0, officeExp: 0, mercenaryExp: 0, items: [] },
         injuries: latest?.injuries || [],
+        inventoryRewards,
         run: latest,
         message: 'Battle result already claimed.'
       };
+    }
+    const inventoryRewards = await grantCombatInventoryRewards(userId, {
+      battleId: normalized.battleId,
+      missionId: combatMission.missionId || normalized.operationId,
+      rewardGroupId: rewards.rewardGroupId || combatMission.rewardGroupId,
+      seed: normalized.seed
+    });
+    let stageClear = null;
+    if (normalized.result === 'victory' && (combatMission.stageId || combatMission.isStageMission)) {
+      stageClear = await repo.upsertCombatStageClear({
+        id: `stage_clear_${randomUUID()}`,
+        userId,
+        missionId: combatMission.missionId,
+        stageId: combatMission.stageId,
+        baseMissionId: combatMission.baseMissionId,
+        result: 'victory',
+        rounds: getBattleRoundCount(normalized.battleResult),
+        clearedAt: claimedAt
+      });
     }
 
     const profile = await getOrCreateMercenaryProfile(userId);
@@ -3315,6 +3925,7 @@ async function claimBattleResult(userId, payload = {}) {
       alreadyClaimed: false,
       result: normalized.result,
       rewards,
+      inventoryRewards,
       mercenaries,
       injuries,
       office: {
@@ -3335,6 +3946,7 @@ async function claimBattleResult(userId, payload = {}) {
       gold: afterProfile.gold,
       mercenaryGold: afterProfile.gold,
       communityPoints: await getCommunityPoints(userId),
+      stageClear,
       run: claimed
     };
   } catch (error) {
@@ -3490,6 +4102,8 @@ module.exports = {
   refreshRecruitBoard,
   hireRecruitCandidate,
   listMyMercenaries,
+  setOwnedMercenaryLock,
+  dismissOwnedMercenary,
   getRecruitCost,
   getOrCreateMercenaryProfile,
   getMercenaryGold,
@@ -3548,8 +4162,13 @@ module.exports = {
   startMissionRun,
   rejectMissionOffer,
   claimBattleResult,
+  listCombatStageClears,
   getUserInventory,
   getUserInventorySummary,
+  listUserEquipmentSlots,
+  getUserMercenaryEquipment,
+  equipInventoryItem,
+  unequipSlot,
   addInventoryItem,
   addInventoryItems,
   claimMissionRun,

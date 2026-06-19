@@ -360,6 +360,9 @@ CREATE TABLE IF NOT EXISTS user_mercenaries (
   current_activity_type TEXT,
   current_activity_id TEXT,
   is_locked BOOLEAN NOT NULL DEFAULT FALSE,
+  dismissed_at TIMESTAMPTZ,
+  dismissed_reason TEXT,
+  dismissed_by_user BOOLEAN NOT NULL DEFAULT FALSE,
   status_updated_at TIMESTAMPTZ,
   hired_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -368,6 +371,9 @@ ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS operational_status TEXT NO
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_type TEXT;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_activity_id TEXT;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS dismissed_at TIMESTAMPTZ;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS dismissed_reason TEXT;
+ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS dismissed_by_user BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMPTZ;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_level INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE user_mercenaries ADD COLUMN IF NOT EXISTS current_exp INTEGER NOT NULL DEFAULT 0;
@@ -480,6 +486,35 @@ CREATE TABLE IF NOT EXISTS user_mercenary_inventory_items (
   acquired_source_type TEXT,
   acquired_source_id TEXT,
   acquired_run_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_equipment_slots (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_mercenary_id TEXT NOT NULL,
+  slot TEXT NOT NULL,
+  inventory_item_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  equipment_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_mercenary_id, slot),
+  UNIQUE(inventory_item_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_mercenary_combat_stage_clears (
+  id TEXT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  mission_id TEXT NOT NULL,
+  stage_id TEXT NOT NULL,
+  base_mission_id TEXT NOT NULL,
+  clear_count INTEGER NOT NULL DEFAULT 0,
+  best_result TEXT,
+  best_rounds INTEGER,
+  first_cleared_at TIMESTAMPTZ,
+  last_cleared_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -800,6 +835,13 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_claimed ON user_m
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user ON user_mercenary_inventory_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user_item ON user_mercenary_inventory_items(user_id, item_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_run ON user_mercenary_inventory_items(acquired_run_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_user ON user_mercenary_equipment_slots(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_mercenary ON user_mercenary_equipment_slots(user_mercenary_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_inventory ON user_mercenary_equipment_slots(inventory_item_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_combat_stage_clears_user ON user_mercenary_combat_stage_clears(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_mercenary_combat_stage_clears_user_mission ON user_mercenary_combat_stage_clears(user_id, mission_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_combat_stage_clears_user_stage ON user_mercenary_combat_stage_clears(user_id, stage_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_combat_stage_clears_user_base ON user_mercenary_combat_stage_clears(user_id, base_mission_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user ON user_mercenary_case_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_progress_user_case ON user_mercenary_case_progress(user_id, case_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_case_step_runs_user_case ON user_mercenary_case_step_runs(user_id, case_id);
