@@ -68,6 +68,12 @@ async function runPreSchemaMigrations() {
   await ensureColumn('titles', 'ends_at', 'TEXT');
   await ensureColumn('season_reward_mappings', 'trophy_label', "TEXT DEFAULT ''");
   await ensureColumn('season_reward_mappings', 'trophy_description', "TEXT DEFAULT ''");
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_level', 'INTEGER DEFAULT 0');
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_pity', 'INTEGER DEFAULT 0');
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_updated_at', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_at', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_source_type', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_source_id', 'TEXT');
 }
 
 async function runMigrations() {
@@ -303,6 +309,7 @@ async function runMigrations() {
        office_exp INTEGER NOT NULL DEFAULT 0,
        office_reputation TEXT NOT NULL DEFAULT 'D',
        mission_offer_next_at TEXT,
+       representative_user_mercenary_id TEXT,
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -311,6 +318,7 @@ async function runMigrations() {
   await ensureColumn('user_mercenary_profiles', 'office_exp', 'INTEGER NOT NULL DEFAULT 0');
   await ensureColumn('user_mercenary_profiles', 'office_reputation', "TEXT NOT NULL DEFAULT 'D'");
   await ensureColumn('user_mercenary_profiles', 'mission_offer_next_at', 'TEXT');
+  await ensureColumn('user_mercenary_profiles', 'representative_user_mercenary_id', 'TEXT');
   await run('UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1');
   await run('UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0');
   await run("UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D')");
@@ -449,14 +457,26 @@ async function runMigrations() {
        item_type TEXT NOT NULL DEFAULT 'misc',
        quantity INTEGER NOT NULL DEFAULT 1,
        locked INTEGER NOT NULL DEFAULT 0,
+       enhancement_level INTEGER NOT NULL DEFAULT 0,
+       enhancement_pity INTEGER NOT NULL DEFAULT 0,
+       enhancement_updated_at TEXT,
+       consumed_at TEXT,
+       consumed_source_type TEXT,
+       consumed_source_id TEXT,
        acquired_source_type TEXT,
        acquired_source_id TEXT,
        acquired_run_id TEXT,
        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-     )`
+      )`
   );
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_level', 'INTEGER DEFAULT 0');
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_pity', 'INTEGER DEFAULT 0');
+  await ensureColumn('user_mercenary_inventory_items', 'enhancement_updated_at', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_at', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_source_type', 'TEXT');
+  await ensureColumn('user_mercenary_inventory_items', 'consumed_source_id', 'TEXT');
   await run(
     `CREATE TABLE IF NOT EXISTS user_mercenary_equipment_slots (
        id TEXT PRIMARY KEY,
@@ -552,6 +572,7 @@ async function runMigrations() {
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user ON user_mercenary_inventory_items(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user_item ON user_mercenary_inventory_items(user_id, item_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_run ON user_mercenary_inventory_items(acquired_run_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_consumed ON user_mercenary_inventory_items(user_id, consumed_at)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_user ON user_mercenary_equipment_slots(user_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_mercenary ON user_mercenary_equipment_slots(user_mercenary_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_inventory ON user_mercenary_equipment_slots(inventory_item_id)');

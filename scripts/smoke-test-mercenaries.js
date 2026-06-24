@@ -88,6 +88,7 @@ async function main() {
     const health = await request('/health');
     assert.strictEqual(health.status, 'ok');
     await request('/api/mercenary/combat-stage-clears', {}, 401);
+    await request('/api/mercenary/representative', {}, 401);
 
     const email = `mercenary-smoke-${Date.now()}@example.com`;
     const password = 'secret123';
@@ -174,6 +175,57 @@ async function main() {
     assert.strictEqual(unequipped.success, true);
     assert.strictEqual(unequipped.equipmentSlots.weapon, null);
 
+    const blacksmithInventoryId = `smoke-blacksmith-${Date.now()}`;
+    await run(
+      `INSERT INTO user_mercenary_inventory_items
+       (id, user_id, item_id, item_type, quantity, locked, acquired_source_type)
+       VALUES (?, ?, ?, 'equipment', 1, 0, 'smoke_blacksmith')`,
+      [blacksmithInventoryId, userId, smokeEquipment.itemId]
+    );
+    await run(
+      `INSERT INTO user_mercenary_inventory_items
+       (id, user_id, item_id, item_type, quantity, locked, acquired_source_type)
+       VALUES (?, ?, 'mat_rusty_scrap_001', 'material', 50, 0, 'smoke_blacksmith')`,
+      [`smoke-scrap-${Date.now()}`, userId]
+    );
+    await request('/api/mercenary/blacksmith/summary', { headers: auth });
+    await run('UPDATE user_mercenary_profiles SET gold = 50000 WHERE user_id = ?', [userId]);
+    const enhanced = await request('/api/mercenary/blacksmith/enhance', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemId: blacksmithInventoryId })
+    });
+    assert.strictEqual(enhanced.success, true);
+    assert.strictEqual(enhanced.ok, true);
+    assert.strictEqual(enhanced.success, true);
+    assert.strictEqual(enhanced.afterLevel, 1);
+    const enhancedRow = await get('SELECT enhancement_level FROM user_mercenary_inventory_items WHERE id = ?', [blacksmithInventoryId]);
+    assert.strictEqual(Number(enhancedRow.enhancement_level), 1);
+    const disassembled = await request('/api/mercenary/blacksmith/disassemble', {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ inventoryItemIds: [blacksmithInventoryId] })
+    });
+    assert.strictEqual(disassembled.success, true);
+    assert.strictEqual(disassembled.ok, true);
+    assert.ok(disassembled.grantedMaterials.length >= 1);
+    const consumedRow = await get('SELECT consumed_at FROM user_mercenary_inventory_items WHERE id = ?', [blacksmithInventoryId]);
+    assert.ok(consumedRow.consumed_at);
+
+    const emptyRepresentative = await request('/api/mercenary/representative', { headers: auth });
+    assert.strictEqual(emptyRepresentative.success, true);
+    assert.strictEqual(emptyRepresentative.representative, null);
+    const representativeSet = await request('/api/mercenary/representative', {
+      method: 'PATCH',
+      headers: auth,
+      body: JSON.stringify({ userMercenaryId: smokeOwnedId })
+    });
+    assert.strictEqual(representativeSet.success, true);
+    assert.strictEqual(representativeSet.representativeUserMercenaryId, smokeOwnedId);
+    assert.strictEqual(representativeSet.representative.userMercenaryId, smokeOwnedId);
+    const representativeLoaded = await request('/api/mercenary/representative', { headers: auth });
+    assert.strictEqual(representativeLoaded.representativeUserMercenaryId, smokeOwnedId);
+
     const lockResult = await request(`/api/mercenary/my/${smokeOwnedId}/lock`, {
       method: 'PATCH',
       headers: auth,
@@ -216,6 +268,9 @@ async function main() {
     assert.strictEqual(afterDismissInventory.items.find((item) => item.id === smokeInventoryId)?.equipped, false);
     const afterDismissRoster = await request('/api/mercenary/my', { headers: auth });
     assert.strictEqual(afterDismissRoster.items.some((item) => String(item.ownedId || item.id) === smokeOwnedId), false);
+    const afterDismissRepresentative = await request('/api/mercenary/representative', { headers: auth });
+    assert.strictEqual(afterDismissRepresentative.representative, null);
+    assert.strictEqual(afterDismissRepresentative.representativeUserMercenaryId, null);
 
     await addPointTransaction({
       userId,

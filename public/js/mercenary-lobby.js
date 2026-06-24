@@ -157,6 +157,8 @@ const mercenaryLobbyState = {
     { label: '사무실', icon: 'settings', action: 'office' },
     { label: '사건 파일', icon: 'report', action: 'cases' },
     { label: '보관함', icon: 'inventory', action: 'inventory' },
+    { label: '대장간', icon: 'settings', action: 'blacksmith' },
+    { label: '드랍 안내', icon: 'report', action: 'drop-guide' },
     { label: '소문 조사', icon: 'eye', action: 'ready' }
   ]
 };
@@ -610,6 +612,30 @@ const inventoryState = {
   },
   loading: false,
   errorMessage: ''
+};
+
+const representativeState = {
+  representativeUserMercenaryId: '',
+  representativeMercenary: null,
+  loading: false,
+  loaded: false
+};
+
+const blacksmithState = {
+  tab: 'disassemble',
+  summary: null,
+  candidates: [],
+  selectedEntryId: '',
+  pending: false,
+  loading: false,
+  errorMessage: '',
+  filters: {
+    q: '',
+    slot: 'all',
+    grade: 'all',
+    status: 'all',
+    sort: 'recent'
+  }
 };
 
 const battleOperationState = {
@@ -1300,7 +1326,11 @@ function normalizeRateField(value) {
 
 function normalizeMercenaryForRoster(item) {
   const id = String(item.id || '').trim();
-  const ownedId = item.ownedId !== undefined ? String(item.ownedId) : '';
+  const ownedId = item.ownedId !== undefined
+    ? String(item.ownedId)
+    : item.userMercenaryId !== undefined
+      ? String(item.userMercenaryId)
+      : '';
   const maxLevel = Number(item.maxLevel || 20) || 20;
   const level = Math.max(1, Number(item.currentLevel ?? item.current_level ?? item.level ?? 1) || 1);
   const exp = Math.max(0, Number(item.currentExp ?? item.current_exp ?? item.exp ?? 0) || 0);
@@ -1486,7 +1516,7 @@ function parseEncounterEnemyComposition(composition = '', encounter = {}) {
 }
 
 function getCombatRewardPreview(rewardGroupId) {
-  const rows = mercenaryCombatRules.combatRewardsByGroupId.get(String(rewardGroupId || '').trim()) || [];
+  const rows = getRewardRowsByGroupId(rewardGroupId);
   return rows
     .filter((reward) => reward?.enabled !== false)
     .map((reward) => {
@@ -1507,6 +1537,221 @@ function getCombatRewardPreview(rewardGroupId) {
         previewOnly: type !== 'gold'
       };
     });
+}
+
+function getRewardRowsByGroupId(rewardGroupId) {
+  const key = String(rewardGroupId || '').trim();
+  if (!key) return [];
+  return (mercenaryCombatRules.combatRewardsByGroupId.get(key) || [])
+    .filter((reward) => reward?.enabled !== false);
+}
+
+function getMissionRewardGroupId(mission = {}) {
+  return String(mission.rewardGroupId || mission.reward_group_id || mission.generatedRewardGroupId || mission.generated_reward_group_id || '').trim();
+}
+
+function getRewardRowsForMission(mission = {}) {
+  const rows = getRewardRowsByGroupId(getMissionRewardGroupId(mission));
+  if (rows.length) return rows;
+  const baseId = mission.baseMissionId || mission.base_mission_id || '';
+  const base = baseId ? battleOperationState.operations.find((operation) => operation.id === baseId || operation.missionId === baseId) : null;
+  return base ? getRewardRowsByGroupId(getMissionRewardGroupId(base)) : [];
+}
+
+function getRewardItemId(reward = {}) {
+  return String(
+    reward.itemId ||
+    reward.item_id ||
+    reward.equipmentItemId ||
+    reward.equipment_item_id ||
+    reward.materialItemId ||
+    reward.material_item_id ||
+    reward.equipmentId ||
+    reward.equipment_id ||
+    ''
+  ).trim();
+}
+
+function getEquipmentBundleForRewards() {
+  return inventoryState.equipmentBundle || {
+    items: [],
+    equipment: [],
+    byItemId: {},
+    itemsById: {},
+    equipmentById: {}
+  };
+}
+
+function resolveRewardItem(reward = {}) {
+  const itemId = getRewardItemId(reward);
+  if (!itemId) return null;
+  const bundle = getEquipmentBundleForRewards();
+  const item = bundle.byItemId?.[itemId] || bundle.itemsById?.[itemId] || null;
+  const equipment = bundle.equipmentById?.[itemId]
+    || (bundle.equipment || []).find((row) => String(row.itemId || row.item_id || '').trim() === itemId)
+    || null;
+  const rewardType = String(reward.rewardType || reward.reward_type || '').trim().toLowerCase();
+  const itemType = String(item?.itemType || item?.item_type || rewardType || '').trim().toLowerCase();
+  const type = rewardType === 'drop' || rewardType === 'item' ? (itemType || rewardType) : rewardType;
+  return {
+    itemId,
+    type: type || itemType || 'item',
+    itemType: itemType || type || 'item',
+    name: equipment?.name || item?.name || itemId,
+    grade: equipment?.grade || item?.grade || '',
+    slot: equipment?.slot || equipment?.equipmentSlot || '',
+    equipment,
+    item
+  };
+}
+
+function normalizeDropRate(dropRate) {
+  const value = Number(dropRate);
+  if (!Number.isFinite(value)) return null;
+  if (value < 0) return 0;
+  if (value > 0 && value <= 1) return value * 100;
+  return value;
+}
+
+function formatDropRateNumber(dropRate) {
+  const value = normalizeDropRate(dropRate);
+  if (value === null) return '';
+  const clamped = Math.min(100, Math.max(0, value));
+  return Number.isInteger(clamped) ? `${clamped}%` : `${clamped.toFixed(clamped < 1 ? 2 : 1)}%`;
+}
+
+function formatDropRateLabel(dropRate) {
+  const value = normalizeDropRate(dropRate);
+  if (value === null) return '확률 정보 없음';
+  if (value >= 70) return '높은 확률';
+  if (value >= 30) return '보통 확률';
+  if (value >= 5) return '낮은 확률';
+  if (value >= 1) return '희귀';
+  return '매우 희귀';
+}
+
+function formatRewardQuantity(reward = {}) {
+  const min = Number(reward.amountMin ?? reward.amount_min ?? reward.quantityMin ?? reward.quantity_min ?? '');
+  const max = Number(reward.amountMax ?? reward.amount_max ?? reward.quantityMax ?? reward.quantity_max ?? '');
+  const amount = Number(reward.quantity ?? reward.amount ?? reward.count ?? '');
+  if (Number.isFinite(min) && Number.isFinite(max) && (min || max)) {
+    return min === max ? `x${formatNumber(min)}` : `x${formatNumber(min)}~${formatNumber(max)}`;
+  }
+  if (Number.isFinite(amount) && amount > 0) return `x${formatNumber(amount)}`;
+  return 'x1';
+}
+
+function buildMissionRewardPreview(mission = {}) {
+  const fixed = [];
+  const materials = [];
+  const equipment = [];
+  const other = [];
+  getRewardRowsForMission(mission).forEach((reward) => {
+    const type = String(reward.rewardType || reward.reward_type || '').trim().toLowerCase();
+    const gold = Number(reward.gold || 0) || 0;
+    const officeExp = Number(reward.officeExp || reward.office_exp || 0) || 0;
+    const mercExp = Number(reward.mercExp || reward.mercenaryExp || reward.mercenary_exp || 0) || 0;
+    if (gold || officeExp || mercExp || type === 'gold' || type === 'office_exp' || type === 'mercenary_exp') {
+      fixed.push({ type, gold, officeExp, mercExp, resultText: reward.resultText || reward.result_text || '' });
+      return;
+    }
+    const resolved = resolveRewardItem(reward);
+    if (!resolved) return;
+    const item = {
+      ...resolved,
+      dropRate: normalizeDropRate(reward.dropRate ?? reward.drop_rate ?? reward.weight),
+      dropLabel: formatDropRateLabel(reward.dropRate ?? reward.drop_rate ?? reward.weight),
+      dropNumber: formatDropRateNumber(reward.dropRate ?? reward.drop_rate ?? reward.weight),
+      quantityLabel: formatRewardQuantity(reward)
+    };
+    if (item.type === 'equipment' || item.itemType === 'equipment') equipment.push(item);
+    else if (item.type === 'material' || item.itemType === 'material') materials.push(item);
+    else other.push(item);
+  });
+  return { fixed, materials, equipment, other };
+}
+
+function getMissionsForRewardGroupId(rewardGroupId) {
+  const key = String(rewardGroupId || '').trim();
+  if (!key) return [];
+  return battleOperationState.operations.filter((operation) => getMissionRewardGroupId(operation) === key);
+}
+
+function findItemDropSources(itemId, options = {}) {
+  const safeItemId = String(itemId || '').trim();
+  if (!safeItemId) return [];
+  const sources = [];
+  (mercenaryCombatRules.combatRewards || []).forEach((reward) => {
+    if (reward?.enabled === false) return;
+    if (getRewardItemId(reward) !== safeItemId) return;
+    const rewardGroupId = String(reward.rewardGroupId || reward.reward_group_id || '').trim();
+    const missions = getMissionsForRewardGroupId(rewardGroupId);
+    missions.forEach((mission) => {
+      sources.push({
+        missionId: mission.id || mission.missionId || '',
+        title: mission.title || mission.name || mission.id || rewardGroupId,
+        stageLabel: mission.stageNumber ? formatStageLabel(mission) : '',
+        dropLabel: formatDropRateLabel(reward.dropRate ?? reward.drop_rate ?? reward.weight),
+        dropNumber: formatDropRateNumber(reward.dropRate ?? reward.drop_rate ?? reward.weight),
+        quantityLabel: formatRewardQuantity(reward)
+      });
+    });
+  });
+  const seen = new Set();
+  const unique = sources.filter((source) => {
+    const key = `${source.missionId}|${source.dropNumber}|${source.quantityLabel}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const limit = Number(options.limit || 0) || unique.length;
+  return unique.slice(0, limit).map((source, index) => ({
+    ...source,
+    remainingCount: index === limit - 1 && unique.length > limit ? unique.length - limit : 0
+  }));
+}
+
+function getRewardResolvedItemByItemId(itemId) {
+  const safeItemId = String(itemId || '').trim();
+  if (!safeItemId) return null;
+  const bundle = getEquipmentBundleForRewards();
+  const item = bundle.byItemId?.[safeItemId] || bundle.itemsById?.[safeItemId] || null;
+  const equipment = bundle.equipmentById?.[safeItemId]
+    || (bundle.equipment || []).find((row) => String(row.itemId || row.item_id || '').trim() === safeItemId)
+    || null;
+  return {
+    itemId: safeItemId,
+    name: equipment?.name || item?.name || safeItemId,
+    grade: equipment?.grade || item?.grade || '',
+    itemType: item?.itemType || item?.item_type || equipment?.itemType || 'item',
+    slot: equipment?.slot || '',
+    item,
+    equipment
+  };
+}
+
+function renderDropSourceList(itemId, options = {}) {
+  const sources = findItemDropSources(itemId, { limit: options.limit || 5 });
+  if (!sources.length) {
+    const item = getRewardResolvedItemByItemId(itemId);
+    const grade = String(item?.grade || '').toUpperCase();
+    if (grade === 'SSR' || grade === 'EX') {
+      return '<p class="drop-source-empty">일반 전투에서는 획득할 수 없습니다. 레이드, 사건 파일, 특수 제작 등 후속 콘텐츠 보상으로 분리됩니다.</p>';
+    }
+    return '<p class="drop-source-empty">현재 확인된 획득처 없음</p>';
+  }
+  const remaining = sources.find((source) => source.remainingCount > 0)?.remainingCount || 0;
+  return `
+    <ul class="drop-source-list">
+      ${sources.map((source) => `
+        <li>
+          <strong>${escapeHtml(source.title)}${source.stageLabel ? ` · ${escapeHtml(source.stageLabel)}` : ''}</strong>
+          <span>${escapeHtml(source.dropLabel)}${source.dropNumber ? ` (${escapeHtml(source.dropNumber)})` : ''} · ${escapeHtml(source.quantityLabel)}</span>
+        </li>
+      `).join('')}
+    </ul>
+    ${remaining ? `<p class="drop-source-more">외 ${formatNumber(remaining)}곳</p>` : ''}
+  `;
 }
 
 function resolveKnownSkillId(skillId) {
@@ -1961,8 +2206,82 @@ async function loadOwnedMercenariesFromApi() {
     ? ''
     : '아직 보유한 용병이 없습니다. 채용 게시판에서 용병을 영입해 보세요.';
   updateMercenaryCurrencyDisplay(payload);
+  syncRepresentativeMercenaryFromRoster();
+  renderRepresentativeLobbyPanel();
   rosterState.selectedId = ownedMercenaryRoster[0]?.id || '';
   return true;
+}
+
+function getRepresentativeOwnedId() {
+  return String(representativeState.representativeUserMercenaryId || '').trim();
+}
+
+function isRepresentativeMercenary(mercenary) {
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary?.ownedId || mercenary?.userMercenaryId || mercenary?.id;
+  return Boolean(ownedId) && String(ownedId) === getRepresentativeOwnedId();
+}
+
+function syncRepresentativeMercenaryFromRoster() {
+  const ownedId = getRepresentativeOwnedId();
+  if (!ownedId) {
+    representativeState.representativeMercenary = null;
+    return null;
+  }
+  const current = ownedMercenaryRoster.find((item) => String(getOwnedRosterKey(item) || item.ownedId || item.id) === ownedId) || null;
+  if (current) representativeState.representativeMercenary = current;
+  return current;
+}
+
+async function loadRepresentativeMercenary() {
+  if (!mercenaryAuthState.authenticated) return null;
+  representativeState.loading = true;
+  try {
+    const payload = await apiRequest('/api/mercenary/representative', { perfScope: 'mercenary-representative' });
+    representativeState.representativeUserMercenaryId = String(payload?.representativeUserMercenaryId || '');
+    representativeState.representativeMercenary = payload?.representative
+      ? normalizeMercenaryForRoster(payload.representative)
+      : null;
+    syncRepresentativeMercenaryFromRoster();
+    representativeState.loaded = true;
+    renderRepresentativeLobbyPanel();
+    return representativeState.representativeMercenary;
+  } catch (error) {
+    console.warn('[mercenary/representative] load failed', error);
+    representativeState.loaded = true;
+    representativeState.representativeUserMercenaryId = '';
+    representativeState.representativeMercenary = null;
+    renderRepresentativeLobbyPanel();
+    return null;
+  } finally {
+    representativeState.loading = false;
+  }
+}
+
+async function setRepresentativeMercenary(mercenary) {
+  const ownedId = getOwnedRosterKey(mercenary) || mercenary?.ownedId || mercenary?.id;
+  if (!ownedId) return;
+  try {
+    const payload = await apiRequest('/api/mercenary/representative', {
+      method: 'PATCH',
+      body: JSON.stringify({ userMercenaryId: ownedId }),
+      perfScope: 'mercenary-representative-set'
+    });
+    representativeState.representativeUserMercenaryId = String(payload?.representativeUserMercenaryId || ownedId);
+    representativeState.representativeMercenary = payload?.representative
+      ? normalizeMercenaryForRoster(payload.representative)
+      : mercenary;
+    syncRepresentativeMercenaryFromRoster();
+    renderRepresentativeLobbyPanel();
+    renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+    showReadyNotice('\uB300\uD45C \uC6A9\uBCD1\uC744 \uC124\uC815\uD588\uC2B5\uB2C8\uB2E4.');
+  } catch (error) {
+    if (error.status === 401) {
+      mercenaryAuthState.authenticated = false;
+      showMercenaryLoginRequiredModal();
+      return;
+    }
+    showReadyNotice(error?.data?.message || error?.message || '\uB300\uD45C \uC6A9\uBCD1 \uC124\uC815\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
+  }
 }
 
 function getOwnedRosterKey(mercenary) {
@@ -4409,6 +4728,11 @@ function normalizeInventoryEntryForUi(entry = {}) {
     effectSummary: entry.effectSummary || item?.effectSummary || equipment?.summary || '',
     slot: entry.slot || equipment?.slot || '',
     category: equipment?.category || '',
+    enhancementLevel: getEquipmentEnhancementLevel(entry),
+    enhancementPity: Math.max(0, Number(entry.enhancementPity || entry.enhancement_pity || 0) || 0),
+    enhancedStats: entry.enhancedStats || null,
+    enhancedModifiers: entry.enhancedModifiers || null,
+    enhancementBonus: entry.enhancementBonus || null,
     quantity: Math.max(0, Number(entry.quantity || 0) || 0)
   };
 }
@@ -4539,7 +4863,7 @@ function renderInventoryCard(entry) {
         <b>${escapeHtml(entry.grade || '?')}</b>
       </span>
       <span class="inventory-item-copy">
-        <strong>${escapeHtml(entry.name)}</strong>
+        <strong>${escapeHtml(formatEquipmentDisplayName(entry.name, entry))}</strong>
         <em>${escapeHtml(entry.itemType)}${entry.slot ? ` · ${escapeHtml(entry.slot)}` : ''} · x${formatNumber(entry.quantity)}</em>
         <small>${escapeHtml(entry.effectSummary || entry.description || '효과 정보 없음')}</small>
       </span>
@@ -4563,11 +4887,15 @@ function renderInventoryDetail(entry) {
   }
   const stats = entry.equipment?.stats || {};
   const modifiers = entry.equipment?.modifiers || {};
-  const statRows = Object.entries({ ...stats, ...modifiers }).filter(([, value]) => Number(value || 0) !== 0);
+  const enhancedStats = entry.enhancedStats || stats;
+  const enhancedModifiers = entry.enhancedModifiers || modifiers;
+  const enhancementRows = Object.entries(entry.enhancementBonus?.stats || {})
+    .filter(([, value]) => Number(value || 0) !== 0);
+  const statRows = Object.entries({ ...enhancedStats, ...enhancedModifiers }).filter(([, value]) => Number(value || 0) !== 0);
   root.innerHTML = `
     <article class="inventory-detail-card">
       <span class="inventory-grade-badge ${getGradeClass(entry.grade)}">${escapeHtml(entry.grade || '?')}</span>
-      <h3>${escapeHtml(entry.name)}</h3>
+      <h3>${escapeHtml(formatEquipmentDisplayName(entry.name, entry))}</h3>
       <p>${escapeHtml(entry.description || '설명 없음')}</p>
       ${entry.equipment?.flavorText ? `<blockquote>${escapeHtml(entry.equipment.flavorText)}</blockquote>` : ''}
       <dl>
@@ -4576,6 +4904,7 @@ function renderInventoryDetail(entry) {
         <div><dt>슬롯</dt><dd>${escapeHtml(entry.slot || '해당 없음')}</dd></div>
         <div><dt>분류</dt><dd>${escapeHtml(entry.category || '없음')}</dd></div>
         <div><dt>수량</dt><dd>${formatNumber(entry.quantity)}</dd></div>
+        <div><dt>강화</dt><dd>${entry.itemType === 'equipment' ? `+${formatNumber(entry.enhancementLevel || 0)}` : '해당 없음'}</dd></div>
         <div><dt>획득 출처</dt><dd>${escapeHtml(entry.acquiredSourceType || '기록 없음')}</dd></div>
         <div><dt>생성일</dt><dd>${escapeHtml(entry.createdAt || '-')}</dd></div>
       </dl>
@@ -4583,10 +4912,20 @@ function renderInventoryDetail(entry) {
         <h4>능력치</h4>
         ${statRows.length ? statRows.map(([key, value]) => `<span>${escapeHtml(key.toUpperCase())} ${Number(value) > 0 ? '+' : ''}${formatNumber(value)}</span>`).join('') : '<p>능력치 보정 없음</p>'}
       </section>
+      ${enhancementRows.length ? `
+        <section class="inventory-stat-list inventory-enhancement-list">
+          <h4>강화 보너스</h4>
+          ${enhancementRows.map(([key, value]) => `<span>${escapeHtml((EQUIPMENT_STAT_LABELS[key] || key).toUpperCase())} +${formatNumber(value)}</span>`).join('')}
+        </section>
+      ` : ''}
       <section class="inventory-tag-list">
         ${(entry.equipment?.recommendedPositions || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
         ${(entry.equipment?.recommendedRoles || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
         ${(entry.equipment?.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join('')}
+      </section>
+      <section class="inventory-source-list">
+        <h4>획득처</h4>
+        ${renderDropSourceList(entry.itemId, { limit: 5 })}
       </section>
       ${entry.equipped ? `
         <section class="inventory-equipped-state">
@@ -4666,6 +5005,457 @@ function bindInventoryView() {
   document.querySelector('#inventory-close-button')?.addEventListener('click', closeInventoryView);
   document.querySelector('#mercenary-inventory-view')?.addEventListener('click', (event) => {
     if (event.target?.id === 'mercenary-inventory-view') closeInventoryView();
+  });
+}
+
+const BLACKSMITH_TABS = [
+  { value: 'disassemble', label: '분해' },
+  { value: 'enhance', label: '강화' },
+  { value: 'craft', label: '제작', disabled: true, badge: '준비중' }
+];
+
+const BLACKSMITH_STATUS_OPTIONS = [
+  { value: 'all', label: '전체' },
+  { value: 'available', label: '작업 가능' },
+  { value: 'unequipped', label: '장착 중 제외' },
+  { value: 'unlocked', label: '잠금 제외' },
+  { value: 'maxed', label: '최대 강화' }
+];
+
+const BLACKSMITH_SORT_OPTIONS = [
+  { value: 'recent', label: '최근 획득 순' },
+  { value: 'grade', label: '등급 높은 순' },
+  { value: 'enhancement', label: '강화 높은 순' },
+  { value: 'power', label: '전투력 높은 순' }
+];
+
+function openBlacksmithView() {
+  document.querySelector('#mercenary-blacksmith-view')?.removeAttribute('hidden');
+  document.body.classList.add('blacksmith-open');
+  loadBlacksmithSummary();
+}
+
+function closeBlacksmithView() {
+  if (blacksmithState.pending) {
+    const ok = window.confirm('대장간 작업이 진행 중입니다. 창을 닫을까요?');
+    if (!ok) return;
+  }
+  document.querySelector('#mercenary-blacksmith-view')?.setAttribute('hidden', '');
+  document.body.classList.remove('blacksmith-open');
+}
+
+async function loadBlacksmithSummary() {
+  blacksmithState.loading = true;
+  blacksmithState.errorMessage = '';
+  renderBlacksmithView();
+  try {
+    await ensureInventoryEquipmentBundle();
+    const payload = await apiRequest('/api/mercenary/blacksmith/summary', { perfScope: 'mercenary-blacksmith-summary' });
+    blacksmithState.summary = payload || null;
+    blacksmithState.candidates = Array.isArray(payload?.enhanceCandidates)
+      ? payload.enhanceCandidates.map(normalizeInventoryEntryForUi)
+      : [];
+    if (!blacksmithState.candidates.some((item) => item.id === blacksmithState.selectedEntryId)) {
+      blacksmithState.selectedEntryId = blacksmithState.candidates[0]?.id || '';
+    }
+  } catch (error) {
+    console.warn('[mercenary/blacksmith] load failed', error);
+    if (error.status === 401 || error.data?.code === 'AUTH_REQUIRED') showMercenaryLoginRequiredModal();
+    blacksmithState.summary = null;
+    blacksmithState.candidates = [];
+    blacksmithState.errorMessage = error.data?.message || error.message || '대장간 장부를 불러오지 못했습니다.';
+  } finally {
+    blacksmithState.loading = false;
+    renderBlacksmithView();
+  }
+}
+
+function getBlacksmithSelectedEntry() {
+  return filterBlacksmithCandidates().find((entry) => String(entry.id) === String(blacksmithState.selectedEntryId))
+    || blacksmithState.candidates.find((entry) => String(entry.id) === String(blacksmithState.selectedEntryId))
+    || filterBlacksmithCandidates()[0]
+    || null;
+}
+
+function getBlacksmithCandidatePower(entry = {}) {
+  const stats = entry.enhancedStats || entry.equipment?.stats || {};
+  const modifiers = entry.enhancedModifiers || entry.equipment?.modifiers || {};
+  return Number(modifiers.combatPower || 0)
+    + ['hp', 'atk', 'def', 'spd', 'tec', 'sup'].reduce((sum, key) => sum + Math.max(0, Number(stats[key] || 0) || 0), 0);
+}
+
+function filterBlacksmithCandidates() {
+  const filters = blacksmithState.filters;
+  const q = String(filters.q || '').trim().toLowerCase();
+  const rows = (blacksmithState.candidates || []).filter((entry) => {
+    if (filters.slot !== 'all' && entry.slot !== filters.slot) return false;
+    if (filters.grade !== 'all' && String(entry.grade || '').toUpperCase() !== filters.grade) return false;
+    if (filters.status === 'available') {
+      if (blacksmithState.tab === 'disassemble' && !entry.canDisassemble) return false;
+      if (blacksmithState.tab === 'enhance' && !entry.canEnhance) return false;
+    }
+    if (filters.status === 'unequipped' && entry.equipped) return false;
+    if (filters.status === 'unlocked' && entry.locked) return false;
+    if (filters.status === 'maxed' && getEquipmentEnhancementLevel(entry) < 5) return false;
+    if (q) {
+      const haystack = [
+        entry.itemId,
+        entry.name,
+        entry.description,
+        entry.effectSummary,
+        entry.slot,
+        entry.grade,
+        ...(entry.equipment?.tags || [])
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+  return rows.sort((a, b) => {
+    if (filters.sort === 'grade') return getGradeRank(b.grade) - getGradeRank(a.grade);
+    if (filters.sort === 'enhancement') return getEquipmentEnhancementLevel(b) - getEquipmentEnhancementLevel(a);
+    if (filters.sort === 'power') return getBlacksmithCandidatePower(b) - getBlacksmithCandidatePower(a);
+    return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  });
+}
+
+function renderBlacksmithTabs() {
+  const root = document.querySelector('#blacksmith-tabs');
+  if (!root) return;
+  root.innerHTML = BLACKSMITH_TABS.map((tab) => `
+    <button type="button" class="${blacksmithState.tab === tab.value ? 'is-active' : ''}" data-blacksmith-tab="${escapeHtml(tab.value)}" ${tab.disabled ? 'disabled' : ''}>
+      <span>${escapeHtml(tab.label)}</span>
+      ${tab.badge ? `<em>${escapeHtml(tab.badge)}</em>` : ''}
+    </button>
+  `).join('');
+  root.querySelectorAll('[data-blacksmith-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      blacksmithState.tab = button.dataset.blacksmithTab || 'disassemble';
+      renderBlacksmithView();
+    });
+  });
+}
+
+function renderBlacksmithFilters() {
+  const search = document.querySelector('#blacksmith-search-input');
+  const slot = document.querySelector('#blacksmith-slot-filter');
+  const grade = document.querySelector('#blacksmith-grade-filter');
+  const status = document.querySelector('#blacksmith-status-filter');
+  const sort = document.querySelector('#blacksmith-sort-filter');
+  if (search) {
+    search.value = blacksmithState.filters.q;
+    search.oninput = (event) => {
+      blacksmithState.filters.q = event.target.value || '';
+      renderBlacksmithView();
+    };
+  }
+  if (slot) {
+    slot.innerHTML = INVENTORY_SLOT_OPTIONS.map((item) => `<option value="${escapeHtml(item.value)}" ${blacksmithState.filters.slot === item.value ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('');
+    slot.onchange = (event) => {
+      blacksmithState.filters.slot = event.target.value || 'all';
+      renderBlacksmithView();
+    };
+  }
+  if (grade) {
+    grade.innerHTML = INVENTORY_GRADE_OPTIONS.map((item) => `<option value="${escapeHtml(item)}" ${blacksmithState.filters.grade === item ? 'selected' : ''}>${item === 'all' ? '전체' : escapeHtml(item)}</option>`).join('');
+    grade.onchange = (event) => {
+      blacksmithState.filters.grade = event.target.value || 'all';
+      renderBlacksmithView();
+    };
+  }
+  if (status) {
+    status.innerHTML = BLACKSMITH_STATUS_OPTIONS.map((item) => `<option value="${escapeHtml(item.value)}" ${blacksmithState.filters.status === item.value ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('');
+    status.onchange = (event) => {
+      blacksmithState.filters.status = event.target.value || 'all';
+      renderBlacksmithView();
+    };
+  }
+  if (sort) {
+    sort.innerHTML = BLACKSMITH_SORT_OPTIONS.map((item) => `<option value="${escapeHtml(item.value)}" ${blacksmithState.filters.sort === item.value ? 'selected' : ''}>${escapeHtml(item.label)}</option>`).join('');
+    sort.onchange = (event) => {
+      blacksmithState.filters.sort = event.target.value || 'recent';
+      renderBlacksmithView();
+    };
+  }
+}
+
+function renderBlacksmithResources() {
+  const root = document.querySelector('#blacksmith-resource-summary');
+  if (!root) return;
+  const materials = (blacksmithState.summary?.importantMaterials || []).slice(0, 4);
+  root.innerHTML = `
+    <span><b>골드</b> ${formatNumber(blacksmithState.summary?.gold || 0)}G</span>
+    ${materials.map((item) => `<span><b>${escapeHtml(item.name)}</b> ${formatNumber(item.quantity || 0)}</span>`).join('')}
+  `;
+}
+
+function getBlacksmithOwnedMaterialQuantity(itemId) {
+  const safeItemId = String(itemId || '').trim();
+  if (!safeItemId) return 0;
+  return (blacksmithState.summary?.importantMaterials || [])
+    .filter((item) => String(item.itemId || item.item_id || '').trim() === safeItemId)
+    .reduce((sum, item) => sum + (Number(item.quantity || 0) || 0), 0);
+}
+
+function renderBlacksmithMaterialCostItem(item = {}) {
+  const itemId = String(item.itemId || item.item_id || '').trim();
+  const required = Math.max(0, Number(item.quantity || 0) || 0);
+  const owned = getBlacksmithOwnedMaterialQuantity(itemId);
+  const shortage = required > owned;
+  return `
+    <li class="${shortage ? 'is-short' : ''}">
+      <span>${escapeHtml(item.name || itemId || '재료')}</span>
+      <strong>${formatNumber(owned)} / ${formatNumber(required)}</strong>
+      ${itemId ? `<button type="button" data-drop-source-item="${escapeHtml(itemId)}">획득처</button>` : ''}
+    </li>
+  `;
+}
+
+function renderBlacksmithList(rows) {
+  const root = document.querySelector('#blacksmith-equipment-list');
+  if (!root) return;
+  if (blacksmithState.loading) {
+    root.innerHTML = '<p class="blacksmith-empty">대장간 장부를 펼치는 중입니다.</p>';
+    return;
+  }
+  if (blacksmithState.errorMessage) {
+    root.innerHTML = `<p class="blacksmith-empty">${escapeHtml(blacksmithState.errorMessage)}</p>`;
+    return;
+  }
+  if (!rows.length) {
+    root.innerHTML = '<p class="blacksmith-empty">작업할 장비가 없습니다.</p>';
+    return;
+  }
+  if (!rows.some((entry) => entry.id === blacksmithState.selectedEntryId)) blacksmithState.selectedEntryId = rows[0].id;
+  root.innerHTML = rows.map((entry) => {
+    const blockedReason = entry.equipped ? '장착 중' : entry.locked ? '잠금' : entry.grade === 'SSR' || entry.grade === 'EX' ? '특수 장비' : '';
+    return `
+      <button type="button" class="blacksmith-equipment-card ${entry.id === blacksmithState.selectedEntryId ? 'is-selected' : ''}" data-blacksmith-entry="${escapeHtml(entry.id)}">
+        <span class="inventory-grade-badge ${getGradeClass(entry.grade)}">${escapeHtml(entry.grade || '?')}</span>
+        <strong>${escapeHtml(formatEquipmentDisplayName(entry.name, entry))}</strong>
+        <em>${escapeHtml(getEquipmentSlotLabel(entry.slot))} · 전투력 +${formatNumber(getBlacksmithCandidatePower(entry))}</em>
+        <small>${escapeHtml(entry.effectSummary || '능력치 정보 없음')}</small>
+        <span class="blacksmith-card-flags">
+          ${entry.equipped ? '<i>장착 중</i>' : ''}
+          ${entry.locked ? '<i>잠금</i>' : ''}
+          ${getEquipmentEnhancementLevel(entry) >= 5 ? '<i>MAX</i>' : ''}
+          ${blockedReason && blacksmithState.tab === 'disassemble' ? `<i>${escapeHtml(blockedReason)}</i>` : ''}
+        </span>
+      </button>
+    `;
+  }).join('');
+  root.querySelectorAll('[data-blacksmith-entry]').forEach((button) => {
+    button.addEventListener('click', () => {
+      blacksmithState.selectedEntryId = button.dataset.blacksmithEntry || '';
+      renderBlacksmithView();
+    });
+  });
+}
+
+function renderBlacksmithStatGrid(entry) {
+  const stats = entry?.enhancedStats || entry?.equipment?.stats || {};
+  const baseStats = entry?.equipment?.stats || {};
+  const bonusStats = entry?.enhancementBonus?.stats || {};
+  const keys = ['hp', 'atk', 'def', 'spd', 'tec', 'sup'];
+  return `
+    <div class="blacksmith-stat-grid">
+      ${keys.map((key) => `
+        <div>
+          <span>${escapeHtml(EQUIPMENT_STAT_LABELS[key] || key.toUpperCase())}</span>
+          <strong>${Number(stats[key] || 0) > 0 ? '+' : ''}${formatNumber(stats[key] || 0)}</strong>
+          <em>기본 ${formatNumber(baseStats[key] || 0)}${Number(bonusStats[key] || 0) ? ` / 강화 +${formatNumber(bonusStats[key])}` : ''}</em>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderBlacksmithDetail(entry) {
+  const root = document.querySelector('#blacksmith-detail-panel');
+  if (!root) return;
+  if (!entry) {
+    root.innerHTML = `
+      <article class="blacksmith-empty-detail">
+        <h3>장비를 선택하세요</h3>
+        <p>왼쪽 장부에서 고철 후보를 고르면 선배가 두드릴지, 녹일지 판단합니다.</p>
+      </article>
+    `;
+    return;
+  }
+  const level = getEquipmentEnhancementLevel(entry);
+  root.innerHTML = `
+    <article class="blacksmith-detail-card ${getGradeClass(entry.grade)}">
+      <header>
+        <span class="inventory-grade-badge ${getGradeClass(entry.grade)}">${escapeHtml(entry.grade || '?')}</span>
+        <div>
+          <h3>${escapeHtml(formatEquipmentDisplayName(entry.name, entry))}</h3>
+          <p>${escapeHtml(getEquipmentSlotLabel(entry.slot))} · ${escapeHtml(entry.category || entry.equipment?.category || '분류 없음')}</p>
+        </div>
+        <strong class="blacksmith-level-badge">${level >= 5 ? 'MAX' : `+${level}`}</strong>
+      </header>
+      <p>${escapeHtml(entry.description || entry.effectSummary || '설명 없음')}</p>
+      ${entry.equipped ? `<p class="blacksmith-warning">장착 중: ${escapeHtml(entry.equippedByMercenaryName || '용병')}</p>` : ''}
+      ${entry.locked ? '<p class="blacksmith-warning">잠금 장비입니다. 분해할 수 없습니다.</p>' : ''}
+      ${(entry.grade === 'SSR' || entry.grade === 'EX') ? '<p class="blacksmith-warning">특수 장비는 대장간 0.1에서 분해/강화할 수 없습니다.</p>' : ''}
+      ${renderBlacksmithStatGrid(entry)}
+      <section class="blacksmith-enhancement-track">
+        ${[0, 1, 2, 3, 4, 5].map((step) => `<span class="${step <= level ? 'is-lit' : ''}">${step === 0 ? '+0' : `+${step}`}</span>`).join('')}
+      </section>
+      ${entry.equipment?.flavorText ? `<blockquote>${escapeHtml(entry.equipment.flavorText)}</blockquote>` : ''}
+    </article>
+  `;
+}
+
+function getBlacksmithDisassemblePreview(entry) {
+  const grade = String(entry?.grade || 'N').toUpperCase();
+  if (grade === 'SR') return ['녹슨 고철 5~8', '계열 재료 1~2', '고급 재료 0~1'];
+  if (grade === 'R') return ['녹슨 고철 2~4', '계열 재료 0~1'];
+  if (grade === 'SSR' || grade === 'EX') return ['특수 장비는 분해 불가'];
+  return ['녹슨 고철 1~2'];
+}
+
+function renderBlacksmithWorkPanel(entry) {
+  const root = document.querySelector('#blacksmith-work-panel');
+  if (!root) return;
+  if (blacksmithState.tab === 'craft') {
+    root.innerHTML = `
+      <article class="blacksmith-work-card">
+        <h3>제작</h3>
+        <p>제작대는 아직 수리 중입니다. 분해와 강화 루프가 안정화된 뒤 열립니다.</p>
+        <button type="button" disabled>준비중</button>
+      </article>
+    `;
+    return;
+  }
+  if (!entry) {
+    root.innerHTML = '<article class="blacksmith-work-card"><h3>작업 대기</h3><p>장비를 선택하면 작업 내용이 표시됩니다.</p></article>';
+    return;
+  }
+  if (blacksmithState.tab === 'disassemble') {
+    const canDisassemble = Boolean(entry.canDisassemble);
+    root.innerHTML = `
+      <article class="blacksmith-work-card ${canDisassemble ? '' : 'is-disabled'}">
+        <h3>분해 결과</h3>
+        <ul>${getBlacksmithDisassemblePreview(entry).map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+        <p class="blacksmith-warning">분해한 장비는 복구할 수 없습니다. 장착/잠금/SSR/EX 장비는 분해할 수 없습니다.</p>
+        <button type="button" data-blacksmith-disassemble="${escapeHtml(entry.id)}" ${!canDisassemble || blacksmithState.pending ? 'disabled' : ''}>선택 장비 분해</button>
+      </article>
+    `;
+    root.querySelector('[data-blacksmith-disassemble]')?.addEventListener('click', () => disassembleBlacksmithEntry(entry));
+    return;
+  }
+  const cost = entry.nextEnhancementCost;
+  const canEnhance = Boolean(entry.canEnhance && cost);
+  const target = cost?.targetLevel || getEquipmentEnhancementLevel(entry) + 1;
+  root.innerHTML = `
+    <article class="blacksmith-work-card ${target === 5 ? 'is-danger' : ''} ${canEnhance ? '' : 'is-disabled'}">
+      <h3>강화 시도</h3>
+      <div class="blacksmith-cost-line"><span>목표</span><strong>+${formatNumber(target)}</strong></div>
+      <div class="blacksmith-cost-line"><span>성공률</span><strong>${formatNumber(cost?.successRate || 0)}%</strong></div>
+      ${target === 5 ? `<p class="blacksmith-warning">+5 강화는 성공률이 낮고 재료 소모가 큽니다. 실패해도 파괴/하락은 없습니다.${entry.enhancementPity ? ` 실패 누적 ${formatNumber(entry.enhancementPity)}회` : ''}</p>` : ''}
+      <div class="blacksmith-cost-line"><span>골드</span><strong>${formatNumber(cost?.gold || 0)}G</strong></div>
+      <ul class="blacksmith-material-list">
+        ${(cost?.materials || []).map(renderBlacksmithMaterialCostItem).join('') || '<li>필요 재료 없음</li>'}
+      </ul>
+      <p class="blacksmith-drop-note">재료는 전투 보상 또는 장비 분해로 얻을 수 있습니다.</p>
+      <p>성공 시 전투력과 실제 전투 스탯에 즉시 반영됩니다.</p>
+      <button type="button" data-blacksmith-enhance="${escapeHtml(entry.id)}" ${!canEnhance || blacksmithState.pending ? 'disabled' : ''}>강화 시도</button>
+    </article>
+  `;
+  root.querySelector('[data-blacksmith-enhance]')?.addEventListener('click', () => enhanceBlacksmithEntry(entry));
+}
+
+function renderBlacksmithView() {
+  renderBlacksmithTabs();
+  renderBlacksmithFilters();
+  renderBlacksmithResources();
+  const rows = filterBlacksmithCandidates();
+  renderBlacksmithList(rows);
+  const selected = getBlacksmithSelectedEntry();
+  renderBlacksmithDetail(selected);
+  renderBlacksmithWorkPanel(selected);
+}
+
+async function refreshAfterBlacksmithAction(message) {
+  if (message) showReadyNotice(message);
+  await Promise.allSettled([
+    loadInventoryData(),
+    loadOwnedMercenariesFromApi()
+  ]);
+  renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+  syncRepresentativeMercenaryFromRoster();
+  renderRepresentativeLobbyPanel();
+  renderBattleOperationBoard();
+  await loadBlacksmithSummary();
+}
+
+async function disassembleBlacksmithEntry(entry) {
+  if (!entry?.id || blacksmithState.pending) return;
+  if (String(entry.grade || '').toUpperCase() === 'SR') {
+    const typed = window.prompt(`SR 장비 분해 확인: ${entry.name} 이름을 입력해 주세요.`);
+    if (typed !== entry.name) {
+      showReadyNotice('장비명을 정확히 입력해야 분해할 수 있습니다.');
+      return;
+    }
+  } else {
+    const ok = window.confirm(`${entry.name} 장비를 분해할까요? 이 작업은 되돌릴 수 없습니다.`);
+    if (!ok) return;
+  }
+  blacksmithState.pending = true;
+  renderBlacksmithView();
+  try {
+    const payload = await apiRequest('/api/mercenary/blacksmith/disassemble', {
+      method: 'POST',
+      body: JSON.stringify({ inventoryItemIds: [entry.id] }),
+      perfScope: 'mercenary-blacksmith-disassemble'
+    });
+    const gained = (payload?.grantedMaterials || []).map((item) => `${item.name} x${formatNumber(item.quantity)}`).join(', ');
+    blacksmithState.selectedEntryId = '';
+    await refreshAfterBlacksmithAction(gained ? `분해 완료: ${gained}` : '분해를 완료했습니다.');
+  } catch (error) {
+    if (error.status === 401) showMercenaryLoginRequiredModal();
+    else showReadyNotice(error?.data?.message || error?.message || '분해에 실패했습니다.');
+  } finally {
+    blacksmithState.pending = false;
+    renderBlacksmithView();
+  }
+}
+
+async function enhanceBlacksmithEntry(entry) {
+  if (!entry?.id || blacksmithState.pending) return;
+  const target = entry.nextEnhancementCost?.targetLevel || getEquipmentEnhancementLevel(entry) + 1;
+  if (target === 5) {
+    const ok = window.confirm('+5 강화는 성공률이 낮고 비용이 큽니다. 그래도 시도할까요? 실패해도 파괴/하락은 없습니다.');
+    if (!ok) return;
+  }
+  blacksmithState.pending = true;
+  renderBlacksmithView();
+  try {
+    const payload = await apiRequest('/api/mercenary/blacksmith/enhance', {
+      method: 'POST',
+      body: JSON.stringify({ inventoryItemId: entry.id }),
+      perfScope: 'mercenary-blacksmith-enhance'
+    });
+    const message = payload?.success
+      ? `${payload.name || entry.name} +${formatNumber(payload.afterLevel)} 강화 성공!`
+      : `${payload.name || entry.name} 강화 실패. 장비는 유지됩니다.`;
+    await refreshAfterBlacksmithAction(message);
+  } catch (error) {
+    if (error.status === 401) showMercenaryLoginRequiredModal();
+    else showReadyNotice(error?.data?.message || error?.message || '강화에 실패했습니다.');
+  } finally {
+    blacksmithState.pending = false;
+    renderBlacksmithView();
+  }
+}
+
+function bindBlacksmithView() {
+  document.querySelector('#blacksmith-close-button')?.addEventListener('click', closeBlacksmithView);
+  document.querySelector('#mercenary-blacksmith-view')?.addEventListener('click', (event) => {
+    if (event.target?.id === 'mercenary-blacksmith-view' || event.target?.classList?.contains('blacksmith-background-scrim')) closeBlacksmithView();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !document.querySelector('#mercenary-blacksmith-view')?.hidden) closeBlacksmithView();
   });
 }
 
@@ -5077,9 +5867,22 @@ function getEquipmentSlotIcon(slot) {
   return 'briefcase';
 }
 
+function getEquipmentEnhancementLevel(entry = {}) {
+  return Math.max(0, Math.min(5, Number(entry.enhancementLevel ?? entry.enhancement_level ?? entry.inventoryEntry?.enhancementLevel ?? 0) || 0));
+}
+
+function formatEnhancementSuffix(entry = {}) {
+  const level = getEquipmentEnhancementLevel(entry);
+  return level > 0 ? ` +${level}` : '';
+}
+
+function formatEquipmentDisplayName(name, entry = {}) {
+  return `${name || '이름 없는 장비'}${formatEnhancementSuffix(entry)}`;
+}
+
 function formatEquipmentSummary(equipment = {}) {
-  const stats = equipment.stats || {};
-  const modifiers = equipment.modifiers || {};
+  const stats = equipment.enhancedStats || equipment.stats || {};
+  const modifiers = equipment.enhancedModifiers || equipment.modifiers || {};
   const rows = Object.entries({ ...stats, ...modifiers })
     .filter(([, value]) => Number(value || 0) !== 0)
     .slice(0, 4)
@@ -5201,6 +6004,103 @@ function ensureMercenaryActionLayer(id, className) {
   return layer;
 }
 
+function closeMercenaryDropGuideModal() {
+  const layer = document.querySelector('#mercenary-drop-guide-modal');
+  if (layer) {
+    layer.hidden = true;
+    layer.innerHTML = '';
+  }
+}
+
+function buildRepresentativeDropGuideRows() {
+  const bases = battleOperationState.baseOperations.length ? battleOperationState.baseOperations : battleOperationState.operations;
+  return bases.slice(0, 8).map((base) => {
+    const group = getStageGroup(base.id);
+    const mission = group?.stages?.[0] || base;
+    const preview = buildMissionRewardPreview(mission);
+    const drops = [...preview.materials.slice(0, 2), ...preview.equipment.slice(0, 2)];
+    return {
+      title: base.title || mission.title || mission.id,
+      drops
+    };
+  }).filter((row) => row.drops.length);
+}
+
+function renderDropGuidePolicy() {
+  return `
+    <section class="drop-guide-policy">
+      <h3>장비 획득 안내</h3>
+      <ul>
+        <li>일반 전투에서는 N/R 장비가 주로 드랍됩니다.</li>
+        <li>SR 장비는 고난도 전투에서 매우 낮은 확률로 드랍됩니다.</li>
+        <li>SSR/EX 장비는 일반 전투에서 드랍되지 않습니다.</li>
+        <li>재료는 전투 보상과 장비 분해로 얻을 수 있습니다.</li>
+        <li>안 쓰는 장비는 대장간에서 분해해 강화 재료로 바꿀 수 있습니다.</li>
+      </ul>
+    </section>
+  `;
+}
+
+function renderDropGuideRepresentativeDrops() {
+  const rows = buildRepresentativeDropGuideRows();
+  if (!rows.length) return '<p class="drop-source-empty">표시할 드랍 정보가 아직 없습니다.</p>';
+  return `
+    <section class="drop-guide-missions">
+      <h3>전투별 대표 드랍</h3>
+      ${rows.map((row) => `
+        <article>
+          <strong>${escapeHtml(row.title)}</strong>
+          <div>
+            ${row.drops.map((item) => `<span>${item.grade ? `[${escapeHtml(item.grade)}] ` : ''}${escapeHtml(item.name)} · ${escapeHtml(item.dropLabel)}</span>`).join('')}
+          </div>
+        </article>
+      `).join('')}
+    </section>
+  `;
+}
+
+async function openMercenaryDropGuideModal(itemId = '') {
+  await ensureInventoryEquipmentBundle().catch((error) => console.warn?.('[mercenary/drop-guide] equipment bundle unavailable:', error));
+  const safeItemId = String(itemId || '').trim();
+  const item = safeItemId ? getRewardResolvedItemByItemId(safeItemId) : null;
+  const layer = ensureMercenaryActionLayer('mercenary-drop-guide-modal', 'mercenary-drop-guide-modal');
+  layer.innerHTML = `
+    <div class="mercenary-action-backdrop" data-drop-guide-close></div>
+    <section class="drop-guide-card" role="dialog" aria-modal="true" aria-label="드랍 안내">
+      <header>
+        <div>
+          <span>전리품 장부</span>
+          <h2>${item ? `${escapeHtml(item.name)} 획득처` : '드랍 안내'}</h2>
+        </div>
+        <button type="button" class="mercenary-modal-close" data-drop-guide-close aria-label="닫기">×</button>
+      </header>
+      ${item ? `
+        <section class="drop-guide-item-source">
+          <p>${item.grade ? `[${escapeHtml(item.grade)}] ` : ''}${escapeHtml(item.itemType || '')}${item.slot ? ` · ${escapeHtml(getEquipmentSlotLabel(item.slot) || item.slot)}` : ''}</p>
+          ${renderDropSourceList(safeItemId, { limit: 8 })}
+          <p class="drop-guide-note">재료는 전투 보상 또는 장비 분해로도 얻을 수 있습니다.</p>
+        </section>
+      ` : `
+        ${renderDropGuidePolicy()}
+        ${renderDropGuideRepresentativeDrops()}
+      `}
+    </section>
+  `;
+  layer.hidden = false;
+  layer.querySelectorAll('[data-drop-guide-close]').forEach((button) => {
+    button.addEventListener('click', closeMercenaryDropGuideModal);
+  });
+}
+
+function bindDropGuideControls() {
+  document.addEventListener('click', (event) => {
+    const trigger = event.target?.closest?.('[data-drop-guide-open], [data-drop-source-item]');
+    if (!trigger) return;
+    event.preventDefault();
+    openMercenaryDropGuideModal(trigger.dataset.dropSourceItem || '');
+  });
+}
+
 function closeMercenaryIllustrationLightbox() {
   const layer = document.querySelector('#mercenary-illustration-lightbox');
   if (layer) {
@@ -5278,8 +6178,8 @@ function renderMercenaryEquipmentManageModal(mercenary, selectedSlot = 'weapon')
       return `
         <article class="mercenary-equipment-candidate ${disabled ? 'is-disabled' : ''}">
           <div>
-            <strong>${escapeHtml(entry.name || equipment.name || entry.itemId)}</strong>
-            <span>${escapeHtml(entry.grade || equipment.grade || '')} · ${escapeHtml(formatEquipmentSummary(equipment || entry))}</span>
+            <strong>${escapeHtml(formatEquipmentDisplayName(entry.name || equipment.name || entry.itemId, entry))}</strong>
+            <span>${escapeHtml(entry.grade || equipment.grade || '')} · ${escapeHtml(formatEquipmentSummary(entry || equipment))}</span>
             ${missingEquipmentMaster ? '<em>장비 마스터 정보 없음</em>' : isEquippedBySelected ? '<em>현재 장착 중</em>' : isEquippedElsewhere ? `<em>${escapeHtml(ownerName)} 장착 중</em>` : occupied ? '<em>먼저 현재 슬롯을 비워주세요</em>' : ''}
           </div>
           <button type="button" data-equipment-manage-equip="${escapeHtml(entry.id)}" ${disabled ? 'disabled' : ''}>장착</button>
@@ -5308,7 +6208,7 @@ function renderMercenaryEquipmentManageModal(mercenary, selectedSlot = 'weapon')
             return `
               <button type="button" class="${slotKey === activeSlot ? 'is-active' : ''}" data-equipment-manage-slot="${escapeHtml(slotKey)}">
                 <span>${escapeHtml(getEquipmentSlotLabel(slotKey))}</span>
-                <strong>${escapeHtml(name)}</strong>
+                <strong>${escapeHtml(slot ? formatEquipmentDisplayName(name, slot) : name)}</strong>
               </button>
             `;
           }).join('')}
@@ -5316,8 +6216,8 @@ function renderMercenaryEquipmentManageModal(mercenary, selectedSlot = 'weapon')
         <main>
           <div class="mercenary-current-equipment">
             <span>${escapeHtml(getEquipmentSlotLabel(activeSlot))}</span>
-            <strong>${escapeHtml(currentSlot?.name || currentSlot?.equipment?.name || currentSlot?.item?.name || '비어 있음')}</strong>
-            <p>${currentSlot ? escapeHtml(formatEquipmentSummary(currentSlot.equipment || currentSlot)) : '장착 중인 장비가 없습니다.'}</p>
+            <strong>${escapeHtml(currentSlot ? formatEquipmentDisplayName(currentSlot?.name || currentSlot?.equipment?.name || currentSlot?.item?.name, currentSlot) : '비어 있음')}</strong>
+            <p>${currentSlot ? escapeHtml(formatEquipmentSummary(currentSlot)) : '장착 중인 장비가 없습니다.'}</p>
             ${currentSlot ? `<button type="button" data-equipment-manage-unequip="${escapeHtml(activeSlot)}" ${blocked ? 'disabled' : ''}>해제</button>` : ''}
           </div>
           <div class="mercenary-equipment-candidate-list">${candidateHtml}</div>
@@ -5373,6 +6273,8 @@ async function setMercenaryLockState(mercenary, locked) {
     showReadyNotice(locked ? '용병을 잠갔습니다.' : '용병 잠금을 해제했습니다.');
     await loadOwnedMercenariesFromApi();
     renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+    syncRepresentativeMercenaryFromRoster();
+    renderRepresentativeLobbyPanel();
   } catch (error) {
     if (error.status === 401) {
       mercenaryAuthState.authenticated = false;
@@ -5456,6 +6358,11 @@ async function dismissMercenary(mercenary, confirmName) {
       loadOwnedMercenariesFromApi(),
       loadInventoryData()
     ]);
+    if (payload?.representativeCleared || String(ownedId) === getRepresentativeOwnedId()) {
+      representativeState.representativeUserMercenaryId = '';
+      representativeState.representativeMercenary = null;
+    }
+    renderRepresentativeLobbyPanel();
     rosterState.selectedId = ownedMercenaryRoster[0]?.rosterId || ownedMercenaryRoster[0]?.id || '';
     renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
     renderInventoryView();
@@ -5475,6 +6382,7 @@ document.addEventListener('keydown', (event) => {
     closeMercenaryIllustrationLightbox();
     closeMercenaryEquipmentManageModal();
     closeMercenaryDismissModal();
+    closeMercenaryDropGuideModal();
   }
 });
 
@@ -5491,17 +6399,41 @@ function formatBattleRewardLine(operation) {
 
 function renderBattleRewardPreview(operation) {
   const summary = summarizeBattleRewards(operation?.rewards || []);
+  const preview = buildMissionRewardPreview(operation);
   const items = [
-    summary.gold ? `<li><span>골드</span><strong>+${formatNumber(summary.gold)}</strong></li>` : '',
-    summary.officeExp ? `<li><span>사무소 EXP</span><strong>+${formatNumber(summary.officeExp)}</strong></li>` : '',
-    summary.mercExp ? `<li><span>용병 EXP</span><strong>+${formatNumber(summary.mercExp)}</strong></li>` : ''
+    summary.gold ? `<li><span>\uACE8\uB4DC</span><strong>+${formatNumber(summary.gold)}</strong></li>` : '',
+    summary.officeExp ? `<li><span>\uC0AC\uBB34\uC18C EXP</span><strong>+${formatNumber(summary.officeExp)}</strong></li>` : '',
+    summary.mercExp ? `<li><span>\uC6A9\uBCD1 EXP</span><strong>+${formatNumber(summary.mercExp)}</strong></li>` : ''
   ].filter(Boolean).join('');
   const note = summary.resultTexts[0] || '';
+  const materialDrops = preview.materials.slice(0, 6).map((item) => `
+    <li class="battle-drop-chip is-material">
+      <span>${escapeHtml(item.name)}</span>
+      <strong>${escapeHtml(item.quantityLabel)} \u00B7 ${escapeHtml(item.dropLabel)}</strong>
+      ${item.dropNumber ? `<small>${escapeHtml(item.dropNumber)}</small>` : ''}
+    </li>
+  `).join('');
+  const equipmentDrops = preview.equipment.slice(0, 6).map((item) => `
+    <li class="battle-drop-chip is-equipment ${String(item.grade || '').toUpperCase() === 'SR' ? 'is-rare' : ''}">
+      <span>${item.grade ? `[${escapeHtml(item.grade)}] ` : ''}${escapeHtml(item.name)}</span>
+      <strong>${escapeHtml(getEquipmentSlotLabel(item.slot) || item.slot || '\uC7A5\uBE44')} \u00B7 ${escapeHtml(item.dropLabel)}</strong>
+      ${item.dropNumber ? `<small>${escapeHtml(item.dropNumber)}</small>` : ''}
+    </li>
+  `).join('');
   return `
-    <section class="battle-reward-preview" aria-label="보상">
-      <h4>보상</h4>
-      ${items ? `<ul>${items}</ul>` : '<p>표시할 보상 정보가 없습니다.</p>'}
-      ${summary.extraCount ? `<p class="battle-reward-extra">추가 보상 ${formatNumber(summary.extraCount)}종은 후속 시스템에서 처리됩니다.</p>` : ''}
+    <section class="battle-reward-preview" aria-label="\uBCF4\uC0C1">
+      <header class="battle-reward-preview-header">
+        <h4>\uC8FC\uC694 \uBCF4\uC0C1</h4>
+        <button type="button" data-drop-guide-open>\uB4DC\uB78D \uC548\uB0B4</button>
+      </header>
+      ${items ? `<ul>${items}</ul>` : '<p>\uD45C\uC2DC\uD560 \uD655\uC815 \uBCF4\uC0C1 \uC815\uBCF4\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.</p>'}
+      ${materialDrops || equipmentDrops ? `
+        <div class="battle-drop-preview">
+          ${materialDrops ? `<section><h5>\uC8FC\uC694 \uC7AC\uB8CC</h5><ul>${materialDrops}</ul></section>` : ''}
+          ${equipmentDrops ? `<section><h5>\uC7A5\uBE44 \uB4DC\uB78D</h5><ul>${equipmentDrops}</ul></section>` : ''}
+        </div>
+      ` : '<p class="battle-reward-extra">\uC774 \uC758\uB8B0\uC758 \uCD94\uAC00 \uC804\uB9AC\uD488 \uC815\uBCF4\uB294 \uC544\uC9C1 \uC5C6\uC2B5\uB2C8\uB2E4.</p>'}
+      <p class="battle-reward-policy">SSR/EX \uC7A5\uBE44\uB294 \uC77C\uBC18 \uC804\uD22C \uB4DC\uB78D \uB300\uC0C1\uC774 \uC544\uB2C8\uBA70, \uD2B9\uC218 \uCF58\uD150\uCE20 \uBCF4\uC0C1\uC73C\uB85C \uBD84\uB9AC\uB429\uB2C8\uB2E4.</p>
       ${note ? `<small>${escapeHtml(note)}</small>` : ''}
     </section>
   `;
@@ -5536,8 +6468,11 @@ async function openBattleOperationView() {
   ensureDefaultBattleParty();
   const loadPromise = ensureOwnedMercenariesLoaded({ refreshBattleBoard: true });
   const stageClearPromise = loadBattleStageClears().then(() => renderBattleOperationBoard());
+  const rewardMasterPromise = ensureInventoryEquipmentBundle().then(() => renderBattleOperationBoard()).catch((error) => {
+    console.warn?.('[mercenary/drop-guide] equipment bundle unavailable:', error);
+  });
   renderBattleOperationBoard();
-  await Promise.all([loadPromise, stageClearPromise]);
+  await Promise.all([loadPromise, stageClearPromise, rewardMasterPromise]);
 }
 
 function closeBattleOperationView() {
@@ -10053,6 +10988,14 @@ function renderQuickNav(items) {
         openInventoryView();
         return;
       }
+      if (button.dataset.quickAction === 'blacksmith') {
+        openBlacksmithView();
+        return;
+      }
+      if (button.dataset.quickAction === 'drop-guide') {
+        openMercenaryDropGuideModal();
+        return;
+      }
       showReadyNotice();
     });
   });
@@ -10163,6 +11106,7 @@ function renderMercenaryCard(mercenary) {
         <span class="merc-card-line">${escapeHtml(mercenary.position)} / ${escapeHtml(mercenary.role)}</span>
         <span class="merc-card-meta">
           <span class="merc-status-badge status-${escapeHtml(mercenary.operationalStatus)}">${escapeHtml(mercenary.statusLabel || mercenary.status)}</span>
+          ${isRepresentativeMercenary(mercenary) ? '<span class="merc-representative-badge">\uB300\uD45C</span>' : ''}
           ${mercenary.isLocked ? '<span class="merc-lock-badge">잠금</span>' : ''}
           <strong>전투력 ${formatNumber(mercenary.power)}</strong>
         </span>
@@ -10733,6 +11677,7 @@ function renderMercenaryDetail(mercenary) {
   root.innerHTML = `
     <div class="detail-heading merc-detail-summary ${getGradeClass(mercenary.grade)}">
       <span class="grade-badge">${escapeHtml(mercenary.grade)}</span>
+      ${isRepresentativeMercenary(mercenary) ? '<span class="merc-representative-badge">\uB300\uD45C \uC6A9\uBCD1</span>' : ''}
       <div>
         <h3>${escapeHtml(mercenary.name)}</h3>
         <p>${escapeHtml(mercenary.species)} / ${escapeHtml(mercenary.job)} / ${escapeHtml(mercenary.position)} / ${escapeHtml(mercenary.role)}</p>
@@ -10805,8 +11750,8 @@ function renderMercenaryEquipment(mercenary) {
         ${renderIcon(getEquipmentSlotIcon(slotKey), 'small')}
         <div>
           <span>${escapeHtml(getEquipmentSlotLabel(slotKey))}</span>
-          <strong>${escapeHtml(name || '\uBE44\uC5B4 \uC788\uC74C')}</strong>
-          <em>${slot ? escapeHtml(`${slot.grade || equipment.grade || ''} · ${formatEquipmentSummary(equipment || slot)}`) : '\uC7A5\uBE44 \uC5C6\uC74C'}</em>
+          <strong>${escapeHtml(slot ? formatEquipmentDisplayName(name, slot) : '\uBE44\uC5B4 \uC788\uC74C')}</strong>
+          <em>${slot ? escapeHtml(`${slot.grade || equipment.grade || ''} · ${formatEquipmentSummary(slot)}`) : '\uC7A5\uBE44 \uC5C6\uC74C'}</em>
         </div>
         ${slot ? `<button type="button" data-mercenary-unequip="${escapeHtml(ownedId)}" data-equipment-slot="${escapeHtml(slotKey)}">\uD574\uC81C</button>` : ''}
       </article>
@@ -10819,6 +11764,7 @@ function renderMercenaryVisual(mercenary) {
   if (!root) return;
   const locked = Boolean(mercenary.isLocked);
   const busy = !isMercenaryIdleForManagement(mercenary);
+  const representative = isRepresentativeMercenary(mercenary);
   root.innerHTML = `
     <div class="visual-art-panel ${getGradeClass(mercenary.grade)}" data-merc-action="illustration" role="button" tabindex="0" aria-label="일러스트 확대">
       ${renderImageWithPlaceholder(mercenary, 'merc-full-art')}
@@ -10833,6 +11779,7 @@ function renderMercenaryVisual(mercenary) {
         <button type="button" data-merc-action="illustration">일러 확대</button>
         <button type="button" data-merc-action="equipment" ${busy ? 'disabled title="진행 중인 활동이 있어 장비를 변경할 수 없습니다."' : ''}>장비 변경</button>
         <button type="button" data-merc-action="lock">${locked ? '잠금 해제' : '잠금'}</button>
+        <button type="button" data-merc-action="representative" ${representative ? 'disabled' : ''}>${representative ? '\uB300\uD45C \uC6A9\uBCD1' : '\uB300\uD45C \uC124\uC815'}</button>
         <button type="button" class="mercenary-action-danger" data-merc-action="dismiss" ${locked || busy ? 'disabled' : ''} title="${locked ? '잠금 상태인 용병은 해고할 수 없습니다.' : busy ? '진행 중인 활동이 있어 해고할 수 없습니다.' : ''}">해고</button>
       </div>
     </div>
@@ -10845,6 +11792,7 @@ function renderMercenaryVisual(mercenary) {
   });
   root.querySelector('[data-merc-action="equipment"]')?.addEventListener('click', () => openMercenaryEquipmentManageModal(mercenary));
   root.querySelector('[data-merc-action="lock"]')?.addEventListener('click', () => setMercenaryLockState(mercenary, !locked));
+  root.querySelector('[data-merc-action="representative"]')?.addEventListener('click', () => setRepresentativeMercenary(mercenary));
   root.querySelector('[data-merc-action="dismiss"]')?.addEventListener('click', () => openMercenaryDismissModal(mercenary));
   root.querySelectorAll('[data-mercenary-unequip]').forEach((button) => {
     button.addEventListener('click', () => unequipMercenaryEquipmentSlot(button.dataset.mercenaryUnequip, button.dataset.equipmentSlot));
@@ -11496,10 +12444,113 @@ function renderLobby(state) {
   document.querySelector('#assistant-line').textContent = state.assistant.line;
 
   renderTopActions(state);
+  renderRepresentativeLobbyPanel();
   renderStatusPanel(state.summary);
   renderHotspots(state.hotspots);
   renderLogs(state.logs);
   renderQuickNav(state.quickNav);
+}
+
+function renderRepresentativeEquipmentSummary(mercenary) {
+  const slots = normalizeEquipmentSlotMap(mercenary?.equipmentSlots || {});
+  return EQUIPMENT_SLOT_ORDER.map((slot) => {
+    const entry = slots[slot];
+    const name = entry?.name || entry?.equipment?.name || entry?.item?.name || '';
+    return `<li><span>${escapeHtml(getEquipmentSlotLabel(slot))}</span><strong>${escapeHtml(entry ? formatEquipmentDisplayName(name, entry) : '\uBE44\uC5B4 \uC788\uC74C')}</strong></li>`;
+  }).join('');
+}
+
+async function openRepresentativeRoster(mode = 'detail') {
+  await openMercenaryRoster();
+  const selected = syncRepresentativeMercenaryFromRoster();
+  if (!selected) return;
+  rosterState.selectedId = selected.rosterId || selected.ownedId || selected.id;
+  renderMercenaryRoster(ownedMercenaryRoster, { source: 'owned' });
+  if (mode === 'equipment') openMercenaryEquipmentManageModal(selected);
+}
+
+function renderRepresentativeLobbyPanel() {
+  const overview = document.querySelector('#office-overview-panel');
+  const hero = document.querySelector('#representative-hero-panel');
+  const content = document.querySelector('#office-content-panel');
+  if (!overview || !hero || !content) return;
+
+  const roster = ownedMercenaryRoster || [];
+  const injured = roster.filter((item) => ['injured', 'treating', 'infirmary'].includes(String(item.operationalStatus || '').toLowerCase())).length;
+  const active = roster.filter((item) => !['idle', 'injured', 'treating', 'infirmary'].includes(String(item.operationalStatus || '').toLowerCase())).length;
+  const representative = syncRepresentativeMercenaryFromRoster() || representativeState.representativeMercenary;
+
+  overview.innerHTML = `
+    <span class="office-dashboard-kicker">\uC0AC\uBB34\uC18C \uD604\uD669</span>
+    <h2>\uC624\uB298\uC758 \uC7A5\uBD80</h2>
+    <dl class="office-dashboard-stats">
+      <div><dt>\uC0AC\uBB34\uC18C</dt><dd>Lv.${formatNumber(mercenaryLobbyState.level || 1)}</dd></div>
+      <div><dt>\uACE8\uB4DC</dt><dd>${formatNumber(mercenaryLobbyState.gold || 0)}G</dd></div>
+      <div><dt>\uBCF4\uC720 \uC6A9\uBCD1</dt><dd>${formatNumber(roster.length)}\uBA85</dd></div>
+      <div><dt>\uC758\uBB34\uC2E4</dt><dd>${formatNumber(injured)}\uBA85</dd></div>
+      <div><dt>\uC9C4\uD589 \uC911</dt><dd>${formatNumber(active)}\uAC74</dd></div>
+      <div><dt>\uB300\uAE30 \uBCF4\uACE0</dt><dd>${formatNumber(mercenaryLobbyState.summary?.claimableReports || 0)}\uAC74</dd></div>
+    </dl>
+  `;
+
+  if (!representative) {
+    hero.innerHTML = `
+      <span class="office-dashboard-kicker">\uB300\uD45C \uC6A9\uBCD1</span>
+      <div class="representative-empty-art" aria-hidden="true"></div>
+      <div class="representative-empty-copy">
+        <h2>\uC544\uC9C1 \uC0AC\uBB34\uC18C\uC758 \uC5BC\uAD74\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.</h2>
+        <p>\uC6A9\uBCD1 \uC0C1\uC138\uC5D0\uC11C \uB300\uD45C \uC6A9\uBCD1\uC744 \uC124\uC815\uD574 \uC8FC\uC138\uC694.</p>
+        <button type="button" data-representative-action="roster">\uC6A9\uBCD1 \uBAA9\uB85D \uC5F4\uAE30</button>
+      </div>
+    `;
+  } else {
+    hero.innerHTML = `
+      <span class="office-dashboard-kicker">\uB300\uD45C \uC6A9\uBCD1</span>
+      <div class="representative-hero-layout ${getGradeClass(representative.grade)}">
+        <div class="representative-hero-art">${renderImageWithPlaceholder(representative, 'representative-portrait')}</div>
+        <div class="representative-hero-copy">
+          <div><span class="grade-badge">${escapeHtml(representative.grade || 'N')}</span><span class="representative-status">${escapeHtml(representative.statusLabel || representative.status || '\uB300\uAE30')}</span></div>
+          <h2>${escapeHtml(representative.name)}</h2>
+          <p>${escapeHtml(representative.species || '')} / ${escapeHtml(representative.position || '')} / ${escapeHtml(representative.role || '')}</p>
+          <dl><div><dt>Lv</dt><dd>${formatNumber(representative.level || 1)}</dd></div><div><dt>\uC804\uD22C\uB825</dt><dd>${formatNumber(representative.totalCombatPower || representative.power || 0)}</dd></div></dl>
+          <ul class="representative-equipment-summary">${renderRepresentativeEquipmentSummary(representative)}</ul>
+        </div>
+      </div>
+      <div class="representative-hero-actions">
+        <button type="button" data-representative-action="detail">\uC0C1\uC138 \uBCF4\uAE30</button>
+        <button type="button" data-representative-action="equipment">\uC7A5\uBE44 \uAD00\uB9AC</button>
+      </div>
+    `;
+  }
+
+  content.innerHTML = `
+    <span class="office-dashboard-kicker">\uC624\uB298 \uD560 \uC77C</span>
+    <h2>\uC0AC\uBB34\uC18C \uC5C5\uBB34</h2>
+    <div class="office-content-actions">
+      <button type="button" data-office-dashboard-action="battle">\uC804\uD22C \uC791\uC804\uD310</button>
+      <button type="button" data-office-dashboard-action="roster">\uC6A9\uBCD1 \uAD00\uB9AC</button>
+      <button type="button" data-office-dashboard-action="inventory">\uBCF4\uAD00\uD568</button>
+      <button type="button" data-office-dashboard-action="blacksmith">\uB300\uC7A5\uAC04</button>
+      <button type="button" data-office-dashboard-action="recruit">\uCC44\uC6A9 \uAC8C\uC2DC\uD310</button>
+      <button type="button" disabled>\uC9C0\uC6D0 \uC6A9\uBCD1 <em>\uC900\uBE44\uC911</em></button>
+      <button type="button" disabled>\uAD6C\uC870 \uC694\uCCAD <em>\uC900\uBE44\uC911</em></button>
+    </div>
+    <p class="office-dashboard-note">\uB300\uD45C \uC6A9\uBCD1\uC740 \uD5A5\uD6C4 \uC9C0\uC6D0 \uC6A9\uBCD1\uACFC \uAD6C\uC870 \uC694\uCCAD \uD504\uB85C\uD544\uC758 \uAE30\uBCF8 \uC5BC\uAD74\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.</p>
+  `;
+
+  hero.querySelectorAll('[data-representative-action]').forEach((button) => {
+    button.addEventListener('click', () => openRepresentativeRoster(button.dataset.representativeAction));
+  });
+  content.querySelectorAll('[data-office-dashboard-action]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.officeDashboardAction;
+      if (action === 'battle') openBattleOperationView();
+      else if (action === 'roster') openMercenaryRoster();
+      else if (action === 'inventory') openInventoryView();
+      else if (action === 'blacksmith') openBlacksmithView();
+      else if (action === 'recruit') openRecruitmentBoard();
+    });
+  });
 }
 
 async function initializeMercenaryLobby() {
@@ -11507,6 +12558,8 @@ async function initializeMercenaryLobby() {
   bindOfficeGrowthPopover();
   bindMercenarySettingsModal();
   bindInventoryView();
+  bindBlacksmithView();
+  bindDropGuideControls();
   bindOfficeControls();
   bindCaseControls();
   document.querySelector('#battle-board-close')?.addEventListener('click', closeBattleOperationView);
@@ -11523,6 +12576,8 @@ async function initializeMercenaryLobby() {
   const authenticated = await checkMercenaryAuth();
   if (authenticated) {
     await hydrateMercenaryOfficeProfile();
+    await loadOwnedMercenariesFromApi().catch((error) => console.warn('[mercenary/representative] roster preload failed', error));
+    await loadRepresentativeMercenary();
   }
 }
 

@@ -387,6 +387,7 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   office_exp INTEGER NOT NULL DEFAULT 0,
   office_reputation TEXT NOT NULL DEFAULT 'D',
   mission_offer_next_at TEXT,
+  representative_user_mercenary_id TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -479,6 +480,12 @@ CREATE TABLE IF NOT EXISTS user_mercenary_inventory_items (
   item_type TEXT NOT NULL DEFAULT 'misc',
   quantity INTEGER NOT NULL DEFAULT 1,
   locked INTEGER NOT NULL DEFAULT 0,
+  enhancement_level INTEGER NOT NULL DEFAULT 0,
+  enhancement_pity INTEGER NOT NULL DEFAULT 0,
+  enhancement_updated_at TEXT,
+  consumed_at TEXT,
+  consumed_source_type TEXT,
+  consumed_source_id TEXT,
   acquired_source_type TEXT,
   acquired_source_id TEXT,
   acquired_run_id TEXT,
@@ -859,6 +866,7 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_claimed ON user_m
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user ON user_mercenary_inventory_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user_item ON user_mercenary_inventory_items(user_id, item_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_run ON user_mercenary_inventory_items(acquired_run_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_consumed ON user_mercenary_inventory_items(user_id, consumed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_user ON user_mercenary_equipment_slots(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_mercenary ON user_mercenary_equipment_slots(user_mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_inventory ON user_mercenary_equipment_slots(inventory_item_id);

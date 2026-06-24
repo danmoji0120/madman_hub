@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#0b0806" />
   <title>용병사무소 로비 0.1</title>
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=304" />
+  <link rel="stylesheet" href="/css/mercenary-lobby.css?v=307" />
 </head>
 <body class="mercenary-lobby-page">
   <div class="lobby-background" aria-hidden="true"></div>
@@ -36,6 +36,12 @@
 
       <nav class="lobby-top-actions top-resource-cluster" id="top-actions" aria-label="용병사무소 상단 메뉴"></nav>
     </header>
+
+    <section class="office-dashboard" id="office-dashboard" aria-label="사무소 운영 현황">
+      <aside class="office-dashboard-panel office-overview-panel" id="office-overview-panel" aria-label="사무소 현황"></aside>
+      <section class="office-dashboard-panel representative-hero-panel" id="representative-hero-panel" aria-label="대표 용병"></section>
+      <aside class="office-dashboard-panel office-content-panel" id="office-content-panel" aria-label="주요 업무"></aside>
+    </section>
 
     <section class="merc-panel status-panel" aria-labelledby="status-panel-title">
       <h2 class="panel-title" id="status-panel-title">사무소 현황</h2>
@@ -543,6 +549,51 @@
         </div>
       </div>
     </section>
+
+    <section class="mercenary-blacksmith-view" id="mercenary-blacksmith-view" aria-label="용병단 대장간" hidden>
+      <div class="blacksmith-background-scrim" aria-hidden="true"></div>
+      <div class="blacksmith-shell">
+        <header class="blacksmith-topbar">
+          <div>
+            <span class="blacksmith-kicker">고철 재활용소 0.1</span>
+            <h2>대장간</h2>
+            <p>쓸모없는 고철도 선배 손에 들어가면 더 위험해집니다.</p>
+          </div>
+          <div class="blacksmith-resource-strip" id="blacksmith-resource-summary"></div>
+          <button class="blacksmith-close-button" id="blacksmith-close-button" type="button">닫기</button>
+        </header>
+        <nav class="blacksmith-tabs" id="blacksmith-tabs" aria-label="대장간 작업 탭"></nav>
+        <section class="blacksmith-toolbar" aria-label="대장간 장비 필터">
+          <label>
+            <span>검색</span>
+            <input id="blacksmith-search-input" type="search" placeholder="장비명, 설명, itemId" autocomplete="off" />
+          </label>
+          <label>
+            <span>슬롯</span>
+            <select id="blacksmith-slot-filter"></select>
+          </label>
+          <label>
+            <span>등급</span>
+            <select id="blacksmith-grade-filter"></select>
+          </label>
+          <label>
+            <span>상태</span>
+            <select id="blacksmith-status-filter"></select>
+          </label>
+          <label>
+            <span>정렬</span>
+            <select id="blacksmith-sort-filter"></select>
+          </label>
+        </section>
+        <div class="blacksmith-layout">
+          <section class="blacksmith-list-panel" aria-label="대장간 장비 목록">
+            <div class="blacksmith-list" id="blacksmith-equipment-list"></div>
+          </section>
+          <section class="blacksmith-detail-panel" id="blacksmith-detail-panel" aria-label="선택 장비 상세"></section>
+          <aside class="blacksmith-work-panel" id="blacksmith-work-panel" aria-label="작업 패널"></aside>
+        </div>
+      </div>
+    </section>
     <section class="settings-overlay" id="mercenary-settings-modal" aria-labelledby="mercenary-settings-title" aria-modal="true" role="dialog" hidden>
       <article class="settings-panel">
         <header class="settings-header">
@@ -574,10 +625,10 @@
   </main>
 
   <script src="/js/api.js?v=219"></script>
-  <script src="/js/mercenary-data-loader.js?v=304"></script>
-  <script src="/js/mercenary-audio.js?v=304"></script>
-  <script src="/js/mercenary-combat-contract.js?v=304"></script>
-  <script src="/js/mercenary-combat-adapters.js?v=304"></script>
-  <script src="/js/mercenary-lobby.js?v=304"></script>
+  <script src="/js/mercenary-data-loader.js?v=306"></script>
+  <script src="/js/mercenary-audio.js?v=306"></script>
+  <script src="/js/mercenary-combat-contract.js?v=306"></script>
+  <script src="/js/mercenary-combat-adapters.js?v=306"></script>
+  <script src="/js/mercenary-lobby.js?v=307"></script>
 </body>
 </html>

@@ -14,6 +14,27 @@ const ITEM_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.items
 const EQUIPMENT_SLOT_KEYS = ['weapon', 'armor', 'accessory', 'tool'];
 const EQUIPMENT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment.master.json');
 const EQUIPMENT_IMAGE_PROMPT_MASTER_PATH = path.join(__dirname, '../../public/data/mercenary.equipment-image-prompts.master.json');
+const BLACKSMITH_MAX_ENHANCEMENT_LEVEL = 5;
+const BLACKSMITH_ENHANCEMENT_SUCCESS_RATES = { 1: 100, 2: 85, 3: 70, 4: 50, 5: 25 };
+const BLACKSMITH_ENHANCEMENT_BONUS_RATES = { 0: 0, 1: 0.10, 2: 0.22, 3: 0.36, 4: 0.55, 5: 0.80 };
+const BLACKSMITH_GRADE_COST_MULTIPLIERS = { N: 1, R: 1.6, SR: 2.8, SSR: 5, EX: 8 };
+const BLACKSMITH_BASE_COSTS = {
+  1: { gold: 300, scrap: 1, family: 0, advanced: 0 },
+  2: { gold: 800, scrap: 2, family: 0, advanced: 0 },
+  3: { gold: 1600, scrap: 4, family: 1, advanced: 0 },
+  4: { gold: 3500, scrap: 7, family: 2, advanced: 0 },
+  5: { gold: 7500, scrap: 12, family: 4, advanced: 1 }
+};
+const BLACKSMITH_MATERIAL_IDS = {
+  scrap: 'mat_rusty_scrap_001',
+  slime: 'mat_slime_core_001',
+  mimic: 'mat_mimic_splinter_001',
+  debtbreaker: 'mat_debtbreaker_badge_001',
+  arcane: 'mat_arcane_residue_001',
+  abyss: 'mat_abyss_scale_001',
+  redThread: 'mat_red_thread_001',
+  distorted: 'mat_distorted_contract_001'
+};
 const REMOVED_LEGACY_BATTLE_OPERATION_IDS = new Set([
   'mock_sewer_cleanup_01',
   'mock_back_alley_02',
@@ -242,6 +263,7 @@ function publicMercenaryProfile(profile) {
     officeExpProgress: officeProgress.officeExpProgress,
     isOfficeMaxLevel: officeProgress.isOfficeMaxLevel,
     officeReputation: officeProgress.officeReputation,
+    representativeUserMercenaryId: profile?.representativeUserMercenaryId || null,
     maxMissionOffers: unlocks.maxMissionOffers,
     maxSquadSlots: unlocks.maxSquadSlots,
     maxActiveRuns: unlocks.maxActiveRuns,
@@ -1931,29 +1953,90 @@ async function dismissOwnedMercenary(userId, ownedMercenaryId, payload = {}) {
     reason: payload.reason || 'user_dismiss',
     dismissedAt: new Date().toISOString()
   });
+  const representativeCleared = await repo.clearRepresentativeUserMercenaryIdIfMatching(userId, ownedMercenaryId);
   return {
     ok: true,
     dismissedMercenaryId: String(ownedMercenaryId),
     mercenary: buildOwnedMercenaryItem(dismissed, master),
     unequippedItemsCount: unequippedItems.length,
     removedFromFormations,
+    representativeCleared,
     refunded: null
   };
 }
 
+function serializeRepresentativeMercenary(item) {
+  if (!item) return null;
+  return {
+    id: item.id || item.mercenaryId || null,
+    userMercenaryId: String(item.ownedId || item.id || ''),
+    mercenaryId: item.id || item.mercenaryId || null,
+    name: item.name || '',
+    grade: item.grade || 'N',
+    race: item.species || '',
+    species: item.species || '',
+    position: item.position || '',
+    role: item.role || '',
+    level: Number(item.level || item.currentLevel || 1) || 1,
+    combatPower: Number(item.totalCombatPower ?? item.combatPower ?? item.power ?? 0) || 0,
+    totalCombatPower: Number(item.totalCombatPower ?? item.combatPower ?? item.power ?? 0) || 0,
+    status: item.statusLabel || item.status || 'idle',
+    operationalStatus: item.operationalStatus || 'idle',
+    locked: Boolean(item.isLocked || item.locked),
+    equipmentSummary: Array.isArray(item.equippedItems) ? item.equippedItems : [],
+    equippedItems: Array.isArray(item.equippedItems) ? item.equippedItems : [],
+    equipmentSlots: item.equipmentSlots || {},
+    enhancementSummary: {
+      equipmentCombatPower: Number(item.equipmentCombatPower || item.equipmentBonus?.combatPower || 0) || 0
+    },
+    standingImage: item.imageKey ? `/assets/mercenary/characters/standing/${item.imageKey}.png` : '',
+    imageKey: item.imageKey || '',
+    sourceType: 'representative_user_mercenary'
+  };
+}
+
+async function getRepresentativeMercenary(userId) {
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const representativeUserMercenaryId = profile?.representativeUserMercenaryId || null;
+  if (!representativeUserMercenaryId) {
+    return { ok: true, representativeUserMercenaryId: null, representative: null };
+  }
+
+  const roster = await listMyMercenaries(userId);
+  const item = (roster.items || []).find((candidate) => String(candidate.ownedId || candidate.id) === String(representativeUserMercenaryId));
+  if (!item) {
+    await repo.clearRepresentativeUserMercenaryIdIfMatching(userId, representativeUserMercenaryId);
+    return { ok: true, representativeUserMercenaryId: null, representative: null };
+  }
+  return {
+    ok: true,
+    representativeUserMercenaryId: String(representativeUserMercenaryId),
+    representative: serializeRepresentativeMercenary(item)
+  };
+}
+
+async function setRepresentativeMercenary(userId, ownedMercenaryId) {
+  const owned = await repo.getUserMercenary(userId, ownedMercenaryId);
+  assertOwnedMercenaryVisible(owned);
+  await getOrCreateMercenaryProfile(userId);
+  await repo.updateRepresentativeUserMercenaryId(userId, ownedMercenaryId);
+  return getRepresentativeMercenary(userId);
+}
+
 
 async function listMyMercenaries(userId) {
-  const [ownedRows, profile, communityPoints, equipmentSlots] = await Promise.all([
+  const [ownedRows, profile, communityPoints, equipmentSlots, inventoryEntries] = await Promise.all([
     repo.listUserMercenaries(userId),
     getOrCreateMercenaryProfile(userId),
     getCommunityPoints(userId),
-    repo.listUserEquipmentSlots(userId)
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserInventoryItems(userId)
   ]);
   const mercenaryProfile = publicMercenaryProfile(profile);
   const lookup = masterById();
   const items = attachEquipmentToMercenaryItems(ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
-    .filter(Boolean), equipmentSlots);
+    .filter(Boolean), attachInventoryDataToEquipmentSlots(equipmentSlots, inventoryEntries));
 
   return {
     ok: true,
@@ -1969,17 +2052,18 @@ async function listMyMercenaries(userId) {
 }
 
 async function buildMercenaryOfficeView(userId) {
-  const [ownedRows, assignments, profile, communityPoints, equipmentSlots] = await Promise.all([
+  const [ownedRows, assignments, profile, communityPoints, equipmentSlots, inventoryEntries] = await Promise.all([
     repo.listUserMercenaries(userId),
     repo.listOfficeAssignments(userId),
     getOrCreateMercenaryProfile(userId),
     getCommunityPoints(userId),
-    repo.listUserEquipmentSlots(userId)
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserInventoryItems(userId)
   ]);
   const lookup = masterById();
   const items = attachEquipmentToMercenaryItems(ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
-    .filter(Boolean), equipmentSlots);
+    .filter(Boolean), attachInventoryDataToEquipmentSlots(equipmentSlots, inventoryEntries));
   const itemByOwnedId = new Map(items.map((item) => [String(item.ownedId), item]));
   const facilities = getOfficeFacilitiesConfig().map((facility) => buildOfficeFacilityResponse(facility, assignments, itemByOwnedId));
   const officeEffects = mergeOfficeEffects(facilities.map((facility) => facility.effects));
@@ -3422,11 +3506,69 @@ function normalizeEquipmentSlotKey(slot) {
   return EQUIPMENT_SLOT_KEYS.includes(key) ? key : '';
 }
 
+function normalizeEnhancementLevel(value) {
+  return Math.min(BLACKSMITH_MAX_ENHANCEMENT_LEVEL, Math.max(0, Math.floor(Number(value || 0) || 0)));
+}
+
+function getEnhancementBonusRate(level) {
+  return BLACKSMITH_ENHANCEMENT_BONUS_RATES[normalizeEnhancementLevel(level)] || 0;
+}
+
+function enhanceNumericBonus(value, level) {
+  const base = Number(value || 0) || 0;
+  if (!base) return 0;
+  const rate = getEnhancementBonusRate(level);
+  if (!rate) return Math.round(base);
+  const sign = base < 0 ? -1 : 1;
+  const delta = Math.max(1, Math.round(Math.abs(base) * rate));
+  return Math.round(base + sign * delta);
+}
+
+function buildEnhancedEquipmentValues(equipment = {}, level = 0) {
+  const safeLevel = normalizeEnhancementLevel(level);
+  const stats = equipment.stats || {};
+  const modifiers = equipment.modifiers || {};
+  const enhancedStats = {};
+  const enhancedModifiers = {};
+  ['hp', 'atk', 'def', 'spd', 'tec', 'sup'].forEach((key) => {
+    enhancedStats[key] = enhanceNumericBonus(stats[key], safeLevel);
+  });
+  ['accuracy', 'evasion', 'critical', 'healing', 'combatPower'].forEach((key) => {
+    enhancedModifiers[key] = enhanceNumericBonus(modifiers[key], safeLevel);
+  });
+  const statBonus = {};
+  const modifierBonus = {};
+  Object.keys(enhancedStats).forEach((key) => {
+    statBonus[key] = Math.round((Number(enhancedStats[key] || 0) || 0) - (Number(stats[key] || 0) || 0));
+  });
+  Object.keys(enhancedModifiers).forEach((key) => {
+    modifierBonus[key] = Math.round((Number(enhancedModifiers[key] || 0) || 0) - (Number(modifiers[key] || 0) || 0));
+  });
+  return { stats: enhancedStats, modifiers: enhancedModifiers, statBonus, modifierBonus };
+}
+
+function attachInventoryDataToEquipmentSlots(slots = [], entries = []) {
+  const inventoryById = new Map((Array.isArray(entries) ? entries : []).map((entry) => [String(entry.id), entry]));
+  return (Array.isArray(slots) ? slots : []).map((slot) => {
+    const entry = inventoryById.get(String(slot.inventoryItemId || '')) || null;
+    return {
+      ...slot,
+      inventoryEntry: entry,
+      enhancementLevel: normalizeEnhancementLevel(slot.enhancementLevel ?? entry?.enhancementLevel),
+      enhancementPity: Math.max(0, Number(slot.enhancementPity ?? entry?.enhancementPity ?? 0) || 0),
+      enhancementUpdatedAt: slot.enhancementUpdatedAt || entry?.enhancementUpdatedAt || null,
+      locked: Boolean(slot.locked ?? entry?.locked)
+    };
+  });
+}
+
 function enrichEquipmentSlot(slot, bundle = getInventoryMasterBundle(), ownedById = new Map()) {
   if (!slot) return null;
   const equipment = bundle.equipmentByItemId.get(slot.itemId) || bundle.equipmentById.get(slot.equipmentId) || null;
   const item = bundle.byItemId.get(slot.itemId) || null;
   const owner = ownedById.get(String(slot.userMercenaryId)) || null;
+  const enhancementLevel = normalizeEnhancementLevel(slot.enhancementLevel ?? slot.inventoryEntry?.enhancementLevel);
+  const enhanced = equipment ? buildEnhancedEquipmentValues(equipment, enhancementLevel) : { stats: {}, modifiers: {}, statBonus: {}, modifierBonus: {} };
   return {
     ...slot,
     equipment,
@@ -3434,6 +3576,14 @@ function enrichEquipmentSlot(slot, bundle = getInventoryMasterBundle(), ownedByI
     name: equipment?.name || item?.name || slot.itemId,
     grade: equipment?.grade || item?.grade || '',
     slot: normalizeEquipmentSlotKey(slot.slot) || slot.slot,
+    enhancementLevel,
+    enhancementPity: Math.max(0, Number(slot.enhancementPity ?? slot.inventoryEntry?.enhancementPity ?? 0) || 0),
+    enhancedStats: enhanced.stats,
+    enhancedModifiers: enhanced.modifiers,
+    enhancementBonus: {
+      stats: enhanced.statBonus,
+      modifiers: enhanced.modifierBonus
+    },
     equippedMercenaryName: owner?.name || owner?.mercenaryId || ''
   };
 }
@@ -3457,8 +3607,9 @@ function calculateEquipmentBonus(slots = [], bundle = getInventoryMasterBundle()
     const slot = rawSlot?.equipment ? rawSlot : enrichEquipmentSlot(rawSlot, bundle);
     const equipment = slot?.equipment;
     if (!equipment) continue;
-    const stats = equipment.stats || {};
-    const modifiers = equipment.modifiers || {};
+    const enhanced = buildEnhancedEquipmentValues(equipment, slot?.enhancementLevel || 0);
+    const stats = enhanced.stats || equipment.stats || {};
+    const modifiers = enhanced.modifiers || equipment.modifiers || {};
     ['hp', 'atk', 'def', 'spd', 'tec', 'sup'].forEach((key) => {
       bonus[key] += Number(stats[key] || 0) || 0;
     });
@@ -3563,11 +3714,21 @@ function enrichInventoryEntry(entry, bundle = getInventoryMasterBundle()) {
   const item = bundle.byItemId.get(entry.itemId) || null;
   const equipment = bundle.equipmentByItemId.get(entry.itemId) || null;
   const imagePrompt = equipment?.imageKey ? (bundle.imagePromptByKey.get(equipment.imageKey) || null) : null;
+  const enhancementLevel = normalizeEnhancementLevel(entry.enhancementLevel);
+  const enhanced = equipment ? buildEnhancedEquipmentValues(equipment, enhancementLevel) : null;
   return {
     ...entry,
     master: item,
     equipment,
     imagePrompt,
+    enhancementLevel,
+    enhancementPity: Math.max(0, Number(entry.enhancementPity || 0) || 0),
+    enhancedStats: enhanced?.stats || null,
+    enhancedModifiers: enhanced?.modifiers || null,
+    enhancementBonus: enhanced ? {
+      stats: enhanced.statBonus,
+      modifiers: enhanced.modifierBonus
+    } : null,
     slot: equipment?.slot || null,
     grade: equipment?.grade || item?.grade || null,
     name: equipment?.name || item?.name || entry.itemId,
@@ -3629,9 +3790,10 @@ async function getUserInventory(userId, filters = {}) {
   const ownedItems = ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
     .filter(Boolean);
+  const hydratedSlots = attachInventoryDataToEquipmentSlots(equipmentSlots, rawEntries);
   const entries = attachEquipmentStateToInventoryEntries(
     rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)),
-    equipmentSlots,
+    hydratedSlots,
     bundle,
     ownedItems
   ).filter((entry) => matchesInventoryQuery(entry, filters));
@@ -3652,7 +3814,12 @@ async function getUserInventorySummary(userId) {
   const ownedItems = ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
     .filter(Boolean);
-  const entries = attachEquipmentStateToInventoryEntries(rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)), equipmentSlots, bundle, ownedItems);
+  const entries = attachEquipmentStateToInventoryEntries(
+    rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)),
+    attachInventoryDataToEquipmentSlots(equipmentSlots, rawEntries),
+    bundle,
+    ownedItems
+  );
   return {
     summary: buildInventorySummary(entries)
   };
@@ -3661,16 +3828,18 @@ async function getUserInventorySummary(userId) {
 
 async function listUserEquipmentSlots(userId) {
   const bundle = getInventoryMasterBundle();
-  const [slots, ownedRows] = await Promise.all([
+  const [slots, ownedRows, inventoryEntries] = await Promise.all([
     repo.listUserEquipmentSlots(userId),
-    repo.listUserMercenaries(userId)
+    repo.listUserMercenaries(userId),
+    repo.listUserInventoryItems(userId)
   ]);
   const lookup = masterById();
   const ownedItems = ownedRows
     .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
     .filter(Boolean);
   const ownedById = new Map(ownedItems.map((item) => [String(item.ownedId), item]));
-  const items = slots.map((slot) => enrichEquipmentSlot(slot, bundle, ownedById)).filter(Boolean);
+  const hydratedSlots = attachInventoryDataToEquipmentSlots(slots, inventoryEntries);
+  const items = hydratedSlots.map((slot) => enrichEquipmentSlot(slot, bundle, ownedById)).filter(Boolean);
   return {
     items,
     equipmentSlots: items,
@@ -3685,8 +3854,15 @@ async function getUserMercenaryEquipment(userId, userMercenaryId) {
   const owned = await repo.getUserMercenary(userId, userMercenaryId);
   if (!owned) throw httpError(404, 'Owned mercenary not found.', 'OWNED_MERCENARY_NOT_FOUND');
   const bundle = getInventoryMasterBundle();
-  const slots = await repo.listEquipmentSlotsForMercenary(userId, userMercenaryId);
-  const summary = buildEquipmentSummary(slots, bundle, new Map([[String(userMercenaryId), buildOwnedMercenaryItem(owned, masterById().get(owned.mercenaryId))]]));
+  const [slots, inventoryEntries] = await Promise.all([
+    repo.listEquipmentSlotsForMercenary(userId, userMercenaryId),
+    repo.listUserInventoryItems(userId)
+  ]);
+  const summary = buildEquipmentSummary(
+    attachInventoryDataToEquipmentSlots(slots, inventoryEntries),
+    bundle,
+    new Map([[String(userMercenaryId), buildOwnedMercenaryItem(owned, masterById().get(owned.mercenaryId))]])
+  );
   return {
     equipmentSlots: summary.slots,
     equipmentItems: summary.items,
@@ -3770,6 +3946,380 @@ async function addInventoryItems(userId, items = [], sourceInfo = {}) {
     results.push(await addInventoryItem(userId, { ...sourceInfo, ...item }));
   }
   return results;
+}
+
+function getBlacksmithGradeMultiplier(grade) {
+  return BLACKSMITH_GRADE_COST_MULTIPLIERS[String(grade || 'N').toUpperCase()] || 1;
+}
+
+function isBlacksmithSpecialGrade(grade) {
+  return ['SSR', 'EX'].includes(String(grade || '').toUpperCase());
+}
+
+function mergeMaterialRequirement(materials, itemId, quantity) {
+  const safeItemId = String(itemId || '').trim();
+  const safeQuantity = Math.max(0, Math.ceil(Number(quantity || 0) || 0));
+  if (!safeItemId || safeQuantity <= 0) return materials;
+  const existing = materials.find((item) => item.itemId === safeItemId);
+  if (existing) existing.quantity += safeQuantity;
+  else materials.push({ itemId: safeItemId, quantity: safeQuantity });
+  return materials;
+}
+
+function selectBlacksmithFamilyMaterial(entry = {}) {
+  const equipment = entry.equipment || {};
+  const item = entry.master || entry.item || {};
+  const haystack = [
+    entry.itemId,
+    entry.name,
+    entry.description,
+    entry.effectSummary,
+    equipment.category,
+    ...(equipment.tags || []),
+    ...(item.sourceTags || [])
+  ].join(' ').toLowerCase();
+  if (haystack.includes('slime') || haystack.includes('sewer') || haystack.includes('점액') || haystack.includes('하수')) return BLACKSMITH_MATERIAL_IDS.slime;
+  if (haystack.includes('mimic') || haystack.includes('dungeon') || haystack.includes('미믹') || haystack.includes('던전')) return BLACKSMITH_MATERIAL_IDS.mimic;
+  if (haystack.includes('debt') || haystack.includes('bounty') || haystack.includes('채무')) return BLACKSMITH_MATERIAL_IDS.debtbreaker;
+  if (haystack.includes('arcane') || haystack.includes('tower') || haystack.includes('mage') || haystack.includes('마탑') || haystack.includes('마력')) return BLACKSMITH_MATERIAL_IDS.arcane;
+  if (haystack.includes('abyss') || haystack.includes('dock') || haystack.includes('심해') || haystack.includes('부두')) return BLACKSMITH_MATERIAL_IDS.abyss;
+  if (haystack.includes('red_thread') || haystack.includes('thread') || haystack.includes('붉은')) return BLACKSMITH_MATERIAL_IDS.redThread;
+  return BLACKSMITH_MATERIAL_IDS.scrap;
+}
+
+function selectBlacksmithAdvancedMaterial(entry = {}) {
+  const family = selectBlacksmithFamilyMaterial(entry);
+  if ([BLACKSMITH_MATERIAL_IDS.arcane, BLACKSMITH_MATERIAL_IDS.abyss, BLACKSMITH_MATERIAL_IDS.redThread].includes(family)) return family;
+  return BLACKSMITH_MATERIAL_IDS.arcane;
+}
+
+function getMaterialQuantity(entries = [], itemId) {
+  return (Array.isArray(entries) ? entries : [])
+    .filter((entry) => entry.itemId === itemId)
+    .reduce((sum, entry) => sum + (Number(entry.quantity || 0) || 0), 0);
+}
+
+function formatBlacksmithMaterial(material, bundle = getInventoryMasterBundle()) {
+  const item = bundle.byItemId.get(material.itemId) || null;
+  return {
+    itemId: material.itemId,
+    itemType: item?.itemType || 'material',
+    name: item?.name || material.itemId,
+    grade: item?.grade || '',
+    quantity: Math.max(0, Number(material.quantity || 0) || 0)
+  };
+}
+
+function buildBlacksmithImportantMaterials(entries = [], bundle = getInventoryMasterBundle()) {
+  return Object.values(BLACKSMITH_MATERIAL_IDS).map((itemId) => {
+    const item = bundle.byItemId.get(itemId) || null;
+    return {
+      itemId,
+      name: item?.name || itemId,
+      grade: item?.grade || '',
+      quantity: getMaterialQuantity(entries, itemId)
+    };
+  });
+}
+
+function buildEnhancementCost(entry = {}) {
+  const currentLevel = normalizeEnhancementLevel(entry.enhancementLevel);
+  const targetLevel = currentLevel + 1;
+  if (targetLevel > BLACKSMITH_MAX_ENHANCEMENT_LEVEL) return null;
+  const base = BLACKSMITH_BASE_COSTS[targetLevel] || BLACKSMITH_BASE_COSTS[BLACKSMITH_MAX_ENHANCEMENT_LEVEL];
+  const grade = String(entry.grade || 'N').toUpperCase();
+  const gradeMultiplier = getBlacksmithGradeMultiplier(grade);
+  const materialMultiplier = Math.sqrt(gradeMultiplier);
+  const materials = [];
+  mergeMaterialRequirement(materials, BLACKSMITH_MATERIAL_IDS.scrap, Math.ceil(Number(base.scrap || 0) * materialMultiplier));
+  mergeMaterialRequirement(materials, selectBlacksmithFamilyMaterial(entry), Math.ceil(Number(base.family || 0) * materialMultiplier));
+  if (targetLevel === 5 && grade === 'SR') {
+    mergeMaterialRequirement(materials, selectBlacksmithAdvancedMaterial(entry), Number(base.advanced || 1) || 1);
+  }
+  const baseRate = BLACKSMITH_ENHANCEMENT_SUCCESS_RATES[targetLevel] || 0;
+  const pityBonus = targetLevel === 5 ? Math.min(20, Math.floor((Number(entry.enhancementPity || 0) || 0) / 3) * 10) : 0;
+  return {
+    targetLevel,
+    gold: Math.max(0, Math.round(Number(base.gold || 0) * gradeMultiplier)),
+    materials,
+    baseSuccessRate: baseRate,
+    pityBonus,
+    successRate: targetLevel === 5 ? Math.min(45, baseRate + pityBonus) : baseRate
+  };
+}
+
+function buildDisassembleRewards(entry = {}) {
+  const grade = String(entry.grade || 'N').toUpperCase();
+  const familyMaterialId = selectBlacksmithFamilyMaterial(entry);
+  const materials = [];
+  if (grade === 'SR') {
+    mergeMaterialRequirement(materials, BLACKSMITH_MATERIAL_IDS.scrap, 5 + Math.floor(Math.random() * 4));
+    mergeMaterialRequirement(materials, familyMaterialId, 1 + Math.floor(Math.random() * 2));
+    if (Math.random() < 0.25) mergeMaterialRequirement(materials, selectBlacksmithAdvancedMaterial(entry), 1);
+  } else if (grade === 'R') {
+    mergeMaterialRequirement(materials, BLACKSMITH_MATERIAL_IDS.scrap, 2 + Math.floor(Math.random() * 3));
+    if (familyMaterialId !== BLACKSMITH_MATERIAL_IDS.scrap && Math.random() < 0.5) mergeMaterialRequirement(materials, familyMaterialId, 1);
+  } else {
+    mergeMaterialRequirement(materials, BLACKSMITH_MATERIAL_IDS.scrap, 1 + Math.floor(Math.random() * 2));
+  }
+  return materials;
+}
+
+function buildBlacksmithCandidate(entry = {}, bundle = getInventoryMasterBundle()) {
+  const cost = entry.itemType === 'equipment' && !isBlacksmithSpecialGrade(entry.grade) ? buildEnhancementCost(entry) : null;
+  return {
+    id: entry.id,
+    itemId: entry.itemId,
+    itemType: entry.itemType,
+    name: entry.name,
+    grade: entry.grade,
+    slot: entry.slot,
+    quantity: entry.quantity,
+    locked: Boolean(entry.locked),
+    equipped: Boolean(entry.equipped),
+    equippedByMercenaryId: entry.equippedByMercenaryId || null,
+    equippedByMercenaryName: entry.equippedByMercenaryName || null,
+    enhancementLevel: normalizeEnhancementLevel(entry.enhancementLevel),
+    enhancementPity: Math.max(0, Number(entry.enhancementPity || 0) || 0),
+    effectSummary: entry.effectSummary,
+    equipment: entry.equipment,
+    enhancedStats: entry.enhancedStats,
+    enhancedModifiers: entry.enhancedModifiers,
+    enhancementBonus: entry.enhancementBonus,
+    canDisassemble: entry.itemType === 'equipment' && !entry.equipped && !entry.locked && !isBlacksmithSpecialGrade(entry.grade),
+    canEnhance: entry.itemType === 'equipment' && !isBlacksmithSpecialGrade(entry.grade) && normalizeEnhancementLevel(entry.enhancementLevel) < BLACKSMITH_MAX_ENHANCEMENT_LEVEL,
+    nextEnhancementCost: cost ? {
+      ...cost,
+      materials: cost.materials.map((material) => formatBlacksmithMaterial(material, bundle))
+    } : null
+  };
+}
+
+function buildBlacksmithRules() {
+  return {
+    maxEnhancementLevel: BLACKSMITH_MAX_ENHANCEMENT_LEVEL,
+    successRateTable: BLACKSMITH_ENHANCEMENT_SUCCESS_RATES,
+    enhancementBonusRates: BLACKSMITH_ENHANCEMENT_BONUS_RATES,
+    gradeCostMultipliers: BLACKSMITH_GRADE_COST_MULTIPLIERS,
+    baseCosts: BLACKSMITH_BASE_COSTS,
+    specialGradePolicy: 'SSR/EX equipment cannot be disassembled or enhanced in blacksmith 0.1.',
+    failurePolicy: 'No destruction and no downgrade. Gold and materials are consumed on failure.'
+  };
+}
+
+async function buildBlacksmithInventoryContext(userId) {
+  const bundle = getInventoryMasterBundle();
+  const [rawEntries, slots, ownedRows] = await Promise.all([
+    repo.listUserInventoryItems(userId),
+    repo.listUserEquipmentSlots(userId),
+    repo.listUserMercenaries(userId)
+  ]);
+  const lookup = masterById();
+  const ownedItems = ownedRows
+    .map((row) => buildOwnedMercenaryItem(row, lookup.get(row.mercenaryId)))
+    .filter(Boolean);
+  const hydratedSlots = attachInventoryDataToEquipmentSlots(slots, rawEntries);
+  const entries = attachEquipmentStateToInventoryEntries(
+    rawEntries.map((entry) => enrichInventoryEntry(entry, bundle)),
+    hydratedSlots,
+    bundle,
+    ownedItems
+  );
+  return { bundle, rawEntries, entries, slots: hydratedSlots, ownedItems };
+}
+
+async function getBlacksmithSummary(userId) {
+  const profile = await getOrCreateMercenaryProfile(userId);
+  const { bundle, entries } = await buildBlacksmithInventoryContext(userId);
+  const equipmentEntries = entries.filter((entry) => entry.itemType === 'equipment');
+  return {
+    ok: true,
+    gold: Number(profile.gold || 0) || 0,
+    importantMaterials: buildBlacksmithImportantMaterials(entries, bundle),
+    disassembleCandidates: equipmentEntries.map((entry) => buildBlacksmithCandidate(entry, bundle)),
+    enhanceCandidates: equipmentEntries.map((entry) => buildBlacksmithCandidate(entry, bundle)),
+    rules: buildBlacksmithRules()
+  };
+}
+
+async function grantBlacksmithMaterials(userId, materials = [], sourceInfo = {}) {
+  const bundle = getInventoryMasterBundle();
+  const granted = [];
+  for (const material of materials) {
+    const item = bundle.byItemId.get(material.itemId) || null;
+    const quantity = Math.max(0, Math.floor(Number(material.quantity || 0) || 0));
+    if (!item || item.itemType !== 'material' || quantity <= 0) continue;
+    const entry = await repo.addInventoryItem({
+      id: `inv_${randomUUID()}`,
+      userId,
+      itemId: item.itemId,
+      itemType: 'material',
+      quantity,
+      locked: false,
+      acquiredSourceType: sourceInfo.acquiredSourceType || 'blacksmith',
+      acquiredSourceId: sourceInfo.acquiredSourceId || null,
+      acquiredRunId: null,
+      stackable: true
+    });
+    granted.push({
+      ...formatBlacksmithMaterial({ itemId: item.itemId, quantity }, bundle),
+      inventoryItemId: entry.id
+    });
+  }
+  return granted;
+}
+
+async function consumeBlacksmithMaterials(userId, requirements = [], sourceInfo = {}) {
+  const entries = await repo.listUserInventoryItems(userId);
+  const consumed = [];
+  for (const requirement of requirements) {
+    let remaining = Math.max(0, Math.floor(Number(requirement.quantity || 0) || 0));
+    if (remaining <= 0) continue;
+    const rows = entries
+      .filter((entry) => entry.itemId === requirement.itemId && entry.itemType === 'material' && Number(entry.quantity || 0) > 0)
+      .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+    const available = rows.reduce((sum, entry) => sum + (Number(entry.quantity || 0) || 0), 0);
+    if (available < remaining) {
+      throw httpError(400, '강화 재료가 부족합니다.', 'BLACKSMITH_MATERIAL_NOT_ENOUGH');
+    }
+    for (const row of rows) {
+      if (remaining <= 0) break;
+      const rowQuantity = Number(row.quantity || 0) || 0;
+      const take = Math.min(rowQuantity, remaining);
+      const nextQuantity = rowQuantity - take;
+      if (nextQuantity <= 0) {
+        await repo.consumeInventoryItem(userId, row.id, {
+          consumedSourceType: sourceInfo.consumedSourceType || 'blacksmith_enhance',
+          consumedSourceId: sourceInfo.consumedSourceId || null
+        });
+      } else {
+        await repo.updateInventoryItemQuantity(userId, row.id, nextQuantity);
+      }
+      row.quantity = nextQuantity;
+      remaining -= take;
+      consumed.push({ itemId: row.itemId, quantity: take });
+    }
+  }
+  return consumed.map((material) => formatBlacksmithMaterial(material));
+}
+
+async function disassembleBlacksmithEquipment(userId, payload = {}) {
+  const inventoryItemIds = Array.isArray(payload.inventoryItemIds)
+    ? payload.inventoryItemIds.map((id) => String(id || '').trim()).filter(Boolean)
+    : [String(payload.inventoryItemId || '').trim()].filter(Boolean);
+  if (!inventoryItemIds.length) throw httpError(400, '분해할 장비를 선택해 주세요.', 'BLACKSMITH_ITEM_REQUIRED');
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  const removedItems = [];
+  const allGranted = [];
+  const operationId = `blacksmith_disassemble_${randomUUID()}`;
+  try {
+    for (const inventoryItemId of inventoryItemIds) {
+      const rawEntry = await repo.getUserInventoryItem(userId, inventoryItemId);
+      if (!rawEntry) throw httpError(404, '보관함 장비를 찾을 수 없습니다.', 'INVENTORY_ITEM_NOT_FOUND');
+      const entry = enrichInventoryEntry(rawEntry);
+      if (entry.itemType !== 'equipment' || !entry.equipment) throw httpError(400, '장비만 분해할 수 있습니다.', 'BLACKSMITH_NOT_EQUIPMENT');
+      if (entry.locked) throw httpError(409, '잠금 장비는 분해할 수 없습니다.', 'BLACKSMITH_ITEM_LOCKED');
+      if (await repo.getEquipmentSlotByInventoryItemId(userId, inventoryItemId)) throw httpError(409, '장착 중인 장비는 분해할 수 없습니다.', 'BLACKSMITH_ITEM_EQUIPPED');
+      if (isBlacksmithSpecialGrade(entry.grade)) throw httpError(409, '특수 장비는 아직 분해할 수 없습니다.', 'BLACKSMITH_SPECIAL_GRADE_BLOCKED');
+      const rewards = buildDisassembleRewards(entry);
+      await repo.consumeInventoryItem(userId, inventoryItemId, {
+        consumedSourceType: 'blacksmith_disassemble',
+        consumedSourceId: operationId
+      });
+      const granted = await grantBlacksmithMaterials(userId, rewards, {
+        acquiredSourceType: 'blacksmith_disassemble',
+        acquiredSourceId: operationId
+      });
+      removedItems.push({
+        inventoryItemId,
+        itemId: entry.itemId,
+        name: entry.name,
+        grade: entry.grade,
+        enhancementLevel: normalizeEnhancementLevel(entry.enhancementLevel)
+      });
+      allGranted.push(...granted);
+    }
+    if (provider === 'sqlite') await run('COMMIT');
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
+  return {
+    ok: true,
+    removedItems,
+    grantedMaterials: allGranted,
+    inventorySummary: (await getUserInventorySummary(userId)).summary
+  };
+}
+
+async function enhanceBlacksmithEquipment(userId, payload = {}) {
+  const inventoryItemId = String(payload.inventoryItemId || '').trim();
+  if (!inventoryItemId) throw httpError(400, '강화할 장비를 선택해 주세요.', 'BLACKSMITH_ITEM_REQUIRED');
+  const rawEntry = await repo.getUserInventoryItem(userId, inventoryItemId);
+  if (!rawEntry) throw httpError(404, '보관함 장비를 찾을 수 없습니다.', 'INVENTORY_ITEM_NOT_FOUND');
+  const entry = enrichInventoryEntry(rawEntry);
+  if (entry.itemType !== 'equipment' || !entry.equipment) throw httpError(400, '장비만 강화할 수 있습니다.', 'BLACKSMITH_NOT_EQUIPMENT');
+  if (isBlacksmithSpecialGrade(entry.grade)) throw httpError(409, '특수 장비 강화는 후속 업데이트에서 열립니다.', 'BLACKSMITH_SPECIAL_GRADE_BLOCKED');
+  const beforeLevel = normalizeEnhancementLevel(entry.enhancementLevel);
+  if (beforeLevel >= BLACKSMITH_MAX_ENHANCEMENT_LEVEL) throw httpError(409, '이미 최대 강화입니다.', 'BLACKSMITH_MAX_ENHANCEMENT');
+  const cost = buildEnhancementCost(entry);
+  if (!cost) throw httpError(400, '강화 비용을 계산할 수 없습니다.', 'BLACKSMITH_COST_UNAVAILABLE');
+  const profile = await getOrCreateMercenaryProfile(userId);
+  if (Number(profile.gold || 0) < cost.gold) throw httpError(400, '용병단 골드가 부족합니다.', 'NOT_ENOUGH_GOLD');
+  const inventoryEntries = await repo.listUserInventoryItems(userId);
+  for (const material of cost.materials) {
+    if (getMaterialQuantity(inventoryEntries, material.itemId) < material.quantity) {
+      throw httpError(400, '강화 재료가 부족합니다.', 'BLACKSMITH_MATERIAL_NOT_ENOUGH');
+    }
+  }
+  const operationId = `blacksmith_enhance_${randomUUID()}`;
+  if (provider === 'sqlite') await run('BEGIN IMMEDIATE TRANSACTION');
+  try {
+    await repo.updateMercenaryGold(userId, Number(profile.gold || 0) - cost.gold);
+    const consumedMaterials = await consumeBlacksmithMaterials(userId, cost.materials, {
+      consumedSourceType: 'blacksmith_enhance',
+      consumedSourceId: operationId
+    });
+    const roll = Math.random() * 100;
+    const success = roll < cost.successRate;
+    const afterLevel = success ? beforeLevel + 1 : beforeLevel;
+    const afterPity = cost.targetLevel === 5 ? (success ? 0 : Math.max(0, Number(entry.enhancementPity || 0) + 1)) : Math.max(0, Number(entry.enhancementPity || 0) || 0);
+    const updatedEntry = await repo.updateInventoryItemEnhancement(userId, inventoryItemId, {
+      enhancementLevel: afterLevel,
+      enhancementPity: afterPity
+    });
+    if (provider === 'sqlite') await run('COMMIT');
+    const beforeEnhanced = buildEnhancedEquipmentValues(entry.equipment, beforeLevel);
+    const afterEnhanced = buildEnhancedEquipmentValues(entry.equipment, afterLevel);
+    const beforePower = calculateCombatPowerFromStats(beforeEnhanced.stats) + (Number(beforeEnhanced.modifiers.combatPower || 0) || 0);
+    const afterPower = calculateCombatPowerFromStats(afterEnhanced.stats) + (Number(afterEnhanced.modifiers.combatPower || 0) || 0);
+    return {
+      ok: true,
+      success,
+      inventoryItemId,
+      itemId: entry.itemId,
+      name: entry.name,
+      grade: entry.grade,
+      beforeLevel,
+      afterLevel,
+      maxLevel: BLACKSMITH_MAX_ENHANCEMENT_LEVEL,
+      cost: {
+        gold: cost.gold,
+        materials: cost.materials.map((material) => formatBlacksmithMaterial(material))
+      },
+      consumedMaterials,
+      successRate: cost.successRate,
+      baseSuccessRate: cost.baseSuccessRate,
+      pityBonus: cost.pityBonus,
+      pity: afterPity,
+      statDelta: Object.fromEntries(Object.keys(afterEnhanced.stats).map((key) => [key, (Number(afterEnhanced.stats[key] || 0) || 0) - (Number(beforeEnhanced.stats[key] || 0) || 0)])),
+      combatPowerDelta: Math.round(afterPower - beforePower),
+      inventoryItem: enrichInventoryEntry(updatedEntry)
+    };
+  } catch (error) {
+    if (provider === 'sqlite') await run('ROLLBACK').catch(() => {});
+    throw error;
+  }
 }
 
 async function claimBattleResult(userId, payload = {}) {
@@ -4102,6 +4652,8 @@ module.exports = {
   refreshRecruitBoard,
   hireRecruitCandidate,
   listMyMercenaries,
+  getRepresentativeMercenary,
+  setRepresentativeMercenary,
   setOwnedMercenaryLock,
   dismissOwnedMercenary,
   getRecruitCost,
@@ -4169,6 +4721,9 @@ module.exports = {
   getUserMercenaryEquipment,
   equipInventoryItem,
   unequipSlot,
+  getBlacksmithSummary,
+  disassembleBlacksmithEquipment,
+  enhanceBlacksmithEquipment,
   addInventoryItem,
   addInventoryItems,
   claimMissionRun,

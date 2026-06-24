@@ -390,6 +390,7 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
   office_exp INTEGER NOT NULL DEFAULT 0,
   office_reputation TEXT NOT NULL DEFAULT 'D',
   mission_offer_next_at TIMESTAMPTZ,
+  representative_user_mercenary_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -397,6 +398,8 @@ CREATE TABLE IF NOT EXISTS user_mercenary_profiles (
 ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_exp INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS office_reputation TEXT NOT NULL DEFAULT 'D';
 ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS mission_offer_next_at TIMESTAMPTZ;
+ALTER TABLE user_mercenary_profiles ADD COLUMN IF NOT EXISTS representative_user_mercenary_id UUID;
+NOTIFY pgrst, 'reload schema';
 UPDATE user_mercenary_profiles SET office_level = 1 WHERE office_level IS NULL OR office_level < 1;
 UPDATE user_mercenary_profiles SET office_exp = 0 WHERE office_exp IS NULL OR office_exp < 0;
 UPDATE user_mercenary_profiles SET office_reputation = COALESCE(NULLIF(office_reputation, ''), rank, 'D');
@@ -483,12 +486,25 @@ CREATE TABLE IF NOT EXISTS user_mercenary_inventory_items (
   item_type TEXT NOT NULL DEFAULT 'misc',
   quantity INTEGER NOT NULL DEFAULT 1,
   locked BOOLEAN NOT NULL DEFAULT FALSE,
+  enhancement_level INTEGER NOT NULL DEFAULT 0,
+  enhancement_pity INTEGER NOT NULL DEFAULT 0,
+  enhancement_updated_at TIMESTAMPTZ,
+  consumed_at TIMESTAMPTZ,
+  consumed_source_type TEXT,
+  consumed_source_id TEXT,
   acquired_source_type TEXT,
   acquired_source_id TEXT,
   acquired_run_id TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS enhancement_level INTEGER DEFAULT 0;
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS enhancement_pity INTEGER DEFAULT 0;
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS enhancement_updated_at TIMESTAMPTZ;
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ;
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS consumed_source_type TEXT;
+ALTER TABLE user_mercenary_inventory_items ADD COLUMN IF NOT EXISTS consumed_source_id TEXT;
 
 CREATE TABLE IF NOT EXISTS user_mercenary_equipment_slots (
   id TEXT PRIMARY KEY,
@@ -835,6 +851,7 @@ CREATE INDEX IF NOT EXISTS idx_user_mercenary_battle_runs_user_claimed ON user_m
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user ON user_mercenary_inventory_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_user_item ON user_mercenary_inventory_items(user_id, item_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_run ON user_mercenary_inventory_items(acquired_run_id);
+CREATE INDEX IF NOT EXISTS idx_user_mercenary_inventory_items_consumed ON user_mercenary_inventory_items(user_id, consumed_at);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_user ON user_mercenary_equipment_slots(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_mercenary ON user_mercenary_equipment_slots(user_mercenary_id);
 CREATE INDEX IF NOT EXISTS idx_user_mercenary_equipment_slots_inventory ON user_mercenary_equipment_slots(inventory_item_id);

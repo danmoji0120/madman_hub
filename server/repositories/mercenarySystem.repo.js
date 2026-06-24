@@ -59,6 +59,7 @@ function normalizeMercenaryProfile(row) {
     officeExp: Number(row.office_exp || 0),
     officeReputation: row.office_reputation || row.rank || 'D',
     missionOfferNextAt: row.mission_offer_next_at || null,
+    representativeUserMercenaryId: row.representative_user_mercenary_id ? String(row.representative_user_mercenary_id) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -147,6 +148,12 @@ function normalizeInventoryEntry(row) {
     itemType: row.item_type || 'misc',
     quantity: Math.max(0, Number(row.quantity || 0) || 0),
     locked: Boolean(row.locked),
+    enhancementLevel: Math.max(0, Number(row.enhancement_level || 0) || 0),
+    enhancementPity: Math.max(0, Number(row.enhancement_pity || 0) || 0),
+    enhancementUpdatedAt: row.enhancement_updated_at || null,
+    consumedAt: row.consumed_at || null,
+    consumedSourceType: row.consumed_source_type || null,
+    consumedSourceId: row.consumed_source_id || null,
     acquiredSourceType: row.acquired_source_type || null,
     acquiredSourceId: row.acquired_source_id || null,
     acquiredRunId: row.acquired_run_id || null,
@@ -1265,13 +1272,14 @@ async function listUserInventoryItems(userId) {
       .from('user_mercenary_inventory_items')
       .select('*')
       .eq('user_id', userId)
+      .is('consumed_at', null)
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data || []).map(normalizeInventoryEntry);
   }
 
   const rows = await all(
-    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? ORDER BY created_at DESC, id DESC',
+    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND consumed_at IS NULL ORDER BY created_at DESC, id DESC',
     [userId]
   );
   return rows.map(normalizeInventoryEntry);
@@ -1285,13 +1293,14 @@ async function getUserInventoryItem(userId, inventoryItemId) {
       .select('*')
       .eq('user_id', userId)
       .eq('id', inventoryItemId)
+      .is('consumed_at', null)
       .maybeSingle();
     if (error) throw error;
     return normalizeInventoryEntry(data);
   }
 
   return normalizeInventoryEntry(await get(
-    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND id = ?',
+    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND id = ? AND consumed_at IS NULL',
     [userId, inventoryItemId]
   ));
 }
@@ -1449,6 +1458,7 @@ async function addInventoryItem({ id, userId, itemId, itemType = 'misc', quantit
         .select('*')
         .eq('user_id', userId)
         .eq('item_id', itemId)
+        .is('consumed_at', null)
         .limit(1);
       if (existing.error) throw existing.error;
       if (existing.data?.[0]) {
@@ -1467,7 +1477,7 @@ async function addInventoryItem({ id, userId, itemId, itemType = 'misc', quantit
       }
     } else {
       const existing = await get(
-        'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND item_id = ? LIMIT 1',
+        'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND item_id = ? AND consumed_at IS NULL LIMIT 1',
         [userId, itemId]
       );
       if (existing) {
@@ -1522,6 +1532,139 @@ async function addInventoryItem({ id, userId, itemId, itemType = 'misc', quantit
     ]
   );
   return normalizeInventoryEntry(await get('SELECT * FROM user_mercenary_inventory_items WHERE id = ?', [id]));
+}
+
+async function updateRepresentativeUserMercenaryId(userId, ownedMercenaryId) {
+  const representativeUserMercenaryId = ownedMercenaryId ? String(ownedMercenaryId) : null;
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .update({
+        representative_user_mercenary_id: representativeUserMercenaryId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+      .select()
+      .single();
+    if (error) throw error;
+    return normalizeMercenaryProfile(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_profiles
+     SET representative_user_mercenary_id = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ?`,
+    [representativeUserMercenaryId, userId]
+  );
+  return getMercenaryProfile(userId);
+}
+
+async function clearRepresentativeUserMercenaryIdIfMatching(userId, ownedMercenaryId) {
+  const representativeUserMercenaryId = String(ownedMercenaryId || '');
+  if (!representativeUserMercenaryId) return false;
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_profiles')
+      .update({ representative_user_mercenary_id: null, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('representative_user_mercenary_id', representativeUserMercenaryId)
+      .select('user_id');
+    if (error) throw error;
+    return Boolean(data?.length);
+  }
+
+  const result = await run(
+    `UPDATE user_mercenary_profiles
+     SET representative_user_mercenary_id = NULL, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND representative_user_mercenary_id = ?`,
+    [userId, representativeUserMercenaryId]
+  );
+  return Boolean(result.changes);
+}
+
+async function updateInventoryItemEnhancement(userId, inventoryItemId, { enhancementLevel = 0, enhancementPity = 0 } = {}) {
+  const safeLevel = Math.max(0, Number(enhancementLevel || 0) || 0);
+  const safePity = Math.max(0, Number(enhancementPity || 0) || 0);
+  const updatedAt = new Date().toISOString();
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .update({
+        enhancement_level: safeLevel,
+        enhancement_pity: safePity,
+        enhancement_updated_at: updatedAt,
+        updated_at: updatedAt
+      })
+      .eq('user_id', userId)
+      .eq('id', inventoryItemId)
+      .is('consumed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeInventoryEntry(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_inventory_items
+     SET enhancement_level = ?, enhancement_pity = ?, enhancement_updated_at = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND consumed_at IS NULL`,
+    [safeLevel, safePity, updatedAt, userId, inventoryItemId]
+  );
+  return getUserInventoryItem(userId, inventoryItemId);
+}
+
+async function updateInventoryItemQuantity(userId, inventoryItemId, quantity) {
+  const safeQuantity = Math.max(0, Number(quantity || 0) || 0);
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .update({ quantity: safeQuantity, updated_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('id', inventoryItemId)
+      .is('consumed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeInventoryEntry(data);
+  }
+
+  await run(
+    'UPDATE user_mercenary_inventory_items SET quantity = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ? AND id = ? AND consumed_at IS NULL',
+    [safeQuantity, userId, inventoryItemId]
+  );
+  return getUserInventoryItem(userId, inventoryItemId);
+}
+
+async function consumeInventoryItem(userId, inventoryItemId, { consumedSourceType = null, consumedSourceId = null } = {}) {
+  const consumedAt = new Date().toISOString();
+  if (provider === 'supabase') {
+    const { data, error } = await getSupabaseAdminClient()
+      .from('user_mercenary_inventory_items')
+      .update({
+        consumed_at: consumedAt,
+        consumed_source_type: consumedSourceType,
+        consumed_source_id: consumedSourceId,
+        updated_at: consumedAt
+      })
+      .eq('user_id', userId)
+      .eq('id', inventoryItemId)
+      .is('consumed_at', null)
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    return normalizeInventoryEntry(data);
+  }
+
+  await run(
+    `UPDATE user_mercenary_inventory_items
+     SET consumed_at = ?, consumed_source_type = ?, consumed_source_id = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE user_id = ? AND id = ? AND consumed_at IS NULL`,
+    [consumedAt, consumedSourceType, consumedSourceId, userId, inventoryItemId]
+  );
+  return normalizeInventoryEntry(await get(
+    'SELECT * FROM user_mercenary_inventory_items WHERE user_id = ? AND id = ?',
+    [userId, inventoryItemId]
+  ));
 }
 
 async function listActiveMissionOffers(userId) {
@@ -2155,6 +2298,8 @@ module.exports = {
   updateMercenaryGold,
   updateMercenaryProfileProgress,
   updateMissionOfferNextAt,
+  updateRepresentativeUserMercenaryId,
+  clearRepresentativeUserMercenaryIdIfMatching,
   getRecruitBoard,
   upsertRecruitBoard,
   listUserMercenaries,
@@ -2193,6 +2338,9 @@ module.exports = {
   unequipInventoryItemSlot,
   unequipAllInventoryItemSlotsForMercenary,
   addInventoryItem,
+  updateInventoryItemEnhancement,
+  updateInventoryItemQuantity,
+  consumeInventoryItem,
   listActiveMissionOffers,
   getMissionOffer,
   createMissionOffer,

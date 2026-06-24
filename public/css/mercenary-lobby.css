@@ -77,6 +77,331 @@ button {
   padding: 28px 38px 28px;
 }
 
+/* Office dashboard / representative mercenary 0.1 */
+.office-dashboard {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.68fr) minmax(420px, 1.35fr) minmax(250px, 0.78fr);
+  gap: 16px;
+  align-items: stretch;
+  max-width: 1440px;
+  min-height: min(610px, calc(100dvh - 250px));
+  margin: 28px auto 18px;
+}
+
+.office-dashboard-panel {
+  min-width: 0;
+  border: 1px solid rgba(215, 170, 84, 0.42);
+  padding: 20px;
+  background: linear-gradient(145deg, rgba(25, 16, 9, 0.86), rgba(8, 5, 3, 0.74));
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.34), 0 16px 34px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.office-dashboard-kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--merc-gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.office-dashboard-panel h2 {
+  margin: 0;
+  color: #fff0c9;
+  font-family: "MercTitle", "Malgun Gothic", serif;
+  font-size: 25px;
+  line-height: 1.2;
+}
+
+.office-overview-panel,
+.office-content-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.office-dashboard-stats {
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 0;
+}
+
+.office-dashboard-stats div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(215, 170, 84, 0.16);
+  padding: 9px 0;
+}
+
+.office-dashboard-stats dt,
+.office-dashboard-stats dd {
+  margin: 0;
+}
+
+.office-dashboard-stats dt {
+  color: rgba(247, 232, 194, 0.7);
+  font-size: 13px;
+}
+
+.office-dashboard-stats dd {
+  color: #fff0c7;
+  font-weight: 800;
+}
+
+.representative-hero-panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 530px;
+  background:
+    linear-gradient(90deg, rgba(40, 25, 10, 0.92), rgba(13, 8, 5, 0.64)),
+    repeating-linear-gradient(0deg, transparent 0, transparent 35px, rgba(215, 170, 84, 0.05) 36px);
+}
+
+.representative-hero-panel::after {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 104px;
+  height: 104px;
+  border: 1px solid rgba(215, 170, 84, 0.26);
+  content: "";
+  transform: rotate(12deg);
+  pointer-events: none;
+}
+
+.representative-hero-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(200px, 0.92fr) minmax(220px, 1fr);
+  flex: 1;
+  min-height: 0;
+  gap: 18px;
+  align-items: end;
+}
+
+.representative-hero-art {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  min-height: 340px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(215, 170, 84, 0.32);
+}
+
+.representative-portrait {
+  width: 100%;
+  height: 390px;
+}
+
+.representative-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 15px 16px rgba(0, 0, 0, 0.72));
+}
+
+.representative-hero-copy {
+  position: relative;
+  z-index: 2;
+  padding-bottom: 8px;
+}
+
+.representative-hero-copy > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.representative-status,
+.merc-representative-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid rgba(255, 217, 135, 0.5);
+  padding: 3px 6px;
+  color: #ffe8ae;
+  background: rgba(73, 48, 18, 0.68);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.representative-hero-copy h2 {
+  margin-top: 12px;
+  font-size: clamp(28px, 3vw, 42px);
+}
+
+.representative-hero-copy p {
+  margin: 7px 0 15px;
+  color: rgba(249, 231, 194, 0.78);
+}
+
+.representative-hero-copy dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.representative-hero-copy dl div {
+  border-left: 2px solid rgba(215, 170, 84, 0.56);
+  padding: 6px 9px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.representative-hero-copy dt,
+.representative-hero-copy dd {
+  margin: 0;
+}
+
+.representative-hero-copy dt {
+  color: rgba(247, 232, 194, 0.62);
+  font-size: 11px;
+}
+
+.representative-hero-copy dd {
+  color: #fff1c7;
+  font-weight: 800;
+}
+
+.representative-equipment-summary {
+  display: grid;
+  gap: 5px;
+  margin: 17px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.representative-equipment-summary li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  border-bottom: 1px solid rgba(215, 170, 84, 0.14);
+  padding-bottom: 5px;
+  font-size: 12px;
+}
+
+.representative-equipment-summary span {
+  color: rgba(247, 232, 194, 0.64);
+}
+
+.representative-equipment-summary strong {
+  overflow: hidden;
+  color: #fce5b2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.representative-hero-actions {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.representative-hero-actions button,
+.representative-empty-copy button,
+.office-content-actions button {
+  min-height: 44px;
+  border: 1px solid rgba(215, 170, 84, 0.48);
+  color: #f6dfaa;
+  background: rgba(18, 11, 6, 0.72);
+  cursor: pointer;
+}
+
+.representative-hero-actions button:hover,
+.representative-empty-copy button:hover,
+.office-content-actions button:hover {
+  border-color: var(--merc-gold-bright);
+  background: rgba(70, 43, 14, 0.68);
+}
+
+.representative-empty-art {
+  width: min(220px, 52%);
+  min-height: 300px;
+  margin: auto;
+  border: 1px dashed rgba(215, 170, 84, 0.35);
+  opacity: 0.72;
+  clip-path: polygon(50% 0, 75% 14%, 82% 48%, 100% 100%, 0 100%, 18% 48%, 25% 14%);
+  background: linear-gradient(180deg, rgba(215, 170, 84, 0.24), rgba(0, 0, 0, 0.1));
+}
+
+.representative-empty-copy {
+  position: relative;
+  z-index: 2;
+  max-width: 440px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.representative-empty-copy p,
+.office-dashboard-note {
+  color: rgba(247, 232, 194, 0.7);
+  line-height: 1.6;
+}
+
+.office-content-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.office-content-actions button {
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  min-height: 62px;
+  padding: 8px;
+  text-align: left;
+}
+
+.office-content-actions button:disabled {
+  color: rgba(247, 232, 194, 0.42);
+  cursor: default;
+}
+
+.office-content-actions em {
+  color: var(--merc-gold);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.office-dashboard-note {
+  margin: auto 0 0;
+  border-top: 1px solid rgba(215, 170, 84, 0.18);
+  padding-top: 14px;
+  font-size: 12px;
+}
+
+/* The former scene hotspots remain available through the dashboard and quick navigation. */
+.status-panel,
+.assistant-panel,
+.lobby-stage {
+  display: none;
+}
+
+.bottom-ui {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 3;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
 .lobby-topbar {
   position: relative;
   z-index: 4;
@@ -4488,6 +4813,28 @@ body.battle-board-open {
   font-family: "MercTitle", "Malgun Gothic", serif;
 }
 
+.battle-reward-preview-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.battle-reward-preview-header button,
+.drop-source-list button,
+.blacksmith-material-list button {
+  border: 1px solid rgba(214, 168, 93, 0.34);
+  background: rgba(54, 34, 18, 0.72);
+  color: #ffe5aa;
+  cursor: pointer;
+}
+
+.battle-reward-preview-header button {
+  min-height: 30px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
 .battle-operation-copy .battle-reward-preview ul {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4514,6 +4861,42 @@ body.battle-board-open {
 .battle-operation-copy .battle-reward-preview li strong {
   color: #ffe5aa;
   font-family: "MercTitle", "Malgun Gothic", serif;
+}
+
+.battle-drop-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.battle-drop-preview section {
+  display: grid;
+  gap: 6px;
+}
+
+.battle-drop-preview h5,
+.battle-reward-policy {
+  margin: 0;
+  color: rgba(231, 209, 171, 0.76);
+  font-size: 12px;
+}
+
+.battle-drop-preview ul {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+}
+
+.battle-drop-chip small {
+  color: rgba(244, 210, 142, 0.68);
+}
+
+.battle-drop-chip.is-rare {
+  border-color: rgba(218, 131, 236, 0.42);
+  background: rgba(66, 35, 74, 0.36);
+}
+
+.battle-reward-policy {
+  padding: 7px 9px;
+  border: 1px solid rgba(214, 168, 93, 0.18);
+  background: rgba(0, 0, 0, 0.18);
 }
 
 
@@ -6732,6 +7115,7 @@ body.battle-board-open {
 
 .inventory-stat-list,
 .inventory-tag-list,
+.inventory-source-list,
 .inventory-disabled-actions,
 .inventory-equip-panel,
 .inventory-equipped-state {
@@ -6743,6 +7127,41 @@ body.battle-board-open {
 .inventory-stat-list h4 {
   flex-basis: 100%;
   margin: 0;
+}
+
+.inventory-source-list {
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-source-list h4 {
+  margin: 0;
+}
+
+.drop-source-list {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.drop-source-list li {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.drop-source-list strong {
+  color: #ffe5aa;
+}
+
+.drop-source-list span,
+.drop-source-empty,
+.drop-source-more {
+  color: rgba(244, 223, 180, 0.7);
 }
 
 .inventory-stat-list span,
@@ -8017,7 +8436,8 @@ body.battle-board-open {
 
 .mercenary-illustration-lightbox,
 .mercenary-equipment-manage-modal,
-.mercenary-dismiss-modal {
+.mercenary-dismiss-modal,
+.mercenary-drop-guide-modal {
   position: fixed;
   inset: 0;
   z-index: 90;
@@ -8028,7 +8448,8 @@ body.battle-board-open {
 
 .mercenary-illustration-lightbox[hidden],
 .mercenary-equipment-manage-modal[hidden],
-.mercenary-dismiss-modal[hidden] {
+.mercenary-dismiss-modal[hidden],
+.mercenary-drop-guide-modal[hidden] {
   display: none !important;
 }
 
@@ -8041,7 +8462,8 @@ body.battle-board-open {
 
 .mercenary-lightbox-card,
 .mercenary-equipment-manage-card,
-.mercenary-dismiss-card {
+.mercenary-dismiss-card,
+.drop-guide-card {
   position: relative;
   z-index: 1;
   border: 1px solid rgba(220, 174, 88, 0.48);
@@ -8285,8 +8707,114 @@ body.battle-board-open {
   font-style: normal;
 }
 
+.drop-guide-card {
+  display: grid;
+  gap: 14px;
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(820px, calc(100dvh - 48px));
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.drop-guide-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+  padding-right: 42px;
+}
+
+.drop-guide-card header span {
+  color: #e6ad63;
+  font-size: 0.78rem;
+}
+
+.drop-guide-card h2,
+.drop-guide-card h3 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.drop-guide-policy ul,
+.drop-guide-missions {
+  display: grid;
+  gap: 8px;
+}
+
+.drop-guide-policy ul {
+  padding-left: 18px;
+  margin: 8px 0 0;
+  color: rgba(247, 232, 194, 0.78);
+}
+
+.drop-guide-missions article,
+.drop-guide-item-source {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(214, 168, 93, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.drop-guide-missions article div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drop-guide-missions article span {
+  padding: 4px 7px;
+  border: 1px solid rgba(214, 168, 93, 0.22);
+  color: rgba(247, 232, 194, 0.82);
+}
+
+.drop-guide-note {
+  margin: 0;
+  color: rgba(247, 232, 194, 0.7);
+}
+
 /* Mobile survival patch v304 */
 @media (max-width: 768px) {
+  .office-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    margin-top: 14px;
+  }
+
+  .representative-hero-panel {
+    min-height: 0;
+    order: -2;
+  }
+
+  .office-content-panel {
+    order: -1;
+  }
+
+  .representative-hero-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .representative-hero-art {
+    min-height: 220px;
+  }
+
+  .representative-portrait {
+    height: 260px;
+  }
+
+  .representative-hero-copy h2 {
+    font-size: 28px;
+  }
+
+  .office-dashboard-panel {
+    padding: 16px;
+  }
+
+  .office-content-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   html,
   body.mercenary-lobby-page {
     min-width: 0;
@@ -8695,7 +9223,8 @@ body.battle-board-open {
 
   .mercenary-lightbox-card,
   .mercenary-equipment-manage-card,
-  .mercenary-dismiss-card {
+  .mercenary-dismiss-card,
+  .drop-guide-card {
     width: 100vw;
     max-width: none;
     height: 100vh;
@@ -8802,5 +9331,521 @@ body.battle-board-open {
 
   .mercenary-equipment-manage-grid aside {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mercenary-blacksmith-view {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(7, 5, 4, 0.78);
+}
+
+.mercenary-blacksmith-view[hidden] {
+  display: none;
+}
+
+.blacksmith-background-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 132, 42, 0.15), transparent 32%),
+    radial-gradient(circle at 82% 88%, rgba(193, 150, 68, 0.14), transparent 38%),
+    rgba(8, 6, 5, 0.84);
+}
+
+.blacksmith-shell {
+  position: relative;
+  width: min(1480px, calc(100vw - 32px));
+  height: min(880px, calc(100dvh - 44px));
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 16px;
+  color: #f7e8c2;
+  background:
+    linear-gradient(135deg, rgba(31, 20, 13, 0.97), rgba(12, 10, 9, 0.98)),
+    #16100c;
+  border: 1px solid rgba(214, 158, 69, 0.42);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.62), inset 0 0 0 1px rgba(255, 230, 164, 0.06);
+  overflow: hidden;
+}
+
+.blacksmith-topbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+}
+
+.blacksmith-kicker {
+  display: block;
+  color: #f2a94f;
+  font-size: 0.78rem;
+  letter-spacing: 0;
+}
+
+.blacksmith-topbar h2 {
+  margin: 2px 0;
+  font-size: clamp(1.55rem, 2vw, 2.25rem);
+  letter-spacing: 0;
+}
+
+.blacksmith-topbar p {
+  margin: 0;
+  color: rgba(247, 232, 194, 0.72);
+}
+
+.blacksmith-resource-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.blacksmith-resource-strip span {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(214, 158, 69, 0.26);
+  background: rgba(25, 17, 12, 0.82);
+  color: rgba(247, 232, 194, 0.88);
+  font-size: 0.82rem;
+}
+
+.blacksmith-resource-strip b {
+  color: #f2c66d;
+  font-weight: 700;
+}
+
+.blacksmith-close-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(214, 158, 69, 0.36);
+  background: rgba(44, 29, 18, 0.86);
+  color: #f7e8c2;
+  cursor: pointer;
+}
+
+.blacksmith-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.blacksmith-tabs button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(214, 158, 69, 0.28);
+  background: rgba(26, 18, 12, 0.78);
+  color: rgba(247, 232, 194, 0.8);
+  cursor: pointer;
+}
+
+.blacksmith-tabs button.is-active {
+  background: linear-gradient(180deg, rgba(167, 86, 35, 0.92), rgba(74, 42, 22, 0.96));
+  color: #fff4d6;
+  border-color: rgba(255, 188, 91, 0.65);
+}
+
+.blacksmith-tabs button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.blacksmith-tabs em {
+  margin-left: 6px;
+  color: #f0b75f;
+  font-style: normal;
+  font-size: 0.75rem;
+}
+
+.blacksmith-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(4, minmax(120px, 150px));
+  gap: 8px;
+  min-width: 0;
+}
+
+.blacksmith-toolbar label {
+  display: grid;
+  gap: 4px;
+  color: rgba(247, 232, 194, 0.76);
+  font-size: 0.76rem;
+}
+
+.blacksmith-toolbar input,
+.blacksmith-toolbar select {
+  min-width: 0;
+  min-height: 36px;
+  border: 1px solid rgba(214, 158, 69, 0.28);
+  background: rgba(10, 8, 7, 0.82);
+  color: #f7e8c2;
+  padding: 0 10px;
+}
+
+.blacksmith-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(360px, 1fr) 360px;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.blacksmith-list-panel,
+.blacksmith-detail-panel,
+.blacksmith-work-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid rgba(214, 158, 69, 0.22);
+  background: rgba(14, 11, 9, 0.74);
+}
+
+.blacksmith-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.blacksmith-equipment-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 9px;
+  width: 100%;
+  min-height: 92px;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid rgba(214, 158, 69, 0.18);
+  background: rgba(27, 18, 12, 0.82);
+  color: #f7e8c2;
+  cursor: pointer;
+}
+
+.blacksmith-equipment-card.is-selected {
+  border-color: rgba(255, 188, 91, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 188, 91, 0.14);
+}
+
+.blacksmith-equipment-card strong,
+.blacksmith-equipment-card em,
+.blacksmith-equipment-card small,
+.blacksmith-card-flags {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.blacksmith-equipment-card strong {
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.25;
+}
+
+.blacksmith-equipment-card em,
+.blacksmith-equipment-card small {
+  color: rgba(247, 232, 194, 0.68);
+  font-style: normal;
+  font-size: 0.78rem;
+}
+
+.blacksmith-card-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.blacksmith-card-flags i {
+  padding: 2px 6px;
+  border: 1px solid rgba(214, 158, 69, 0.22);
+  color: #f0b75f;
+  font-style: normal;
+  font-size: 0.72rem;
+}
+
+.blacksmith-detail-card,
+.blacksmith-work-card,
+.blacksmith-empty-detail {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.blacksmith-detail-card header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.blacksmith-detail-card h3,
+.blacksmith-work-card h3 {
+  margin: 0;
+  letter-spacing: 0;
+}
+
+.blacksmith-detail-card p,
+.blacksmith-work-card p,
+.blacksmith-empty,
+.blacksmith-empty-detail p {
+  color: rgba(247, 232, 194, 0.72);
+}
+
+.blacksmith-level-badge {
+  min-width: 54px;
+  min-height: 40px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(255, 188, 91, 0.45);
+  background: rgba(91, 48, 20, 0.78);
+  color: #ffd98b;
+}
+
+.blacksmith-warning {
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(214, 79, 58, 0.42);
+  background: rgba(91, 23, 17, 0.34);
+  color: #ffb9a9;
+}
+
+.blacksmith-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.blacksmith-stat-grid div {
+  display: grid;
+  gap: 2px;
+  padding: 9px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(214, 158, 69, 0.16);
+}
+
+.blacksmith-stat-grid span,
+.blacksmith-stat-grid em,
+.blacksmith-cost-line span {
+  color: rgba(247, 232, 194, 0.58);
+  font-size: 0.74rem;
+  font-style: normal;
+}
+
+.blacksmith-stat-grid strong,
+.blacksmith-cost-line strong {
+  color: #ffe2a0;
+}
+
+.blacksmith-enhancement-track {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.blacksmith-enhancement-track span {
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(214, 158, 69, 0.2);
+  background: rgba(0, 0, 0, 0.24);
+  color: rgba(247, 232, 194, 0.48);
+}
+
+.blacksmith-enhancement-track span.is-lit {
+  border-color: rgba(255, 188, 91, 0.55);
+  background: rgba(154, 78, 25, 0.58);
+  color: #ffe2a0;
+}
+
+.blacksmith-work-card ul,
+.blacksmith-material-list {
+  display: grid;
+  gap: 7px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.blacksmith-work-card li,
+.blacksmith-cost-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid rgba(214, 158, 69, 0.15);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.blacksmith-material-list li {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.blacksmith-material-list li.is-short {
+  border-color: rgba(214, 79, 58, 0.38);
+  background: rgba(91, 23, 17, 0.24);
+}
+
+.blacksmith-material-list button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 0.76rem;
+}
+
+.blacksmith-drop-note {
+  margin: 0;
+  color: rgba(247, 232, 194, 0.68);
+  font-size: 0.82rem;
+}
+
+.blacksmith-work-card button {
+  min-height: 44px;
+  border: 1px solid rgba(255, 188, 91, 0.52);
+  background: linear-gradient(180deg, rgba(201, 114, 39, 0.96), rgba(99, 50, 23, 0.96));
+  color: #fff4d6;
+  cursor: pointer;
+}
+
+.blacksmith-work-card.is-danger button {
+  border-color: rgba(255, 107, 82, 0.7);
+  background: linear-gradient(180deg, rgba(176, 55, 42, 0.96), rgba(91, 24, 19, 0.96));
+}
+
+.blacksmith-work-card button:disabled,
+.blacksmith-work-card.is-disabled button {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .blacksmith-layout {
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-areas:
+      "list detail"
+      "list work";
+  }
+
+  .blacksmith-list-panel {
+    grid-area: list;
+  }
+
+  .blacksmith-detail-panel {
+    grid-area: detail;
+  }
+
+  .blacksmith-work-panel {
+    grid-area: work;
+  }
+
+  .blacksmith-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .mercenary-blacksmith-view {
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .blacksmith-shell {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    padding: 10px;
+    border-right: 0;
+    border-left: 0;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+
+  .blacksmith-topbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .blacksmith-resource-strip {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .blacksmith-toolbar {
+    grid-template-columns: 1fr 1fr;
+    overflow-y: auto;
+    max-height: 30dvh;
+  }
+
+  .blacksmith-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .blacksmith-list-panel,
+  .blacksmith-detail-panel,
+  .blacksmith-work-panel {
+    grid-area: auto;
+    overflow: visible;
+  }
+
+  .blacksmith-list {
+    max-height: 34dvh;
+    overflow-y: auto;
+  }
+
+  .blacksmith-work-panel {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.34);
+  }
+}
+
+@media (max-width: 480px) {
+  .office-dashboard {
+    gap: 10px;
+  }
+
+  .office-dashboard-panel {
+    padding: 13px;
+  }
+
+  .representative-hero-actions,
+  .office-content-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .representative-equipment-summary li {
+    grid-template-columns: 66px minmax(0, 1fr);
+  }
+
+  .blacksmith-toolbar,
+  .blacksmith-stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .blacksmith-equipment-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .blacksmith-detail-card header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .blacksmith-level-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 }
